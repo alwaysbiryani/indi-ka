@@ -168,7 +168,7 @@ export default function Home() {
 
 
             <div className="mt-4 p-4 text-center border-t border-zinc-200 dark:border-zinc-800">
-              <p className="text-xs text-zinc-400">Created by <a href="https://github.com/alwaysbiryani" target="_blank" rel="noopener noreferrer" className="font-medium text-zinc-600 dark:text-zinc-300 hover:underline">Manideep</a></p>
+              <p className="text-xs text-zinc-400">Created by <a href="https://github.com/alwaysbiryani/indi-ka" target="_blank" rel="noopener noreferrer" className="font-medium text-zinc-600 dark:text-zinc-300 hover:underline">Manideep</a></p>
             </div>
           </div>
         </aside>
