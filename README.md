@@ -1,36 +1,41 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-## Getting Started
+# Wispr Flow - Hinglish Edition
 
-First, run the development server:
+A premium voice dictation app powered by Sarvam AI, designed for seamless Hinglish transcription.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Features
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- **Hinglish First**: Built with Hinglish as the default language.
+- **Sarvam AI Integration**: Uses Sarvam's Speech-to-Text and Transliteration APIs for high accuracy.
+- **Premium Design**: Modern, dark-mode focused UI with glassmorphism and smooth animations.
+- **Real-time Feedback**: Visual feedback during recording and processing.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Setup
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1.  **Clone the repository** (if you haven't already).
+2.  **Install dependencies**:
+    ```bash
+    npm install
+    ```
+3.  **Run the development server**:
+    ```bash
+    npm run dev
+    ```
+4.  **Open the app**: Navigate to [http://localhost:3000](http://localhost:3000).
 
-## Learn More
+## Configuration
 
-To learn more about Next.js, take a look at the following resources:
+To use the transcription features, you need a **Sarvam AI API Key**.
+-   When you first open the app, you will be prompted to enter your API key.
+-   The key is stored securely in your browser's local storage.
+-   You can update it anytime by clicking the Settings icon.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Tech Stack
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+-   **Frontend**: Next.js 15 (App Router), React, Tailwind CSS v4, Framer Motion.
+-   **Icons**: Lucide React.
+-   **Backend**: Next.js API Routes (Serverless functions).
 
-## Deploy on Vercel
+## License
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+MIT
