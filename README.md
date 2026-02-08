@@ -4,6 +4,14 @@
 
 **Indi-क** is the fastest and most seamless way to transcribe your voice into text for Hinglish or any major Indian language. Built with a "mobile-first" philosophy, it provides a high-end, smooth experience whether you are on a smartphone or a desktop.
 
+## 📱 v1 Experience
+
+<div align="center">
+  <img src="public/screenshots/web_v1.png" width="800" alt="Indi-ka Web v1" />
+  <br />
+  <img src="public/screenshots/mobile_v1.png" width="250" alt="Indi-ka Mobile v1" />
+</div>
+
 ## ✨ Key Experience Highlights
 
 - **Desktop & Mobile Optimized**: A responsive interface that scales perfectly. Enjoy a dedicated side-sidebar on desktop and a clean, focused "canvas" experience on mobile.
