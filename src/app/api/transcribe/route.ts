@@ -8,10 +8,16 @@ export async function POST(req: NextRequest) {
         const language = formData.get('language') as string; // 'hinglish', 'hi-IN', 'en-IN'
 
         // Priority: Header > Env Variable
-        const apiKey = req.headers.get('x-api-key') || process.env.SARVAM_API_KEY;
+        let apiKey = req.headers.get('x-api-key') || process.env.SARVAM_API_KEY || process.env.NEXT_PUBLIC_SARVAM_API_KEY;
 
-        if (!apiKey) {
-            return NextResponse.json({ error: 'CONFIG_ERROR: API Key missing' }, { status: 401 });
+        // Clean up the key if it exists
+        apiKey = apiKey?.trim();
+
+        if (!apiKey || apiKey === 'your_api_key_here') {
+            return NextResponse.json({
+                error: 'CONFIG_ERROR: API Key missing',
+                details: 'Sarvam AI API key is missing. Please provide it in the settings or set SARVAM_API_KEY in your environment variables.'
+            }, { status: 401 });
         }
 
         if (!audioFile) {

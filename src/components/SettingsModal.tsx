@@ -64,8 +64,11 @@ export default function SettingsModal({ isOpen, onClose, apiKey, onSaveApiKey }:
                             placeholder="Enter your API key..."
                             className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 transition-all font-mono text-sm"
                         />
-                        <p className="mt-2 text-xs text-gray-500">
-                            Your API key is stored locally in your browser and never sent anywhere else except Sarvam AI.
+                        <p className="mt-2 text-xs text-gray-400 leading-relaxed">
+                            Your API key is stored locally in your browser. For a permanent deployment on Vercel, add <strong>SARVAM_API_KEY</strong> to your Vercel Environment Variables.
+                        </p>
+                        <p className="mt-2 text-xs text-zinc-500">
+                            Get your key from <a href="https://www.sarvam.ai/" target="_blank" rel="noopener noreferrer" className="text-purple-400 hover:underline">sarvam.ai</a>.
                         </p>
                     </div>
 

@@ -126,9 +126,7 @@ export default function Home() {
             exit={{ height: 0, opacity: 0 }}
             className="bg-red-50 dark:bg-red-900/20 border-b border-red-200 dark:border-red-800 px-6 py-3 flex items-center justify-center space-x-2 text-red-600 dark:text-red-400 text-sm font-medium"
           >
-            <AlertCircle className="w-4 h-4" />
-            <span>{errorBanner}</span>
-            <button onClick={() => setErrorBanner(null)} className="ml-4 underline opacity-75 hover:opacity-100">Dismiss</button>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
