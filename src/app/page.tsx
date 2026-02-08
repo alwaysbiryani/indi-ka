@@ -142,8 +142,14 @@ export default function Home() {
             <LanguageSelector
               selectedLanguage={language}
               onSelectLanguage={setLanguage}
-              className="mb-4"
+              className="mb-2 relative z-50"
             />
+            <div className="p-4 bg-blue-50 dark:bg-blue-900/10 rounded-lg border border-blue-100 dark:border-blue-900/20 relative z-0">
+              <h3 className="text-blue-600 dark:text-blue-400 font-semibold text-xs mb-1 uppercase tracking-wider">Pro Tip</h3>
+              <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                Speaking naturally in Hinglish, English or your local language? Set language to 'Auto' for best results.
+              </p>
+            </div>
             <div className="mt-auto">
               <div className="mb-4 p-4 bg-zinc-100 dark:bg-zinc-800/50 rounded-lg border border-zinc-200 dark:border-zinc-800">
                 <h3 className="font-semibold text-xs mb-1 uppercase tracking-wider text-zinc-500">Powered By</h3>
@@ -153,16 +159,11 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="p-4 bg-blue-50 dark:bg-blue-900/10 rounded-lg border border-blue-100 dark:border-blue-900/20">
-                <h3 className="text-blue-600 dark:text-blue-400 font-semibold text-xs mb-1 uppercase tracking-wider">Pro Tip</h3>
-                <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                  Speaking naturally in Hinglish? Set language to 'Auto' for best results.
-                </p>
-              </div>
+
             </div>
 
             <div className="mt-4 p-4 text-center border-t border-zinc-200 dark:border-zinc-800">
-              <p className="text-xs text-zinc-400">Created by <a href="https://github.com/manideep123ma" target="_blank" rel="noopener noreferrer" className="font-medium text-zinc-600 dark:text-zinc-300 hover:underline">Manideep</a></p>
+              <p className="text-xs text-zinc-400">Created by <a href="https://github.com/alwaysbiryani" target="_blank" rel="noopener noreferrer" className="font-medium text-zinc-600 dark:text-zinc-300 hover:underline">Manideep</a></p>
             </div>
           </div>
         </aside>

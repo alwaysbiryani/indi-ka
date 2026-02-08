@@ -20,36 +20,15 @@
 - **AI Services**: Sarvam AI (Speech-to-Text & Transliteration APIs)
 
 ## Getting Started
-
+    
 1.  **Clone the repository**:
     ```bash
-    git clone https://github.com/manideep123ma/indi-ka.git
+    git clone https://github.com/alwaysbiryani/indi-ka.git
     cd indi-ka
     ```
-
-2.  **Install dependencies**:
-    ```bash
-    npm install
-    ```
-
-3.  **Set up Environment Variables**:
-    Create a `.env.local` file in the root directory and add your Sarvam AI API key:
-    ```bash
-    SARVAM_API_KEY=your_api_key_here
-    ```
-    Alternatively, you can enter the API key directly in the application settings.
-
-4.  **Run the development server**:
-    ```bash
-    npm run dev
-    ```
-
-5.  Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-## License
-
-This project is open-source and available under the [MIT License](LICENSE).
-
+    
+    ...
+    
 ## Author
 
-Created by [Manideep](https://github.com/manideep123ma).
+Created by [Manideep](https://github.com/alwaysbiryani).
