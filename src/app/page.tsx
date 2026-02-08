@@ -126,7 +126,24 @@ export default function Home() {
             exit={{ height: 0, opacity: 0 }}
             className="bg-red-50 dark:bg-red-900/20 border-b border-red-200 dark:border-red-800 px-6 py-3 flex items-center justify-center space-x-2 text-red-600 dark:text-red-400 text-sm font-medium"
           >
-            )}
+            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            <div className="flex flex-col md:flex-row items-center space-y-2 md:space-y-0 md:space-x-4 text-center md:text-left">
+              <span>{errorBanner}</span>
+              <div className="flex items-center space-x-3">
+                {errorBanner.includes('API Key') && (
+                  <button
+                    onClick={() => {
+                      setIsSettingsOpen(true);
+                      setErrorBanner(null);
+                    }}
+                    className="px-3 py-1 bg-red-600 text-white rounded-md text-xs hover:bg-red-700 transition-colors"
+                  >
+                    Open Settings
+                  </button>
+                )}
+                <button onClick={() => setErrorBanner(null)} className="underline opacity-75 hover:opacity-100 text-xs">Dismiss</button>
+              </div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
