@@ -84,11 +84,11 @@ export default function Home() {
 
       {/* Header */}
       <header className="relative z-20 flex items-center justify-between px-6 py-4 border-b border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md sticky top-0">
-        <div className="flex items-center space-x-3 w-1/4">
-          <div className="w-8 h-8 bg-black dark:bg-white rounded-lg flex items-center justify-center shadow-sm">
+        <div className="flex items-center space-x-3 w-auto min-w-max">
+          <div className="w-8 h-8 bg-black dark:bg-white rounded-lg flex items-center justify-center shadow-sm shrink-0">
             <MessageSquare className="w-4 h-4 text-white dark:text-black" />
           </div>
-          <div>
+          <div className="whitespace-nowrap">
             <h1 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-white">
               <span className="text-orange-600 dark:text-orange-500">I</span>ndi-क
             </h1>
@@ -223,15 +223,17 @@ export default function Home() {
                 />
               </div>
 
-              <div className="flex flex-col items-center py-8 bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
-                <span className="text-[10px] text-zinc-400 uppercase tracking-widest font-bold mb-4">Powered Using</span>
-                <img
-                  src="/logos/sarvam-wordmark-black.svg"
-                  alt="Sarvam AI"
-                  className="h-5 dark:invert opacity-70 mb-6"
-                />
-                <div className="h-px w-12 bg-zinc-100 dark:bg-zinc-800 mb-6" />
-                <p className="text-[10px] text-zinc-500 font-medium">
+              <div className="flex flex-col items-center py-6 bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm w-full max-w-[280px]">
+                <div className="flex items-center space-x-2 mb-4">
+                  <span className="text-[10px] text-zinc-400 uppercase tracking-widest font-bold">Powered Using</span>
+                  <img
+                    src="/logos/sarvam-wordmark-black.svg"
+                    alt="Sarvam AI"
+                    className="h-3.5 dark:invert opacity-70"
+                  />
+                </div>
+                <div className="h-px w-8 bg-zinc-100 dark:bg-zinc-800 mb-4" />
+                <p className="text-[9px] text-zinc-500 font-medium whitespace-nowrap">
                   Created by <a href="https://github.com/alwaysbiryani/indi-ka" target="_blank" rel="noopener noreferrer" className="text-zinc-800 dark:text-zinc-200 font-bold hover:underline">Manideep</a> / AI for India
                 </p>
               </div>
@@ -265,12 +267,14 @@ export default function Home() {
 
           <div className="p-4 border-t border-zinc-200 dark:border-zinc-800">
             <div className="mb-4 p-4 bg-orange-50 dark:bg-orange-950/20 rounded-xl border border-orange-100 dark:border-orange-900/30 flex flex-col items-center text-center">
-              <span className="text-[10px] text-orange-600/70 dark:text-orange-400/70 uppercase tracking-[0.2em] font-bold mb-3">Powered Using</span>
-              <img
-                src="/logos/sarvam-wordmark-black.svg"
-                alt="Sarvam AI"
-                className="h-4 dark:invert opacity-80"
-              />
+              <div className="flex items-center space-x-2">
+                <span className="text-[9px] text-orange-600/70 dark:text-orange-400/70 uppercase tracking-[0.2em] font-bold">Powered Using</span>
+                <img
+                  src="/logos/sarvam-wordmark-black.svg"
+                  alt="Sarvam AI"
+                  className="h-3.5 dark:invert opacity-80"
+                />
+              </div>
             </div>
             <div className="flex justify-center">
               <NetworkStatus fixed={false} />
