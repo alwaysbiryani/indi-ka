@@ -108,12 +108,12 @@ export default function Home() {
 
         <div className="flex items-center justify-end space-x-4 w-1/4">
 
-          <button
+          {/* <button
             onClick={() => setIsSettingsOpen(true)}
             className="md:hidden p-2 text-zinc-400"
           >
             <Settings className="w-5 h-5" />
-          </button>
+          </button> */}
         </div>
       </header>
 
@@ -165,15 +165,7 @@ export default function Home() {
                 Speaking naturally in Hinglish, English or your local language? Set language to 'Auto' for best results.
               </p>
             </div>
-            <div className="mt-auto">
-              <div className="mb-4 p-4 bg-zinc-100 dark:bg-zinc-800/50 rounded-lg border border-zinc-200 dark:border-zinc-800">
-                <h3 className="font-semibold text-xs mb-1 uppercase tracking-wider text-zinc-500">Powered By</h3>
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm font-medium text-orange-600 dark:text-orange-400">Sarvam AI</span>
-                  <span className="text-xs text-zinc-400">for Indian Languages</span>
-                </div>
-              </div>
-            </div>
+
 
             <div className="mt-4 p-4 text-center border-t border-zinc-200 dark:border-zinc-800">
               <p className="text-xs text-zinc-400">Created by <a href="https://github.com/alwaysbiryani" target="_blank" rel="noopener noreferrer" className="font-medium text-zinc-600 dark:text-zinc-300 hover:underline">Manideep</a></p>
@@ -233,8 +225,12 @@ export default function Home() {
 
           <div className="p-4 border-t border-zinc-200 dark:border-zinc-800">
             {/* Ads Space Placeholder */}
-            <div className="w-full h-32 bg-zinc-100 dark:bg-zinc-900 rounded-lg flex items-center justify-center border border-dashed border-zinc-300 dark:border-zinc-700 mb-4">
-              <span className="text-xs text-zinc-400 uppercase tracking-widest font-medium">Ads Space</span>
+            <div className="mb-4 p-4 bg-orange-50 dark:bg-orange-950/20 rounded-xl border border-orange-100 dark:border-orange-900/30 flex flex-col items-center text-center">
+              <span className="text-[10px] text-orange-600/70 dark:text-orange-400/70 uppercase tracking-[0.2em] font-bold mb-2">Powered By</span>
+              <div className="flex flex-col items-center">
+                <span className="text-lg font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">Sarvam AI</span>
+                <span className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1 font-medium">State-of-the-art Indic Voice Models</span>
+              </div>
             </div>
 
             {/* Online Indicator */}
