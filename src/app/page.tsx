@@ -90,8 +90,8 @@ export default function Home() {
             <MessageSquare className="w-5 h-5 text-zinc-50 dark:text-zinc-950" />
           </div>
           <div className="whitespace-nowrap">
-            <h1 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-white">
-              <span className="text-orange-600 dark:text-orange-500">I</span>ndi-क
+            <h1 className="text-2xl font-black tracking-tighter bg-gradient-to-r from-[#FF9933] via-zinc-400 dark:via-white to-[#138808] bg-clip-text text-transparent select-none">
+              Indi-क
             </h1>
           </div>
         </div>
