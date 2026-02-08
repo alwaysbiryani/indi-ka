@@ -293,14 +293,14 @@ export default function Home() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsHistoryOpen(false)}
-              className="fixed inset-0 bg-black/60 backdrop-blur-md z-[100] md:hidden"
+              className="fixed inset-0 bg-black/60 backdrop-blur-md z-[100]"
             />
             <motion.div
-              initial={{ y: '100%' }}
-              animate={{ y: 0 }}
-              exit={{ y: '100%' }}
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed inset-x-0 bottom-0 top-[10%] bg-zinc-50 dark:bg-zinc-950 rounded-t-[40px] z-[101] md:hidden flex flex-col shadow-2xl overflow-hidden border-t border-zinc-200 dark:border-zinc-800"
+              className="fixed right-0 top-0 bottom-0 w-full max-w-sm md:max-w-md bg-zinc-50 dark:bg-zinc-950 z-[101] flex flex-col shadow-2xl overflow-hidden border-l border-zinc-200 dark:border-zinc-800"
             >
               <div className="flex items-center justify-between p-6 border-b border-zinc-200 dark:border-zinc-800">
                 <div className="flex items-center space-x-2">
