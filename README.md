@@ -1,7 +1,7 @@
 
-# Indi-क (Wispr Flow)
+# Indi-क (Wispr Flow for Indian Languages)
 
-**Indi-क** is the fastest and most seamless way to write in Hinglish. Powered by Sarvam AI, it provides state-of-the-art speech-to-text capabilities tailored specifically for Indian languages.
+**Indi-क** is the fastest and most seamless way to write in Hinglish or any of your local language. Powered by Sarvam AI, it provides state-of-the-art speech-to-text capabilities tailored specifically for Indian languages.
 
 ## Features
 
