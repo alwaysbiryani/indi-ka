@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Copy, Check, MessageSquare, AlertCircle } from 'lucide-react';
+import { Copy, Check, MessageSquare, AlertCircle, Clock } from 'lucide-react';
 import AudioRecorder from '@/components/AudioRecorder';
 import LanguageSelector from '@/components/LanguageSelector';
 import SettingsModal from '@/components/SettingsModal';
@@ -84,7 +84,7 @@ export default function Home() {
 
       {/* Header */}
       <header className="relative z-20 flex items-center justify-between px-6 py-4 border-b border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md sticky top-0">
-        <div className="flex items-center space-x-3 w-auto min-w-max">
+        <div className="flex items-center space-x-3">
           <div className="w-8 h-8 bg-black dark:bg-white rounded-lg flex items-center justify-center shadow-sm shrink-0">
             <MessageSquare className="w-4 h-4 text-white dark:text-black" />
           </div>
@@ -95,14 +95,23 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="flex-1 text-center hidden lg:block">
+        <div className="flex-1 text-center hidden lg:block px-4">
           <span className="px-3 py-1 rounded-full bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs font-medium text-zinc-500 uppercase tracking-wide">
             Your home for voice-to-text for Indian languages
           </span>
         </div>
 
-        <div className="flex items-center justify-end w-1/4">
-          {/* Settings icon hidden as per user request */}
+        <div className="flex items-center space-x-2">
+          {/* Mobile History Button from wireframe */}
+          <button
+            onClick={() => document.getElementById('recent-history')?.scrollIntoView({ behavior: 'smooth' })}
+            className="md:hidden px-3 py-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-lg text-[10px] font-bold uppercase tracking-widest text-zinc-500 flex items-center space-x-1.5 border border-zinc-200 dark:border-zinc-700"
+          >
+            <Clock className="w-3 h-3" />
+            <span>history</span>
+          </button>
+
+          <div className="hidden md:block w-10" /> {/* Placeholder for desktop symmetry */}
         </div>
       </header>
 
@@ -137,30 +146,101 @@ export default function Home() {
         )}
       </AnimatePresence>
 
-      {/* Main Grid Layout */}
-      <div className="relative z-10 flex-1 flex flex-col md:grid md:grid-cols-12 gap-0 md:h-[calc(100vh-65px)] md:overflow-hidden overflow-y-auto">
+      <div className="relative flex-1 flex flex-col md:overflow-hidden overflow-y-auto">
 
-        {/* Mobile Language Selector (Top) */}
-        <div className="md:hidden px-6 py-2 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 flex items-center justify-between">
-          <LanguageSelector
-            selectedLanguage={language}
-            onSelectLanguage={setLanguage}
-            className="!mb-0 w-auto min-w-[140px]"
-          />
-          <div className="flex items-center space-x-2">
+        {/* Mobile Wireframe Layout */}
+        <div className="md:hidden flex flex-col p-4 space-y-4">
+
+          {/* Row 2: Drop-down selector & Tap to Speak */}
+          <div className="grid grid-cols-5 gap-3">
+            <div className="col-span-3">
+              <LanguageSelector
+                selectedLanguage={language}
+                onSelectLanguage={setLanguage}
+                className="!mb-0"
+              />
+            </div>
+            <div className="col-span-2">
+              <AudioRecorder
+                onTranscriptionComplete={handleTranscriptionComplete}
+                onError={handleError}
+                language={language}
+                apiKey={apiKey}
+                className="h-[46px]" // Approximating selector height
+              />
+            </div>
+          </div>
+
+          {/* Row 3: Transcription Canvas */}
+          <div className="flex-1 min-h-[40vh] bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm relative group">
+            <textarea
+              value={transcript}
+              onChange={(e) => setTranscript(e.target.value)}
+              className="w-full h-full bg-transparent border-none focus:ring-0 text-lg text-zinc-800 dark:text-zinc-200 leading-relaxed p-6 resize-none placeholder-zinc-300 font-normal outline-none"
+              placeholder="transcription canvas,"
+            />
+            {transcript && (
+              <button
+                onClick={handleCopy}
+                className="absolute top-4 right-4 p-2 bg-zinc-50 dark:bg-zinc-800 rounded-lg border border-zinc-200 dark:border-zinc-700 shadow-sm"
+              >
+                {hasCopied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4 text-zinc-400" />}
+              </button>
+            )}
+          </div>
+
+          {/* History Anchor */}
+          <div id="recent-history" className="pt-2">
+            <h2 className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest pl-2 mb-2">Recent History</h2>
+            <HistorySidebar
+              history={history}
+              onDelete={handleDeleteHistory}
+              onSelect={(text) => {
+                setTranscript(prev => prev ? `${prev}\n\n${text}` : text);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              onClearAll={handleClearHistory}
+              className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm overflow-hidden"
+            />
+          </div>
+
+          {/* Row 4: Credits */}
+          <div className="bg-orange-50 dark:bg-orange-950/20 rounded-2xl border border-orange-100 dark:border-orange-900/30 p-6 flex flex-col items-center justify-center space-y-3">
+            <div className="flex items-center space-x-2">
+              <span className="text-[10px] text-orange-600/70 dark:text-orange-400/70 uppercase tracking-[0.2em] font-bold">Powered Using</span>
+              <img
+                src="/logos/sarvam-wordmark-black.svg"
+                alt="Sarvam AI"
+                className="h-4 dark:invert opacity-80"
+              />
+            </div>
+            <p className="text-[10px] text-zinc-400 font-medium">State-of-the-art Indic Voice Models</p>
+          </div>
+
+          {/* Row 5: Author / Contact */}
+          <div className="bg-zinc-100 dark:bg-zinc-800/50 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-4 text-center">
+            <p className="text-[10px] text-zinc-500 font-medium whitespace-nowrap">
+              Created by <a href="https://github.com/alwaysbiryani/indi-ka" target="_blank" rel="noopener noreferrer" className="text-zinc-800 dark:text-zinc-200 font-bold hover:underline">Manideep</a> / AI for India
+            </p>
+          </div>
+
+          {/* Row 6: Online Indicator */}
+          <div className="flex justify-center py-2 pb-10">
             <NetworkStatus fixed={false} />
           </div>
         </div>
 
-        {/* Left Column: Language Selector (Desktop) */}
-        <aside className="hidden md:flex md:col-span-3 lg:col-span-2 flex-col border-r border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/20">
-          <div className="p-4 h-full flex flex-col">
+        {/* Desktop Layout */}
+        <div className="hidden md:grid md:grid-cols-12 gap-0 flex-1 md:h-[calc(100vh-65px)] border-t border-zinc-100 dark:border-zinc-800/50">
+
+          {/* Desktop Left: Selector */}
+          <aside className="md:col-span-3 lg:col-span-2 border-r border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/20 p-4 flex flex-col">
             <LanguageSelector
               selectedLanguage={language}
               onSelectLanguage={setLanguage}
-              className="mb-2 relative z-50"
+              className="mb-4"
             />
-            <div className="p-4 bg-blue-50 dark:bg-blue-900/10 rounded-lg border border-blue-100 dark:border-blue-900/20 relative z-0">
+            <div className="p-4 bg-blue-50 dark:bg-blue-900/10 rounded-xl border border-blue-100 dark:border-blue-900/20">
               <h3 className="text-blue-600 dark:text-blue-400 font-semibold text-xs mb-1 uppercase tracking-wider">Pro Tip</h3>
               <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed">
                 Speaking naturally in Hinglish, English or your local language? Set language to 'Auto' for best results.
@@ -168,81 +248,15 @@ export default function Home() {
             </div>
 
             <div className="mt-auto pt-4 border-t border-zinc-200 dark:border-zinc-800">
-              <p className="text-[10px] text-zinc-400 text-center pb-2">
+              <p className="text-[10px] text-zinc-400 text-center">
                 Created by <a href="https://github.com/alwaysbiryani/indi-ka" target="_blank" rel="noopener noreferrer" className="font-medium text-zinc-600 dark:text-zinc-300 hover:underline">Manideep</a> / AI for India
               </p>
             </div>
-          </div>
-        </aside>
+          </aside>
 
-        {/* Center Column: Canvas & Recorder */}
-        <section className="col-span-1 md:col-span-6 lg:col-span-7 flex flex-col h-full relative bg-white dark:bg-zinc-950">
-          {/* Recorder Area - Top (Desktop only) */}
-          <div className="hidden md:block p-6 w-full max-w-xl mx-auto z-10">
-            <AudioRecorder
-              onTranscriptionComplete={handleTranscriptionComplete}
-              onError={handleError}
-              language={language}
-              apiKey={apiKey}
-            />
-          </div>
-
-          {/* Canvas */}
-          <div className="flex-1 relative group w-full max-w-4xl mx-auto flex flex-col">
-            <textarea
-              id="transcript-area"
-              value={transcript}
-              onChange={(e) => setTranscript(e.target.value)}
-              className="w-full flex-1 bg-transparent border-none focus:ring-0 text-lg md:text-xl text-zinc-800 dark:text-zinc-200 leading-relaxed p-8 resize-none placeholder-zinc-300 font-normal custom-scrollbar outline-none"
-              placeholder="Transcribed text will appear here..."
-            />
-
-            {/* Floating Copy Action */}
-            <div className="absolute top-0 right-6 opacity-0 group-hover:opacity-100 transition-opacity">
-              <button
-                onClick={handleCopy}
-                disabled={!transcript}
-                className="p-2 bg-white dark:bg-zinc-900 hover:bg-zinc-100 dark:hover:bg-zinc-800 shadow-sm border border-zinc-200 dark:border-zinc-800 rounded-lg text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-all disabled:opacity-0"
-              >
-                {hasCopied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
-              </button>
-            </div>
-
-            {/* Mobile-only Integrated Section (Integrated at bottom of scrollable area) */}
-            <div className="md:hidden px-6 pb-32 space-y-8 bg-zinc-50 dark:bg-zinc-900/50 pt-10 border-t border-zinc-100 dark:border-zinc-800/50">
-              <div className="space-y-4">
-                <HistorySidebar
-                  history={history}
-                  onDelete={handleDeleteHistory}
-                  onSelect={(text) => {
-                    setTranscript(prev => prev ? `${prev}\n\n${text}` : text);
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
-                  onClearAll={handleClearHistory}
-                  className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm overflow-hidden"
-                />
-              </div>
-
-              <div className="flex flex-col items-center py-6 bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm w-full max-w-[280px]">
-                <div className="flex items-center space-x-2 mb-4">
-                  <span className="text-[10px] text-zinc-400 uppercase tracking-widest font-bold">Powered Using</span>
-                  <img
-                    src="/logos/sarvam-wordmark-black.svg"
-                    alt="Sarvam AI"
-                    className="h-3.5 dark:invert opacity-70"
-                  />
-                </div>
-                <div className="h-px w-8 bg-zinc-100 dark:bg-zinc-800 mb-4" />
-                <p className="text-[9px] text-zinc-500 font-medium whitespace-nowrap">
-                  Created by <a href="https://github.com/alwaysbiryani/indi-ka" target="_blank" rel="noopener noreferrer" className="text-zinc-800 dark:text-zinc-200 font-bold hover:underline">Manideep</a> / AI for India
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Sticky Mobile Recorder */}
-          <div className="md:hidden fixed bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-zinc-50 dark:from-zinc-950 via-zinc-50/90 dark:via-zinc-950/90 to-transparent pt-12 z-40">
-            <div className="max-w-md mx-auto">
+          {/* Desktop Center: Canvas & Tap to Speak */}
+          <section className="md:col-span-6 lg:col-span-7 flex flex-col bg-white dark:bg-zinc-950">
+            <div className="p-6 w-full max-w-xl mx-auto">
               <AudioRecorder
                 onTranscriptionComplete={handleTranscriptionComplete}
                 onError={handleError}
@@ -250,37 +264,54 @@ export default function Home() {
                 apiKey={apiKey}
               />
             </div>
-          </div>
-        </section>
 
-        {/* Right Column: History (Desktop) */}
-        <aside className="hidden md:flex md:col-span-3 lg:col-span-3 flex-col h-full border-l border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/20">
-          <div className="flex-1 overflow-hidden">
-            <HistorySidebar
-              history={history}
-              onDelete={handleDeleteHistory}
-              onSelect={(text) => setTranscript(prev => prev ? `${prev}\n\n${text}` : text)}
-              onClearAll={handleClearHistory}
-              className="h-full bg-transparent border-none"
-            />
-          </div>
-
-          <div className="p-4 border-t border-zinc-200 dark:border-zinc-800">
-            <div className="mb-4 p-4 bg-orange-50 dark:bg-orange-950/20 rounded-xl border border-orange-100 dark:border-orange-900/30 flex flex-col items-center text-center">
-              <div className="flex items-center space-x-2">
-                <span className="text-[9px] text-orange-600/70 dark:text-orange-400/70 uppercase tracking-[0.2em] font-bold">Powered Using</span>
-                <img
-                  src="/logos/sarvam-wordmark-black.svg"
-                  alt="Sarvam AI"
-                  className="h-3.5 dark:invert opacity-80"
-                />
+            <div className="flex-1 relative group w-full max-w-4xl mx-auto flex flex-col">
+              <textarea
+                value={transcript}
+                onChange={(e) => setTranscript(e.target.value)}
+                className="w-full h-full bg-transparent border-none focus:ring-0 text-lg md:text-xl text-zinc-800 dark:text-zinc-200 leading-relaxed p-8 resize-none placeholder-zinc-300 font-normal custom-scrollbar outline-none"
+                placeholder="Transcribed text will appear here..."
+              />
+              <div className="absolute top-4 right-8 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button
+                  onClick={handleCopy}
+                  className="p-2 bg-white dark:bg-zinc-900 hover:bg-zinc-100 dark:hover:bg-zinc-800 shadow-sm border border-zinc-200 dark:border-zinc-800 rounded-lg text-zinc-400"
+                >
+                  {hasCopied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+                </button>
               </div>
             </div>
-            <div className="flex justify-center">
-              <NetworkStatus fixed={false} />
+          </section>
+
+          {/* Desktop Right: History & Credits */}
+          <aside className="md:col-span-3 lg:col-span-3 border-l border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/20 flex flex-col">
+            <div className="flex-1 overflow-hidden">
+              <HistorySidebar
+                history={history}
+                onDelete={handleDeleteHistory}
+                onSelect={(text) => setTranscript(prev => prev ? `${prev}\n\n${text}` : text)}
+                onClearAll={handleClearHistory}
+                className="h-full bg-transparent border-none"
+              />
             </div>
-          </div>
-        </aside>
+
+            <div className="p-4 border-t border-zinc-200 dark:border-zinc-800 space-y-4">
+              <div className="p-4 bg-orange-50 dark:bg-orange-950/20 rounded-xl border border-orange-100 dark:border-orange-900/30 flex flex-col items-center">
+                <div className="flex items-center space-x-2">
+                  <span className="text-[9px] text-orange-600/70 dark:text-orange-400/70 uppercase tracking-[0.2em] font-bold">Powered Using</span>
+                  <img
+                    src="/logos/sarvam-wordmark-black.svg"
+                    alt="Sarvam AI"
+                    className="h-3.5 dark:invert opacity-80"
+                  />
+                </div>
+              </div>
+              <div className="flex justify-center">
+                <NetworkStatus fixed={false} />
+              </div>
+            </div>
+          </aside>
+        </div>
       </div>
 
       <SettingsModal
