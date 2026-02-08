@@ -5,7 +5,7 @@
 **Indi-क** is the fastest and most seamless way to transcribe your voice into text for Hinglish or any major Indian language. Built with a "mobile-first" philosophy, it provides a high-end, smooth experience whether you are on a smartphone or a desktop.
 
 ## 📱 v1 Experience
-<img width="1840" height="3600" alt="indi-ka vercel app_(Samsung Galaxy S20 Ultra) (1)-portrait" src="https://github.com/user-attachments/assets/7adfbc09-becf-401e-8d6b-40d68f969d2b" />
+<img width="920" height="1800" alt="indi-ka vercel app_(Samsung Galaxy S20 Ultra) (1)-portrait" src="https://github.com/user-attachments/assets/7adfbc09-becf-401e-8d6b-40d68f969d2b" />
 
 ## ✨ Key Experience Highlights
 
