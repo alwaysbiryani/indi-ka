@@ -100,9 +100,9 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="flex-1 text-center hidden md:block">
+        <div className="flex-1 text-center hidden lg:block">
           <span className="px-3 py-1 rounded-full bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs font-medium text-zinc-500 uppercase tracking-wide">
-            The Home for Hinglish
+            Your home for voice-to-text for Indian languages
           </span>
         </div>
 
@@ -168,7 +168,7 @@ export default function Home() {
 
             <div className="mt-auto pt-4 border-t border-zinc-200 dark:border-zinc-800">
               <p className="text-[10px] text-zinc-400 text-center pb-2">
-                Created by <a href="https://github.com/alwaysbiryani/indi-ka" target="_blank" rel="noopener noreferrer" className="font-medium text-zinc-600 dark:text-zinc-300 hover:underline">Manideep</a>
+                Created by <a href="https://github.com/alwaysbiryani/indi-ka" target="_blank" rel="noopener noreferrer" className="font-medium text-zinc-600 dark:text-zinc-300 hover:underline">Manideep</a> / AI for India
               </p>
             </div>
           </div>
@@ -227,11 +227,12 @@ export default function Home() {
           <div className="p-4 border-t border-zinc-200 dark:border-zinc-800">
             {/* Ads Space Placeholder */}
             <div className="mb-4 p-4 bg-orange-50 dark:bg-orange-950/20 rounded-xl border border-orange-100 dark:border-orange-900/30 flex flex-col items-center text-center">
-              <span className="text-[10px] text-orange-600/70 dark:text-orange-400/70 uppercase tracking-[0.2em] font-bold mb-2">Powered By</span>
-              <div className="flex flex-col items-center">
-                <span className="text-lg font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">Sarvam AI</span>
-                <span className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1 font-medium">State-of-the-art Indic Voice Models</span>
-              </div>
+              <span className="text-[10px] text-orange-600/70 dark:text-orange-400/70 uppercase tracking-[0.2em] font-bold mb-3">Powered By</span>
+              <img
+                src="/logos/sarvam-wordmark-black.svg"
+                alt="Sarvam AI"
+                className="h-4 dark:invert opacity-80"
+              />
             </div>
 
             {/* Online Indicator */}
