@@ -143,27 +143,24 @@ export default function Home() {
         {/* Mobile Layout (Visible on Small Screens) */}
         <div className="md:hidden flex flex-col flex-1 p-5 space-y-6 overflow-y-auto">
 
-          {/* Alignment Fix: SELECT LANGUAGE and Tap to Speak side-by-side */}
-          <div className="space-y-2">
-            <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest pl-1">SELECT LANGUAGE</span>
-            <div className="grid grid-cols-12 gap-3 items-center">
-              <div className="col-span-12 xs:col-span-7">
-                <LanguageSelector
-                  selectedLanguage={language}
-                  onSelectLanguage={setLanguage}
-                  className="!mb-0"
-                />
-              </div>
-              <div className="col-span-12 xs:col-span-5">
-                <AudioRecorder
-                  onTranscriptionComplete={handleTranscriptionComplete}
-                  onError={handleError}
-                  language={language}
-                  apiKey={apiKey}
-                  isCompact={true}
-                  className="h-full"
-                />
-              </div>
+          {/* Tap to Speak and Language Selector */}
+          <div className="grid grid-cols-12 gap-3 items-center">
+            <div className="col-span-12 xs:col-span-7">
+              <LanguageSelector
+                selectedLanguage={language}
+                onSelectLanguage={setLanguage}
+                className="!mb-0"
+              />
+            </div>
+            <div className="col-span-12 xs:col-span-5">
+              <AudioRecorder
+                onTranscriptionComplete={handleTranscriptionComplete}
+                onError={handleError}
+                language={language}
+                apiKey={apiKey}
+                isCompact={true}
+                className="h-full"
+              />
             </div>
           </div>
 
@@ -187,7 +184,7 @@ export default function Home() {
 
           {/* Footers */}
           <div className="space-y-4 pt-2">
-            <div className="bg-orange-50/50 dark:bg-orange-950/10 rounded-3xl border border-orange-100/50 dark:border-orange-900/20 p-6 flex flex-col items-center justify-center space-y-3">
+            <div className="bg-orange-50/50 dark:bg-orange-950/10 rounded-3xl border border-orange-100/50 dark:border-orange-900/20 p-6 flex flex-col items-center justify-center">
               <div className="flex items-center space-x-2">
                 <span className="text-[10px] text-orange-600/70 dark:text-orange-400/70 uppercase tracking-[0.2em] font-bold">POWERED USING</span>
                 <img
@@ -196,17 +193,18 @@ export default function Home() {
                   className="h-4 dark:invert opacity-80"
                 />
               </div>
-              <p className="text-[10px] text-zinc-400 font-medium tracking-tight">State-of-the-art Indic Voice Models</p>
             </div>
 
-            <div className="bg-zinc-100/50 dark:bg-zinc-900/30 rounded-3xl border border-zinc-200 dark:border-zinc-800/50 p-4 px-6 flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 rounded-full bg-zinc-900 dark:bg-zinc-100 flex items-center justify-center text-[11px] font-bold text-zinc-50 dark:text-zinc-950">N</div>
-                <p className="text-[10px] text-zinc-500 font-medium">
+            <div className="bg-zinc-100/50 dark:bg-zinc-900/30 rounded-3xl border border-zinc-200 dark:border-zinc-800/50 p-4 px-5 flex items-center justify-between overflow-hidden">
+              <div className="flex items-center space-x-2.5 min-w-0">
+                <div className="w-7 h-7 rounded-lg bg-zinc-900 dark:bg-zinc-100 flex items-center justify-center text-[10px] font-bold text-zinc-50 dark:text-zinc-950 shrink-0">N</div>
+                <p className="text-[10px] text-zinc-500 font-medium truncate">
                   Created by <a href="https://github.com/alwaysbiryani/indi-ka" target="_blank" rel="noopener noreferrer" className="text-zinc-800 dark:text-zinc-200 font-bold hover:underline">Manideep</a> / AI for India
                 </p>
               </div>
-              <NetworkStatus fixed={false} />
+              <div className="shrink-0 scale-90 origin-right">
+                <NetworkStatus fixed={false} />
+              </div>
             </div>
           </div>
         </div>
@@ -215,8 +213,7 @@ export default function Home() {
         <div className="hidden md:grid md:grid-cols-12 gap-0 flex-1 md:h-[calc(100vh-65px)] border-t border-zinc-100 dark:border-zinc-800/50">
 
           <aside className="md:col-span-3 lg:col-span-2 border-r border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/20 p-6 flex flex-col">
-            <div className="space-y-2 mb-6">
-              <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest pl-1">SELECT LANGUAGE</span>
+            <div className="mb-6">
               <LanguageSelector
                 selectedLanguage={language}
                 onSelectLanguage={setLanguage}
@@ -264,7 +261,7 @@ export default function Home() {
                 </button>
               </div>
 
-              <div className="flex items-center justify-between px-6 py-4 bg-orange-50/30 dark:bg-orange-950/10 rounded-2xl border border-orange-100/30 dark:border-orange-900/10">
+              <div className="flex items-center justify-center px-6 py-4 bg-orange-50/30 dark:bg-orange-950/10 rounded-2xl border border-orange-100/30 dark:border-orange-900/10">
                 <div className="flex items-center space-x-3">
                   <span className="text-[10px] text-orange-600/70 dark:text-orange-400/70 uppercase tracking-[0.2em] font-bold">POWERED USING</span>
                   <img
@@ -273,8 +270,6 @@ export default function Home() {
                     className="h-4 dark:invert opacity-80"
                   />
                 </div>
-                <div className="h-4 w-px bg-zinc-200 dark:bg-zinc-800" />
-                <p className="text-[10px] text-zinc-400 font-medium">State-of-the-art Indic Voice Models by Sarvam AI</p>
               </div>
             </div>
           </section>
