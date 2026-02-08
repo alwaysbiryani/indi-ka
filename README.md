@@ -19,16 +19,6 @@
 - **Styling**: Tailwind CSS v4, Framer Motion for animations
 - **Icons**: Lucide React
 - **AI Services**: Sarvam AI (Speech-to-Text & Transliteration APIs)
-
-## Getting Started
-    
-1.  **Clone the repository**:
-    ```bash
-    git clone https://github.com/alwaysbiryani/indi-ka.git
-    cd indi-ka
-    ```
-    
-    ...
     
 ## Author
 
