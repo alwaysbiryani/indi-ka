@@ -158,8 +158,6 @@ export default function Home() {
                   <span className="text-xs text-zinc-400">for Indian Languages</span>
                 </div>
               </div>
-
-
             </div>
 
             <div className="mt-4 p-4 text-center border-t border-zinc-200 dark:border-zinc-800">
