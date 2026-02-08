@@ -96,6 +96,14 @@ export default function Home() {
           </div>
         </div>
 
+        <div className="absolute left-1/2 -translate-x-1/2 hidden sm:flex items-center space-x-2 whitespace-nowrap">
+          <span className="text-[10px] md:text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-[0.2em] flex items-center space-x-2">
+            <span>🇮🇳</span>
+            <span className="opacity-30">|</span>
+            <span>your home for Voice-To-Text</span>
+          </span>
+        </div>
+
         <div className="flex items-center space-x-2">
           <button
             onClick={() => setIsHistoryOpen(true)}
