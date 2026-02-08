@@ -11,9 +11,10 @@ interface AudioRecorderProps {
     language: string;
     apiKey: string;
     className?: string;
+    isCompact?: boolean;
 }
 
-export default function AudioRecorder({ onTranscriptionComplete, onError, language, apiKey, className }: AudioRecorderProps) {
+export default function AudioRecorder({ onTranscriptionComplete, onError, language, apiKey, className, isCompact }: AudioRecorderProps) {
     const [isRecording, setIsRecording] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -21,16 +22,6 @@ export default function AudioRecorder({ onTranscriptionComplete, onError, langua
 
     const startRecording = async () => {
         try {
-            if (!apiKey && !process.env.NEXT_PUBLIC_SARVAM_API_KEY) {
-                // We still check apiKey prop, but now backend also checks env. 
-                // We show alert if prop is missing and we suspect env might be missing too (client side can't strictly know backend env)
-                // For better UX, we assume if key is passed OR not, backend will handle auth. 
-                // But if user HAS entered a key, we use it. 
-                if (!apiKey) {
-                    // Let backend handle 401
-                }
-            }
-
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             const mediaRecorder = new MediaRecorder(stream);
             mediaRecorderRef.current = mediaRecorder;
@@ -50,13 +41,12 @@ export default function AudioRecorder({ onTranscriptionComplete, onError, langua
                 try {
                     const response = await fetch('/api/transcribe', {
                         method: 'POST',
-                        headers: { 'x-api-key': apiKey }, // Can be empty if relying on backend env
+                        headers: { 'x-api-key': apiKey },
                         body: formData,
                     });
 
                     if (!response.ok) {
                         const errorData = await response.json();
-                        // Pass error to parent
                         onError(errorData.details || errorData.error || 'Transcription failed');
                     } else {
                         const data = await response.json();
@@ -87,6 +77,18 @@ export default function AudioRecorder({ onTranscriptionComplete, onError, langua
         }
     };
 
+    const buttonBaseClasses = isCompact
+        ? "w-full min-h-[48px] px-4 bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-800 dark:hover:bg-zinc-200 text-zinc-50 dark:text-zinc-950 rounded-xl font-semibold text-sm transition-all active:scale-[0.99] flex items-center justify-center space-x-2 shadow-sm"
+        : "w-full py-4 bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-800 dark:hover:bg-zinc-200 text-zinc-50 dark:text-zinc-950 rounded-xl font-medium text-lg transition-all active:scale-[0.99] flex items-center justify-center space-x-2 shadow-sm";
+
+    const recordingClasses = isCompact
+        ? "w-full min-h-[48px] px-4 bg-red-500 hover:bg-red-600 text-white rounded-xl font-semibold text-sm transition-all active:scale-[0.99] flex items-center justify-center space-x-2 shadow-sm ring-2 ring-red-500/10 animate-pulse"
+        : "w-full py-4 bg-red-500 hover:bg-red-600 text-white rounded-xl font-medium text-lg transition-all active:scale-[0.99] flex items-center justify-center space-x-2 shadow-sm ring-4 ring-red-500/10 animate-pulse";
+
+    const processingClasses = isCompact
+        ? "w-full min-h-[48px] px-4 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 rounded-xl font-semibold text-sm flex items-center justify-center space-x-2 cursor-wait"
+        : "w-full py-4 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 rounded-xl font-medium text-lg flex items-center justify-center space-x-3 cursor-wait";
+
     return (
         <div className={`flex flex-col items-center justify-center w-full ${className}`}>
             <AnimatePresence mode="wait">
@@ -97,11 +99,8 @@ export default function AudioRecorder({ onTranscriptionComplete, onError, langua
                         exit={{ scale: 0.98, opacity: 0 }}
                         className="w-full"
                     >
-                        <button
-                            onClick={startRecording}
-                            className="w-full py-4 bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-800 dark:hover:bg-zinc-200 text-zinc-50 dark:text-zinc-950 rounded-xl font-medium text-lg transition-all active:scale-[0.99] flex items-center justify-center space-x-2 shadow-sm"
-                        >
-                            <Mic className="w-5 h-5" />
+                        <button onClick={startRecording} className={buttonBaseClasses}>
+                            <Mic className={isCompact ? "w-4 h-4" : "w-5 h-5"} />
                             <span>Tap to Speak</span>
                         </button>
                     </motion.div>
@@ -114,11 +113,8 @@ export default function AudioRecorder({ onTranscriptionComplete, onError, langua
                         exit={{ scale: 0.98, opacity: 0 }}
                         className="w-full"
                     >
-                        <button
-                            onClick={stopRecording}
-                            className="w-full py-4 bg-red-500 hover:bg-red-600 text-white rounded-xl font-medium text-lg transition-all active:scale-[0.99] flex items-center justify-center space-x-2 shadow-sm ring-4 ring-red-500/10 animate-pulse"
-                        >
-                            <Square className="w-5 h-5 fill-current" />
+                        <button onClick={stopRecording} className={recordingClasses}>
+                            <Square className={isCompact ? "w-3.5 h-3.5 fill-current" : "w-5 h-5 fill-current"} />
                             <span>Listening...</span>
                         </button>
                     </motion.div>
@@ -131,8 +127,8 @@ export default function AudioRecorder({ onTranscriptionComplete, onError, langua
                         exit={{ scale: 0.98, opacity: 0 }}
                         className="w-full"
                     >
-                        <div className="w-full py-4 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 rounded-xl font-medium text-lg flex items-center justify-center space-x-3 cursor-wait">
-                            <Loader2 className="w-5 h-5 animate-spin" />
+                        <div className={processingClasses}>
+                            <Loader2 className={isCompact ? "w-4 h-4 animate-spin" : "w-5 h-5 animate-spin"} />
                             <span>Processing...</span>
                         </div>
                     </motion.div>
