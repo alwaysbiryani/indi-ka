@@ -227,7 +227,7 @@ export default function Home() {
           <div className="p-4 border-t border-zinc-200 dark:border-zinc-800">
             {/* Ads Space Placeholder */}
             <div className="mb-4 p-4 bg-orange-50 dark:bg-orange-950/20 rounded-xl border border-orange-100 dark:border-orange-900/30 flex flex-col items-center text-center">
-              <span className="text-[10px] text-orange-600/70 dark:text-orange-400/70 uppercase tracking-[0.2em] font-bold mb-3">Powered By</span>
+              <span className="text-[10px] text-orange-600/70 dark:text-orange-400/70 uppercase tracking-[0.2em] font-bold mb-3">Powered Using</span>
               <img
                 src="/logos/sarvam-wordmark-black.svg"
                 alt="Sarvam AI"
