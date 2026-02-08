@@ -2,24 +2,56 @@
 
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-Vercel-black?style=for-the-badge&logo=vercel)](https://indi-ka.vercel.app/)
 
-**Indi-क** is the fastest and most seamless way to write in Hinglish or any of your local language. Powered by Sarvam AI, it provides state-of-the-art speech-to-text capabilities tailored specifically for Indian languages.
+**Indi-क** is the fastest and most seamless way to transcribe your voice into text for Hinglish or any major Indian language. Built with a "mobile-first" philosophy, it provides a high-end, smooth experience whether you are on a smartphone or a desktop.
 
-## Features
+## ✨ Key Experience Highlights
 
-- **Hinglish First**: Optimized for code-mixing (Hinglish), handling both English and Hindi naturally.
-- **Multi-Language Support**: Supports 10+ Indian languages including Hindi, Bengali, Tamil, Telugu, Marathi, Gujarati, Kannada, Malayalam, Punjabi, and Odia.
-- **Auto-Detection**: Automatically detects the language you are speaking.
-- **Privacy Focused**: Your API key and transcription history are stored locally on your device.
-- **Minimalist Design**: A clean, distraction-free interface with dark mode support.
-- **Local History**: Persistent history of your recent transcriptions with clear/copy functionality.
+- **Desktop & Mobile Optimized**: A responsive interface that scales perfectly. Enjoy a dedicated side-sidebar on desktop and a clean, focused "canvas" experience on mobile.
+- **Side-Panel History**: Access your past transcriptions via a polished, sliding side-panel drawer on both web and mobile.
+- **Premium Indian Aesthetics**: A modern design system featuring a high-quality Indian flag gradient logo and subtle micro-animations.
+- **Hinglish First**: Specialized support for code-mixed speech, switching naturally between English and your local language.
 
-## Tech Stack
+## 🚀 Features
 
-- **Frontend**: Next.js 16 (App Router), React 19, TypeScript
-- **Styling**: Tailwind CSS v4, Framer Motion for animations
+- **Multi-Language Support**: Choose from 10+ Indian languages (Hindi, Bengali, Tamil, Telugu, Marathi, Gujarati, Kannada, Malayalam, Punjabi, Odia, etc.).
+- **Smart Auto-Detection**: Let the AI detect your language automatically for a hands-free experience.
+- **Tap-to-Speak**: A single-swipe-ready interface designed for immediate action.
+- **Privacy First**: Your API keys and transcription history never leave your browser—stored securely in local storage.
+- **One-Tap Copy**: Quickly copy your entire transcript to use in messages, notes, or emails.
+- **Network Awareness**: Live online/offline status monitoring to ensure stable transcriptions.
+
+## 🛠️ Tech Stack
+
+- **Frontend**: Next.js 15+ (App Router), React 19, TypeScript
+- **Styling**: Tailwind CSS v4, Framer Motion
 - **Icons**: Lucide React
-- **AI Services**: Sarvam AI (Speech-to-Text & Transliteration APIs)
-    
-## Author
+- **Engine**: Powered Using [Sarvam AI](https://www.sarvam.ai/) (State-of-the-art Indic Voice Models)
 
-Created by [Manideep](https://github.com/alwaysbiryani).
+## 📦 Getting Started
+
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/alwaysbiryani/indi-ka.git
+   cd indi-ka
+   ```
+
+2. **Install dependencies**:
+   ```bash
+   npm install
+   ```
+
+3. **Run the development server**:
+   ```bash
+   npm run dev
+   ```
+
+4. **Add your API Key**:
+   Open the settings in the app and enter your Sarvam AI API key.
+
+## 📄 License
+
+This project is open-source and available under the MIT License.
+
+## 👤 Author
+
+Created by [Manideep](https://github.com/alwaysbiryani) / AI for India.
