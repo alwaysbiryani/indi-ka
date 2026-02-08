@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Settings, Copy, Check, MessageSquare, Menu, LogIn, AlertCircle, Clock } from 'lucide-react';
+import { Copy, Check, MessageSquare, AlertCircle } from 'lucide-react';
 import AudioRecorder from '@/components/AudioRecorder';
 import LanguageSelector from '@/components/LanguageSelector';
 import SettingsModal from '@/components/SettingsModal';
@@ -18,14 +18,10 @@ export default function Home() {
   const [hasCopied, setHasCopied] = useState(false);
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [errorBanner, setErrorBanner] = useState<string | null>(null);
-  const [isMobileHistoryOpen, setIsMobileHistoryOpen] = useState(false);
 
   useEffect(() => {
-    // Only fetch from local storage if needed, but we prefer .env or hardcoded source
-    // But since this is client-side, we might still want to allow user override via settings
     const storedKey = localStorage.getItem('sarvam_api_key');
     if (storedKey) setApiKey(storedKey);
-    // Removed the "setIsSettingsOpen(true)" call to start fresh without nagging
 
     const storedHistory = localStorage.getItem('transcription_history');
     if (storedHistory) {
@@ -62,11 +58,11 @@ export default function Home() {
       text: text,
       timestamp: Date.now(),
       language: language,
-      detectedLanguage: detectedLanguage // Save detected language (e.g., 'hi-IN')
+      detectedLanguage: detectedLanguage
     };
     const newHistory = [newItem, ...history];
     saveHistory(newHistory);
-    setErrorBanner(null); // Clear errors on success
+    setErrorBanner(null);
   };
 
   const handleError = (msg: string) => {
@@ -84,9 +80,7 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-50 flex flex-col font-sans overflow-hidden transition-colors duration-300">
-
-
+    <main className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-50 flex flex-col font-sans transition-colors duration-300">
 
       {/* Header */}
       <header className="relative z-20 flex items-center justify-between px-6 py-4 border-b border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md sticky top-0">
@@ -107,21 +101,8 @@ export default function Home() {
           </span>
         </div>
 
-        <div className="flex items-center justify-end space-x-2 md:space-x-4 w-1/4">
-          <button
-            onClick={() => setIsMobileHistoryOpen(true)}
-            className="md:hidden p-2 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 transition-colors"
-            title="History"
-          >
-            <Clock className="w-5 h-5" />
-          </button>
-          <button
-            onClick={() => setIsSettingsOpen(true)}
-            className="p-2 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 transition-colors"
-            title="Settings"
-          >
-            <Settings className="w-5 h-5" />
-          </button>
+        <div className="flex items-center justify-end w-1/4">
+          {/* Settings icon hidden as per user request */}
         </div>
       </header>
 
@@ -157,7 +138,7 @@ export default function Home() {
       </AnimatePresence>
 
       {/* Main Grid Layout */}
-      <div className="relative z-10 flex-1 flex flex-col md:grid md:grid-cols-12 gap-0 h-[calc(100vh-65px)] overflow-hidden">
+      <div className="relative z-10 flex-1 flex flex-col md:grid md:grid-cols-12 gap-0 md:h-[calc(100vh-65px)] md:overflow-hidden overflow-y-auto">
 
         {/* Mobile Language Selector (Top) */}
         <div className="md:hidden px-6 py-2 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 flex items-center justify-between">
@@ -171,7 +152,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Left Column: Language Selector */}
+        {/* Left Column: Language Selector (Desktop) */}
         <aside className="hidden md:flex md:col-span-3 lg:col-span-2 flex-col border-r border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/20">
           <div className="p-4 h-full flex flex-col">
             <LanguageSelector
@@ -196,25 +177,23 @@ export default function Home() {
 
         {/* Center Column: Canvas & Recorder */}
         <section className="col-span-1 md:col-span-6 lg:col-span-7 flex flex-col h-full relative bg-white dark:bg-zinc-950">
-
-          {/* Recorder Area - Top (Hidden on Mobile, shown in sticky bottom) */}
+          {/* Recorder Area - Top (Desktop only) */}
           <div className="hidden md:block p-6 w-full max-w-xl mx-auto z-10">
             <AudioRecorder
               onTranscriptionComplete={handleTranscriptionComplete}
               onError={handleError}
               language={language}
               apiKey={apiKey}
-              className=""
             />
           </div>
 
           {/* Canvas */}
-          <div className="flex-1 relative group w-full max-w-4xl mx-auto">
+          <div className="flex-1 relative group w-full max-w-4xl mx-auto flex flex-col">
             <textarea
               id="transcript-area"
               value={transcript}
               onChange={(e) => setTranscript(e.target.value)}
-              className="w-full h-full bg-transparent border-none focus:ring-0 text-lg md:text-xl text-zinc-800 dark:text-zinc-200 leading-relaxed p-8 resize-none placeholder-zinc-300 font-normal custom-scrollbar outline-none"
+              className="w-full flex-1 bg-transparent border-none focus:ring-0 text-lg md:text-xl text-zinc-800 dark:text-zinc-200 leading-relaxed p-8 resize-none placeholder-zinc-300 font-normal custom-scrollbar outline-none"
               placeholder="Transcribed text will appear here..."
             />
 
@@ -228,10 +207,39 @@ export default function Home() {
                 {hasCopied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
               </button>
             </div>
+
+            {/* Mobile-only Integrated Section (Integrated at bottom of scrollable area) */}
+            <div className="md:hidden px-6 pb-32 space-y-8 bg-zinc-50 dark:bg-zinc-900/50 pt-10 border-t border-zinc-100 dark:border-zinc-800/50">
+              <div className="space-y-4">
+                <HistorySidebar
+                  history={history}
+                  onDelete={handleDeleteHistory}
+                  onSelect={(text) => {
+                    setTranscript(prev => prev ? `${prev}\n\n${text}` : text);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  onClearAll={handleClearHistory}
+                  className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm overflow-hidden"
+                />
+              </div>
+
+              <div className="flex flex-col items-center py-8 bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
+                <span className="text-[10px] text-zinc-400 uppercase tracking-widest font-bold mb-4">Powered Using</span>
+                <img
+                  src="/logos/sarvam-wordmark-black.svg"
+                  alt="Sarvam AI"
+                  className="h-5 dark:invert opacity-70 mb-6"
+                />
+                <div className="h-px w-12 bg-zinc-100 dark:bg-zinc-800 mb-6" />
+                <p className="text-[10px] text-zinc-500 font-medium">
+                  Created by <a href="https://github.com/alwaysbiryani/indi-ka" target="_blank" rel="noopener noreferrer" className="text-zinc-800 dark:text-zinc-200 font-bold hover:underline">Manideep</a> / AI for India
+                </p>
+              </div>
+            </div>
           </div>
 
           {/* Sticky Mobile Recorder */}
-          <div className="md:hidden fixed bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-white dark:from-zinc-950 via-white/90 dark:via-zinc-950/90 to-transparent pt-12 z-40">
+          <div className="md:hidden fixed bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-zinc-50 dark:from-zinc-950 via-zinc-50/90 dark:via-zinc-950/90 to-transparent pt-12 z-40">
             <div className="max-w-md mx-auto">
               <AudioRecorder
                 onTranscriptionComplete={handleTranscriptionComplete}
@@ -241,10 +249,9 @@ export default function Home() {
               />
             </div>
           </div>
-
         </section>
 
-        {/* Right Column: History */}
+        {/* Right Column: History (Desktop) */}
         <aside className="hidden md:flex md:col-span-3 lg:col-span-3 flex-col h-full border-l border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/20">
           <div className="flex-1 overflow-hidden">
             <HistorySidebar
@@ -257,7 +264,6 @@ export default function Home() {
           </div>
 
           <div className="p-4 border-t border-zinc-200 dark:border-zinc-800">
-            {/* Ads Space Placeholder */}
             <div className="mb-4 p-4 bg-orange-50 dark:bg-orange-950/20 rounded-xl border border-orange-100 dark:border-orange-900/30 flex flex-col items-center text-center">
               <span className="text-[10px] text-orange-600/70 dark:text-orange-400/70 uppercase tracking-[0.2em] font-bold mb-3">Powered Using</span>
               <img
@@ -266,79 +272,12 @@ export default function Home() {
                 className="h-4 dark:invert opacity-80"
               />
             </div>
-
-            {/* Online Indicator */}
             <div className="flex justify-center">
               <NetworkStatus fixed={false} />
             </div>
           </div>
         </aside>
-
       </div>
-
-      {/* Modals */}
-      {/* Mobile History Drawer */}
-      <AnimatePresence>
-        {isMobileHistoryOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] md:hidden"
-          >
-            {/* Backdrop */}
-            <div
-              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-              onClick={() => setIsMobileHistoryOpen(false)}
-            />
-            {/* Drawer */}
-            <motion.div
-              initial={{ y: '100%' }}
-              animate={{ y: 0 }}
-              exit={{ y: '100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="absolute bottom-0 left-0 right-0 h-[85vh] bg-zinc-50 dark:bg-zinc-900 rounded-t-3xl overflow-hidden flex flex-col shadow-2xl border-t border-zinc-200 dark:border-zinc-800"
-            >
-              {/* Drag Handle Overlay Mockup */}
-              <div className="w-12 h-1.5 bg-zinc-300 dark:bg-zinc-700 rounded-full mx-auto my-4 shrink-0" />
-
-              <div className="flex-1 overflow-hidden">
-                <HistorySidebar
-                  history={history}
-                  onDelete={handleDeleteHistory}
-                  onSelect={(text) => {
-                    setTranscript(prev => prev ? `${prev}\n\n${text}` : text);
-                    setIsMobileHistoryOpen(false);
-                  }}
-                  onClearAll={handleClearHistory}
-                  className="h-full bg-transparent border-none"
-                />
-              </div>
-
-              <div className="p-6 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-100/50 dark:bg-zinc-800/50">
-                <div className="flex flex-col items-center">
-                  <span className="text-[10px] text-zinc-400 uppercase tracking-widest font-bold mb-3">Powered Using</span>
-                  <img
-                    src="/logos/sarvam-wordmark-black.svg"
-                    alt="Sarvam AI"
-                    className="h-4 dark:invert opacity-70 mb-4"
-                  />
-                  <p className="text-[10px] text-zinc-500 font-medium">
-                    Created by <a href="https://github.com/alwaysbiryani/indi-ka" target="_blank" rel="noopener noreferrer" className="text-zinc-700 dark:text-zinc-300 hover:underline">Manideep</a> / AI for India
-                  </p>
-                </div>
-              </div>
-
-              <button
-                onClick={() => setIsMobileHistoryOpen(false)}
-                className="mx-6 mb-8 py-3 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-xl font-semibold shadow-lg active:scale-95 transition-all text-sm"
-              >
-                Close History
-              </button>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       <SettingsModal
         isOpen={isSettingsOpen}
@@ -346,7 +285,6 @@ export default function Home() {
         apiKey={apiKey}
         onSaveApiKey={handleSaveApiKey}
       />
-
     </main>
   );
 }
