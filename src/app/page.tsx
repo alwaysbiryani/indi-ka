@@ -9,6 +9,7 @@ import SettingsModal from '@/components/SettingsModal';
 import HistorySidebar, { HistoryItem } from '@/components/HistorySidebar';
 import NetworkStatus from '@/components/NetworkStatus';
 import { motion, AnimatePresence } from 'framer-motion';
+import { cn } from '@/utils/cn';
 
 export default function Home() {
   const [transcript, setTranscript] = useState('');
@@ -20,6 +21,7 @@ export default function Home() {
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [lastViewedTimestamp, setLastViewedTimestamp] = useState<number>(0);
   const [errorBanner, setErrorBanner] = useState<string | null>(null);
+  const [showAutoCopyBanner, setShowAutoCopyBanner] = useState(false);
 
   useEffect(() => {
     const storedKey = localStorage.getItem('sarvam_api_key');
@@ -52,7 +54,11 @@ export default function Home() {
     if (transcript) {
       navigator.clipboard.writeText(transcript);
       setHasCopied(true);
-      setTimeout(() => setHasCopied(false), 2000);
+      setShowAutoCopyBanner(true);
+      setTimeout(() => {
+        setHasCopied(false);
+        setShowAutoCopyBanner(false);
+      }, 3000);
     }
   };
 
@@ -63,6 +69,21 @@ export default function Home() {
     }
 
     setTranscript(text);
+
+    // Auto-copy to clipboard
+    if (text) {
+      navigator.clipboard.writeText(text).then(() => {
+        setHasCopied(true);
+        setShowAutoCopyBanner(true);
+        setTimeout(() => {
+          setHasCopied(false);
+          setShowAutoCopyBanner(false);
+        }, 3000);
+      }).catch(err => {
+        console.error('Failed to auto-copy: ', err);
+      });
+    }
+
     const newItem: HistoryItem = {
       id: Date.now().toString(),
       text: text,
@@ -205,12 +226,26 @@ export default function Home() {
               placeholder="Start speaking to transcribe..."
             />
             {transcript && (
-              <button
-                onClick={handleCopy}
-                className="absolute top-5 right-5 p-2.5 bg-zinc-100 dark:bg-zinc-800/80 backdrop-blur-md rounded-xl border border-zinc-200 dark:border-zinc-700 shadow-sm transition-all hover:scale-110 active:scale-95"
-              >
-                {hasCopied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4 text-zinc-400" />}
-              </button>
+              <div className="absolute top-5 right-5 flex items-center space-x-2">
+                <AnimatePresence>
+                  {showAutoCopyBanner && (
+                    <motion.div
+                      initial={{ opacity: 0, x: 10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 10 }}
+                      className="px-3 py-1.5 bg-zinc-900 dark:bg-zinc-100 text-zinc-50 dark:text-zinc-950 rounded-xl text-[10px] font-bold uppercase tracking-wider shadow-lg border border-zinc-200 dark:border-zinc-800 whitespace-nowrap"
+                    >
+                      Copied!
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+                <button
+                  onClick={handleCopy}
+                  className="p-2.5 bg-zinc-100 dark:bg-zinc-800/80 backdrop-blur-md rounded-xl border border-zinc-200 dark:border-zinc-700 shadow-sm transition-all hover:scale-110 active:scale-95"
+                >
+                  {hasCopied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4 text-zinc-400" />}
+                </button>
+              </div>
             )}
           </div>
 
@@ -285,12 +320,29 @@ export default function Home() {
                   className="w-full h-full bg-transparent border-none focus:ring-0 text-xl text-zinc-800 dark:text-zinc-200 leading-relaxed p-10 resize-none placeholder-zinc-300 font-normal outline-none"
                   placeholder="Transcribed text will appear here..."
                 />
-                <button
-                  onClick={handleCopy}
-                  className="absolute top-8 right-8 p-3 bg-white dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700 shadow-md border border-zinc-200 dark:border-zinc-800 rounded-2xl text-zinc-400 transition-all opacity-0 group-hover:opacity-100"
-                >
-                  {hasCopied ? <Check className="w-5 h-5 text-green-500" /> : <Copy className="w-5 h-5" />}
-                </button>
+                <div className={cn(
+                  "absolute top-8 right-8 flex items-center space-x-3 transition-all duration-300",
+                  showAutoCopyBanner ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                )}>
+                  <AnimatePresence>
+                    {showAutoCopyBanner && (
+                      <motion.div
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 20 }}
+                        className="px-4 py-2 bg-zinc-900 dark:bg-zinc-100 text-zinc-50 dark:text-zinc-950 rounded-2xl text-[10px] font-bold uppercase tracking-[0.15em] shadow-xl border border-zinc-200 dark:border-zinc-800 whitespace-nowrap"
+                      >
+                        Copied to Clipboard
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                  <button
+                    onClick={handleCopy}
+                    className="p-3 bg-white dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700 shadow-md border border-zinc-200 dark:border-zinc-800 rounded-2xl text-zinc-400 transition-all"
+                  >
+                    {hasCopied ? <Check className="w-5 h-5 text-green-500" /> : <Copy className="w-5 h-5" />}
+                  </button>
+                </div>
               </div>
 
               <div className="flex items-center justify-center px-6 py-4 bg-orange-50/30 dark:bg-orange-950/10 rounded-2xl border border-orange-100/30 dark:border-orange-900/10">
