@@ -33,11 +33,14 @@
 - **Privacy First**: Your API keys and transcription history never leave your browser—stored securely in local storage.
 - **One-Tap Copy**: Quickly copy your entire transcript to use in messages, notes, or emails.
 - **Network Awareness**: Live online/offline status monitoring to ensure stable transcriptions.
-## 🛠️ Tech Stack
+## 🛠️ Tech Stack & Tools
 - **Frontend**: Next.js 15+ (App Router), React 19, TypeScript
-- **Styling**: Tailwind CSS v4, Framer Motion
+- **Styling & Motion**: Tailwind CSS v4, Framer Motion
 - **Icons**: Lucide React
-- **Engine**: Powered Using [Sarvam AI](https://www.sarvam.ai/) (State-of-the-art Indic Voice Models)
+- **Transcription Engine**: [Sarvam AI](https://www.sarvam.ai/) (State-of-the-art Indic Voice Models)
+- **Deployment & Infra**: [Vercel](https://vercel.com/)
+- **AI IDE**: [Antigravity](https://antigravity.google/) (Powered by Google DeepMind)
+- **Wireframing & Prototyping**: [Excalidraw](https://excalidraw.com/)
 ## 📦 Getting Started
 1. **Clone the repository**:
    ```bash
