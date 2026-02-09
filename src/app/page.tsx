@@ -52,8 +52,13 @@ export default function Home() {
     }
   };
 
-  const handleTranscriptionComplete = (text: string, detectedLanguage?: string) => {
-    setTranscript(prev => prev ? `${prev}\n\n${text}` : text);
+  const handleTranscriptionComplete = (text: string, detectedLanguage?: string, isPartial?: boolean) => {
+    if (isPartial) {
+      setTranscript(text);
+      return;
+    }
+
+    setTranscript(text);
     const newItem: HistoryItem = {
       id: Date.now().toString(),
       text: text,

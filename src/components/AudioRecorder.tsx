@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { sliceAudioBuffer, bufferToWav } from '@/utils/audioProcessing';
 
 interface AudioRecorderProps {
-    onTranscriptionComplete: (text: string, detectedLanguage?: string) => void;
+    onTranscriptionComplete: (text: string, detectedLanguage?: string, isPartial?: boolean) => void;
     onError: (msg: string) => void;
     language: string;
     apiKey: string;
@@ -23,6 +23,10 @@ export default function AudioRecorder({ onTranscriptionComplete, onError, langua
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const chunksRef = useRef<Blob[]>([]);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
+    const lastProcessedTimeRef = useRef(0);
+    const isTranscribingPartRef = useRef(false);
+    const accumulatedTranscriptRef = useRef("");
+    const detectedLanguageRef = useRef("auto");
 
     // Auto-stop at 5 minutes
     React.useEffect(() => {
@@ -45,14 +49,22 @@ export default function AudioRecorder({ onTranscriptionComplete, onError, langua
             mediaRecorderRef.current = mediaRecorder;
             chunksRef.current = [];
 
-            mediaRecorder.ondataavailable = (e) => {
-                if (e.data.size > 0) chunksRef.current.push(e.data);
+            mediaRecorder.ondataavailable = async (e) => {
+                if (e.data.size > 0) {
+                    chunksRef.current.push(e.data);
+
+                    // Background transcription: if we have enough for a new 30s segment
+                    // and we're not currently transcribing a part
+                    const currentTotalDuration = chunksRef.current.length * 30; // approx if timeslice is 30s
+                    // Better to check recordingDuration for more accuracy
+                }
             };
 
-            mediaRecorder.onstop = async () => {
-                setIsProcessing(true);
-                setProcessingStatus("Preparing audio...");
+            const processAvailableSegments = async (isFinal = false) => {
+                if (isTranscribingPartRef.current && !isFinal) return;
+
                 const audioBlob = new Blob(chunksRef.current, { type: 'audio/webm' });
+                if (audioBlob.size === 0) return;
 
                 try {
                     const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -60,44 +72,18 @@ export default function AudioRecorder({ onTranscriptionComplete, onError, langua
                     const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
                     const duration = audioBuffer.duration;
 
-                    let finalTranscript = "";
-                    let detectedLang = "";
+                    while (lastProcessedTimeRef.current + 30 <= duration || (isFinal && lastProcessedTimeRef.current < duration)) {
+                        const start = lastProcessedTimeRef.current;
+                        const end = isFinal ? Math.min(start + 30, duration) : start + 30;
 
-                    if (duration > 30) {
-                        const segments = Math.ceil(duration / 30);
-                        for (let i = 0; i < segments; i++) {
-                            setProcessingStatus(`Transcribing part ${i + 1} of ${segments}...`);
-                            const start = i * 30;
-                            const end = Math.min((i + 1) * 30, duration);
+                        if (end - start < 0.5 && isFinal) break; // too short
 
-                            const slicedBuffer = sliceAudioBuffer(audioBuffer, start, end, audioContext);
-                            const slicedBlob = bufferToWav(slicedBuffer);
+                        isTranscribingPartRef.current = true;
+                        const slicedBuffer = sliceAudioBuffer(audioBuffer, start, end, audioContext);
+                        const slicedBlob = bufferToWav(slicedBuffer);
 
-                            const formData = new FormData();
-                            formData.append('audio', slicedBlob, `segment_${i}.wav`);
-                            formData.append('language', language);
-
-                            const response = await fetch('/api/transcribe', {
-                                method: 'POST',
-                                headers: { 'x-api-key': apiKey },
-                                body: formData,
-                            });
-
-                            if (!response.ok) {
-                                const errorData = await response.json();
-                                throw new Error(errorData.details || errorData.error || `Segment ${i + 1} failed`);
-                            }
-
-                            const data = await response.json();
-                            finalTranscript += (finalTranscript ? " " : "") + data.transcript;
-                            if (data.detected_language_code) detectedLang = data.detected_language_code;
-                        }
-                        onTranscriptionComplete(finalTranscript, detectedLang);
-                    } else {
-                        setProcessingStatus("Transcribing...");
-                        const wavBlob = bufferToWav(audioBuffer);
                         const formData = new FormData();
-                        formData.append('audio', wavBlob, 'recording.wav');
+                        formData.append('audio', slicedBlob, `segment_${start}.wav`);
                         formData.append('language', language);
 
                         const response = await fetch('/api/transcribe', {
@@ -106,14 +92,38 @@ export default function AudioRecorder({ onTranscriptionComplete, onError, langua
                             body: formData,
                         });
 
-                        if (!response.ok) {
-                            const errorData = await response.json();
-                            onError(errorData.details || errorData.error || 'Transcription failed');
-                        } else {
+                        if (response.ok) {
                             const data = await response.json();
-                            onTranscriptionComplete(data.transcript, data.detected_language_code);
+                            const newText = data.transcript;
+                            accumulatedTranscriptRef.current += (accumulatedTranscriptRef.current ? " " : "") + newText;
+                            if (data.detected_language_code) detectedLanguageRef.current = data.detected_language_code;
+
+                            // Live update the UI
+                            onTranscriptionComplete(accumulatedTranscriptRef.current, detectedLanguageRef.current, true);
                         }
+
+                        lastProcessedTimeRef.current = end;
+                        if (isFinal && lastProcessedTimeRef.current >= duration) break;
                     }
+                } catch (err) {
+                    console.error("Background transcription error:", err);
+                } finally {
+                    isTranscribingPartRef.current = false;
+                }
+            };
+
+            mediaRecorder.onstop = async () => {
+                setIsProcessing(true);
+                setProcessingStatus("Finalizing transcription...");
+
+                if (timerRef.current) {
+                    clearInterval(timerRef.current);
+                    timerRef.current = null;
+                }
+
+                try {
+                    await processAvailableSegments(true);
+                    onTranscriptionComplete(accumulatedTranscriptRef.current, detectedLanguageRef.current, false);
                 } catch (error: any) {
                     console.error("Transcription error:", error);
                     onError(error.message || "Failed to process audio");
@@ -124,11 +134,21 @@ export default function AudioRecorder({ onTranscriptionComplete, onError, langua
                 }
             };
 
-            mediaRecorder.start();
+            mediaRecorder.start(30000); // Fire ondataavailable every 30s
             setIsRecording(true);
             setRecordingDuration(0);
+            lastProcessedTimeRef.current = 0;
+            accumulatedTranscriptRef.current = "";
+
             timerRef.current = setInterval(() => {
-                setRecordingDuration(prev => prev + 1);
+                setRecordingDuration(prev => {
+                    const next = prev + 1;
+                    if (next % 30 === 0) {
+                        mediaRecorder.requestData();
+                        processAvailableSegments(false);
+                    }
+                    return next;
+                });
             }, 1000);
         } catch (err) {
             console.error("Error accessing microphone:", err);
