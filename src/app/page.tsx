@@ -18,6 +18,7 @@ export default function Home() {
   const [apiKey, setApiKey] = useState('');
   const [hasCopied, setHasCopied] = useState(false);
   const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [lastViewedTimestamp, setLastViewedTimestamp] = useState<number>(0);
   const [errorBanner, setErrorBanner] = useState<string | null>(null);
 
   useEffect(() => {
@@ -32,6 +33,9 @@ export default function Home() {
         console.error("Failed to parse history", e);
       }
     }
+
+    const storedLastViewed = localStorage.getItem('last_viewed_history');
+    if (storedLastViewed) setLastViewedTimestamp(parseInt(storedLastViewed));
   }, []);
 
   const saveHistory = (newHistory: HistoryItem[]) => {
@@ -85,6 +89,15 @@ export default function Home() {
     localStorage.removeItem('transcription_history');
   };
 
+  const hasNewHistory = history.length > 0 && history[0].timestamp > lastViewedTimestamp;
+
+  const openHistory = () => {
+    setIsHistoryOpen(true);
+    const now = Date.now();
+    setLastViewedTimestamp(now);
+    localStorage.setItem('last_viewed_history', now.toString());
+  };
+
   return (
     <main className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-50 flex flex-col font-sans transition-colors duration-300">
 
@@ -111,11 +124,17 @@ export default function Home() {
 
         <div className="flex items-center space-x-2">
           <button
-            onClick={() => setIsHistoryOpen(true)}
-            className="px-4 py-2 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-xl text-[11px] font-bold uppercase tracking-widest text-zinc-500 transition-colors flex items-center space-x-2 border border-zinc-200 dark:border-zinc-700"
+            onClick={openHistory}
+            className="relative px-4 py-2 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-xl text-[11px] font-bold uppercase tracking-widest text-zinc-500 transition-colors flex items-center space-x-2 border border-zinc-200 dark:border-zinc-700"
           >
             <Clock className="w-3.5 h-3.5" />
             <span>HISTORY</span>
+            {hasNewHistory && (
+              <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500 border-2 border-white dark:border-zinc-950"></span>
+              </span>
+            )}
           </button>
         </div>
       </header>
