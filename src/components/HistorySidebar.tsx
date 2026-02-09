@@ -96,7 +96,7 @@ export default function HistorySidebar({ history, onDelete, onSelect, onClearAll
                             onClick={() => onSelect(item.text)}
                             className="group relative bg-white dark:bg-zinc-800/80 hover:bg-zinc-50 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-700/50 hover:border-zinc-300 dark:hover:border-zinc-600 rounded-xl p-4 transition-all cursor-pointer shadow-sm hover:shadow-md"
                         >
-                            <p className="text-zinc-700 dark:text-zinc-300 text-xs sm:text-sm line-clamp-6 mb-6 font-normal leading-relaxed text-ellipsis">
+                            <p className="text-zinc-700 dark:text-zinc-300 text-xs sm:text-sm line-clamp-6 mb-6 pr-14 sm:pr-0 font-normal leading-relaxed text-ellipsis">
                                 {item.text}
                             </p>
 
@@ -113,18 +113,18 @@ export default function HistorySidebar({ history, onDelete, onSelect, onClearAll
                             </div>
 
                             {/* Hover Actions */}
-                            <div className="absolute top-2 right-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 dark:bg-zinc-800/90 backdrop-blur-sm rounded-lg p-1 border border-zinc-200 dark:border-zinc-700">
+                            <div className="absolute top-2 right-2 flex space-x-2 sm:space-x-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity bg-white/90 dark:bg-zinc-800/90 backdrop-blur-sm rounded-lg p-1 border border-zinc-200 dark:border-zinc-700">
                                 <button
                                     onClick={(e) => handleCopy(e, item.id, item.text)}
-                                    className="p-1.5 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-md transition-colors"
+                                    className="p-2 sm:p-1.5 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-md transition-colors"
                                 >
-                                    {copiedId === item.id ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                                    {copiedId === item.id ? <Check className="w-4 h-4 sm:w-3.5 sm:h-3.5 text-emerald-500" /> : <Copy className="w-4 h-4 sm:w-3.5 sm:h-3.5" />}
                                 </button>
                                 <button
                                     onClick={(e) => handleDelete(e, item.id)}
-                                    className="p-1.5 text-zinc-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
+                                    className="p-2 sm:p-1.5 text-zinc-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
                                 >
-                                    <Trash2 className="w-3.5 h-3.5" />
+                                    <Trash2 className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
                                 </button>
                             </div>
                         </motion.div>
