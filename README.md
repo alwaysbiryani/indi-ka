@@ -7,8 +7,10 @@
 ## 📱 v1 Experience
 <img width="460" height="900" alt="indi-ka vercel app_(Samsung Galaxy S20 Ultra) (1)-portrait" src="https://github.com/user-attachments/assets/7adfbc09-becf-401e-8d6b-40d68f969d2b" />
 
-## 🆕 v2 - Long Form Transcription
+## 🆕 v2 - Efficiency & Performance
 - **Extended Recording**: Support for up to **5 minutes** of continuous speech (previously limited to 30 seconds).
+- **Auto-Copy to Clipboard**: Transcription is automatically copied to your clipboard the moment it's finalized—zero clicks required.
+- **Horizontal Smooth Notifications**: A refined, non-intrusive "Copied!" pill that slides out next to the copy button, providing instant confirmation without blocking your view.
 - **Automatic Audio Splitting**: Large recordings are intelligently sliced into segments and processed sequentially for a seamless experience.
 - **Graceful Limit Handling**: Real-time timer and progress updates, with a proactive warning at 4:30 to ensure you never lose a word.
 - **WAV Precision**: High-fidelity audio encoding directly in the browser for improved transcription accuracy.
