@@ -13,6 +13,7 @@
 - **Horizontal Smooth Notifications**: A refined, non-intrusive "Copied!" pill that slides out next to the copy button, providing instant confirmation without blocking your view.
 - **Automatic Audio Splitting**: Large recordings are intelligently sliced into segments and processed sequentially for a seamless experience.
 - **Graceful Limit Handling**: Real-time timer and progress updates, with a proactive warning at 4:30 to ensure you never lose a word.
+- **Animated Backspace**: A satisfying high-speed "rewind" animation that clears the canvas whenever a new recording starts, ensuring a fresh focus for your next thought.
 - **WAV Precision**: High-fidelity audio encoding directly in the browser for improved transcription accuracy.
 
 ## ✨ Key Experience Highlights
