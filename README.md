@@ -19,6 +19,7 @@
 - **WAV Precision**: High-fidelity audio encoding directly in the browser.
 ## 📱 v1 Experience
 <img width="460" height="900" alt="indi-ka vercel app" src="https://github.com/user-attachments/assets/7adfbc09-becf-401e-8d6b-40d68f969d2b" />
+
 ## ✨ Key Experience Highlights
 - **Desktop & Mobile Optimized**: A responsive interface that scales perfectly. Enjoy a dedicated side-sidebar on desktop and a clean, focused "canvas" experience on mobile.
 - **Side-Panel History**: Access your past transcriptions via a polished, sliding side-panel drawer on both web and mobile.
