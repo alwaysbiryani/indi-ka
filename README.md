@@ -1,5 +1,6 @@
 # Indi-क (Wispr Flow for Indian Languages)
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-Vercel-black?style=for-the-badge&logo=vercel)](https://indi-ka.vercel.app/)
+
 **Indi-क** is the fastest and most seamless way to transcribe your voice into text for Hinglish or any major Indian language. Built with a "mobile-first" philosophy, it provides a high-end, smooth experience whether you are on a smartphone or a desktop.
 ## 🏆 v3 - The Cinematic Pro Update
 - **Cinematic Dark Mode**: Locked to a permanent, high-contrast dark theme for a focused and professional experience.
