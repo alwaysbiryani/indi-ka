@@ -96,7 +96,7 @@ export default function HistorySidebar({ history, onDelete, onSelect, onClearAll
                             onClick={() => onSelect(item.text)}
                             className="group relative bg-white dark:bg-zinc-800/80 hover:bg-zinc-50 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-700/50 hover:border-zinc-300 dark:hover:border-zinc-600 rounded-xl p-4 transition-all cursor-pointer shadow-sm hover:shadow-md"
                         >
-                            <p className="text-zinc-700 dark:text-zinc-300 text-xs sm:text-sm line-clamp-3 mb-6 font-normal leading-relaxed">
+                            <p className="text-zinc-700 dark:text-zinc-300 text-xs sm:text-sm line-clamp-6 mb-6 font-normal leading-relaxed text-ellipsis">
                                 {item.text}
                             </p>
 

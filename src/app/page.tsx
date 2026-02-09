@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Copy, Check, MessageSquare, AlertCircle, Clock, X } from 'lucide-react';
 import AudioRecorder from '@/components/AudioRecorder';
 import LanguageSelector from '@/components/LanguageSelector';
@@ -13,6 +13,8 @@ import { cn } from '@/utils/cn';
 
 export default function Home() {
   const [transcript, setTranscript] = useState('');
+  const mobileRef = useRef<HTMLTextAreaElement>(null);
+  const desktopRef = useRef<HTMLTextAreaElement>(null);
   const [language, setLanguage] = useState('auto');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
@@ -39,6 +41,25 @@ export default function Home() {
     const storedLastViewed = localStorage.getItem('last_viewed_history');
     if (storedLastViewed) setLastViewedTimestamp(parseInt(storedLastViewed));
   }, []);
+
+  // Handle transcript textarea updates (scrolling for desktop, expanding for mobile)
+  useEffect(() => {
+    // For mobile
+    if (mobileRef.current) {
+      mobileRef.current.style.height = 'auto';
+      mobileRef.current.style.height = `${mobileRef.current.scrollHeight}px`;
+
+      // Also scroll the parent container to bottom if we're near the bottom
+      const container = mobileRef.current.closest('.overflow-y-auto');
+      if (container) {
+        container.scrollTop = container.scrollHeight;
+      }
+    }
+    // For desktop
+    if (desktopRef.current) {
+      desktopRef.current.scrollTop = desktopRef.current.scrollHeight;
+    }
+  }, [transcript]);
 
   const saveHistory = (newHistory: HistoryItem[]) => {
     setHistory(newHistory);
@@ -246,11 +267,12 @@ export default function Home() {
           </div>
 
           {/* Transcription Canvas */}
-          <div className="flex-1 min-h-[45vh] bg-white dark:bg-zinc-900/50 backdrop-blur-sm rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-xl relative group overflow-hidden">
+          <div className="flex-none min-h-[30vh] bg-white dark:bg-zinc-900/50 backdrop-blur-sm rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-xl relative group">
             <textarea
+              ref={mobileRef}
               value={transcript}
               onChange={(e) => setTranscript(e.target.value)}
-              className="w-full h-full bg-transparent border-none focus:ring-0 text-lg md:text-xl text-zinc-800 dark:text-zinc-200 leading-relaxed p-7 resize-none placeholder-zinc-300 font-normal outline-none scrollbar-hide"
+              className="w-full bg-transparent border-none focus:ring-0 text-lg md:text-xl text-zinc-800 dark:text-zinc-200 leading-relaxed p-7 resize-none placeholder-zinc-300 font-normal outline-none overflow-hidden"
               placeholder="Start speaking to transcribe..."
             />
             {transcript && (
@@ -344,6 +366,7 @@ export default function Home() {
 
               <div className="flex-1 bg-zinc-50 dark:bg-zinc-900/30 rounded-[32px] border border-zinc-200 dark:border-zinc-800 relative group overflow-hidden">
                 <textarea
+                  ref={desktopRef}
                   value={transcript}
                   onChange={(e) => setTranscript(e.target.value)}
                   className="w-full h-full bg-transparent border-none focus:ring-0 text-xl text-zinc-800 dark:text-zinc-200 leading-relaxed p-10 resize-none placeholder-zinc-300 font-normal outline-none"
