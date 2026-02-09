@@ -110,6 +110,33 @@ export default function Home() {
     localStorage.removeItem('transcription_history');
   };
 
+  const animateClear = () => {
+    if (!transcript) return;
+
+    const initialText = transcript;
+    const duration = 400; // ms - snappy but visible
+    const start = performance.now();
+
+    const frame = (now: number) => {
+      const elapsed = now - start;
+      const progress = Math.min(elapsed / duration, 1);
+
+      // Cubic easing for a "vacuum" effect
+      const remainingProgress = 1 - Math.pow(progress, 3);
+      const currentLength = Math.floor(initialText.length * remainingProgress);
+
+      setTranscript(initialText.substring(0, currentLength));
+
+      if (progress < 1) {
+        requestAnimationFrame(frame);
+      } else {
+        setTranscript('');
+      }
+    };
+
+    requestAnimationFrame(frame);
+  };
+
   const hasNewHistory = history.length > 0 && history[0].timestamp > lastViewedTimestamp;
 
   const openHistory = () => {
@@ -213,6 +240,7 @@ export default function Home() {
                 apiKey={apiKey}
                 isCompact={true}
                 className="h-full"
+                onRecordingStart={animateClear}
               />
             </div>
           </div>
@@ -311,6 +339,7 @@ export default function Home() {
                 language={language}
                 apiKey={apiKey}
                 className="max-w-xl mx-auto"
+                onRecordingStart={animateClear}
               />
 
               <div className="flex-1 bg-zinc-50 dark:bg-zinc-900/30 rounded-[32px] border border-zinc-200 dark:border-zinc-800 relative group overflow-hidden">

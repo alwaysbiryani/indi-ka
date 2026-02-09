@@ -15,9 +15,10 @@ interface AudioRecorderProps {
     apiKey: string;
     className?: string;
     isCompact?: boolean;
+    onRecordingStart?: () => void;
 }
 
-export default function AudioRecorder({ onTranscriptionComplete, onError, language, apiKey, className, isCompact }: AudioRecorderProps) {
+export default function AudioRecorder({ onTranscriptionComplete, onError, language, apiKey, className, isCompact, onRecordingStart }: AudioRecorderProps) {
     const [isRecording, setIsRecording] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
     const [processingStatus, setProcessingStatus] = useState("");
@@ -45,6 +46,7 @@ export default function AudioRecorder({ onTranscriptionComplete, onError, langua
     }, []);
 
     const startRecording = async () => {
+        if (onRecordingStart) onRecordingStart();
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             const mediaRecorder = new MediaRecorder(stream);
