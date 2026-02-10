@@ -14,11 +14,21 @@ interface AudioRecorderProps {
     language: string;
     apiKey: string;
     className?: string;
-    isCompact?: boolean;
+    variant?: 'default' | 'compact' | 'circular' | 'side-by-side';
     onRecordingStart?: () => void;
+    autoStart?: boolean;
 }
 
-export default function AudioRecorder({ onTranscriptionComplete, onError, language, apiKey, className, isCompact, onRecordingStart }: AudioRecorderProps) {
+export default function AudioRecorder({
+    onTranscriptionComplete,
+    onError,
+    language,
+    apiKey,
+    className,
+    variant = 'default',
+    onRecordingStart,
+    autoStart = false
+}: AudioRecorderProps) {
     const [isRecording, setIsRecording] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
     const [processingStatus, setProcessingStatus] = useState("");
@@ -31,12 +41,23 @@ export default function AudioRecorder({ onTranscriptionComplete, onError, langua
     const accumulatedTranscriptRef = useRef("");
     const detectedLanguageRef = useRef("auto");
 
+    const isCompact = variant === 'compact' || variant === 'side-by-side';
+    const isCircular = variant === 'circular';
+
     // Auto-stop at 5 minutes
     React.useEffect(() => {
         if (recordingDuration >= 300) {
             stopRecording();
         }
     }, [recordingDuration]);
+
+    // Coordinate Auto-Start for seamless transitions
+    React.useEffect(() => {
+        if (autoStart && !isRecording && !isProcessing) {
+            startRecording();
+            onRecordingStart?.(); // Notify parent to clear flags
+        }
+    }, [autoStart]);
 
     // Cleanup timer on unmount
     React.useEffect(() => {
@@ -56,17 +77,11 @@ export default function AudioRecorder({ onTranscriptionComplete, onError, langua
             mediaRecorder.ondataavailable = async (e) => {
                 if (e.data.size > 0) {
                     chunksRef.current.push(e.data);
-
-                    // Background transcription: if we have enough for a new 30s segment
-                    // and we're not currently transcribing a part
-                    const currentTotalDuration = chunksRef.current.length * 30; // approx if timeslice is 30s
-                    // Better to check recordingDuration for more accuracy
                 }
             };
 
             const processAvailableSegments = async (isFinal = false) => {
                 if (isTranscribingPartRef.current && !isFinal) return;
-
                 const audioBlob = new Blob(chunksRef.current, { type: 'audio/webm' });
                 if (audioBlob.size === 0) return;
 
@@ -79,8 +94,7 @@ export default function AudioRecorder({ onTranscriptionComplete, onError, langua
                     while (lastProcessedTimeRef.current + 30 <= duration || (isFinal && lastProcessedTimeRef.current < duration)) {
                         const start = lastProcessedTimeRef.current;
                         const end = isFinal ? Math.min(start + 30, duration) : start + 30;
-
-                        if (end - start < 0.5 && isFinal) break; // too short
+                        if (end - start < 0.5 && isFinal) break;
 
                         isTranscribingPartRef.current = true;
                         const slicedBuffer = sliceAudioBuffer(audioBuffer, start, end, audioContext);
@@ -101,11 +115,8 @@ export default function AudioRecorder({ onTranscriptionComplete, onError, langua
                             const newText = data.transcript;
                             accumulatedTranscriptRef.current += (accumulatedTranscriptRef.current ? " " : "") + newText;
                             if (data.detected_language_code) detectedLanguageRef.current = data.detected_language_code;
-
-                            // Live update the UI
                             onTranscriptionComplete(accumulatedTranscriptRef.current, detectedLanguageRef.current, true);
                         }
-
                         lastProcessedTimeRef.current = end;
                         if (isFinal && lastProcessedTimeRef.current >= duration) break;
                     }
@@ -118,7 +129,7 @@ export default function AudioRecorder({ onTranscriptionComplete, onError, langua
 
             mediaRecorder.onstop = async () => {
                 setIsProcessing(true);
-                setProcessingStatus("Finalizing transcription...");
+                setProcessingStatus("Finalizing...");
 
                 if (timerRef.current) {
                     clearInterval(timerRef.current);
@@ -138,7 +149,7 @@ export default function AudioRecorder({ onTranscriptionComplete, onError, langua
                 }
             };
 
-            mediaRecorder.start(30000); // Fire ondataavailable every 30s
+            mediaRecorder.start(30000);
             setIsRecording(true);
             setRecordingDuration(0);
             lastProcessedTimeRef.current = 0;
@@ -171,109 +182,157 @@ export default function AudioRecorder({ onTranscriptionComplete, onError, langua
         }
     };
 
-    const buttonBaseClasses = isCompact
-        ? "w-full min-h-[48px] px-4 bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-800 dark:hover:bg-zinc-200 text-zinc-50 dark:text-zinc-950 rounded-xl font-semibold text-sm transition-all active:scale-[0.99] flex items-center justify-center space-x-2 shadow-sm"
-        : "w-full py-4 bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-800 dark:hover:bg-zinc-200 text-zinc-50 dark:text-zinc-950 rounded-xl font-medium text-lg transition-all active:scale-[0.99] flex items-center justify-center space-x-2 shadow-sm";
+    const getButtonClasses = () => {
+        if (isCircular) {
+            return "w-64 h-64 rounded-full bg-zinc-100 text-zinc-900 hover:bg-zinc-950 transition-all duration-700 active:scale-95 group border-[12px] border-zinc-200 dark:border-white/10 backdrop-blur-md overflow-hidden relative";
+        }
+        if (variant === 'side-by-side') {
+            return "w-full h-full bg-white dark:bg-white/10 hover:bg-zinc-50 dark:hover:bg-white/20 text-zinc-900 dark:text-white rounded-[32px] font-black uppercase tracking-[0.15em] transition-all active:scale-95 flex items-center justify-center space-x-3 shadow-[0_12px_24px_rgba(0,0,0,0.05)] border-b-8 border-zinc-200 dark:border-white/10 backdrop-blur-xl";
+        }
+        if (isCompact) {
+            return "w-full min-h-[48px] px-4 bg-white/60 dark:bg-white/5 backdrop-blur-xl hover:bg-white/80 text-zinc-900 dark:text-white rounded-2xl font-bold text-sm transition-all active:scale-[0.99] flex items-center justify-center space-x-2 border border-zinc-200 dark:border-white/40 shadow-sm";
+        }
+        return "w-full py-4 bg-white/60 dark:bg-white/5 backdrop-blur-xl hover:bg-white/80 text-zinc-900 dark:text-white rounded-2xl font-bold text-lg transition-all active:scale-[0.99] flex items-center justify-center space-x-2 border border-zinc-200 dark:border-white/40 shadow-sm";
+    };
 
-    const processingClasses = isCompact
-        ? "w-full min-h-[48px] px-4 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 rounded-xl font-semibold text-sm flex items-center justify-center space-x-2 cursor-wait"
-        : "w-full py-4 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 rounded-xl font-medium text-lg flex items-center justify-center space-x-3 cursor-wait";
+    const getProcessingClasses = () => {
+        if (isCircular) {
+            return "w-64 h-64 rounded-full bg-zinc-100 dark:bg-zinc-900 border-4 border-zinc-200 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 flex flex-col items-center justify-center space-y-3 cursor-wait shadow-inner";
+        }
+        return isCompact
+            ? "w-full min-h-[48px] px-4 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 rounded-xl font-semibold text-sm flex items-center justify-center space-x-2 cursor-wait"
+            : "w-full py-4 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 rounded-xl font-medium text-lg flex items-center justify-center space-x-3 cursor-wait";
+    };
 
     return (
-        <div className={`flex flex-col items-center justify-center w-full ${className}`}>
+        <div className={cn("flex flex-col items-center justify-center w-full", className)}>
             <AnimatePresence mode="wait">
                 {!isRecording && !isProcessing && (
                     <motion.div
-                        initial={{ scale: 0.98, opacity: 0 }}
+                        initial={{ scale: 0.9, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
-                        exit={{ scale: 0.98, opacity: 0 }}
-                        className="w-full"
+                        exit={{ scale: 0.9, opacity: 0 }}
+                        className={cn("relative z-20", isCircular ? "" : "w-full h-full")}
                     >
-                        <button onClick={startRecording} className={buttonBaseClasses}>
-                            <Mic className={isCompact ? "w-4 h-4" : "w-5 h-5"} />
-                            <span>Tap to Speak</span>
+                        <button
+                            type="button"
+                            onClick={(e) => {
+                                if (variant === 'side-by-side' && onRecordingStart) {
+                                    onRecordingStart();
+                                } else {
+                                    startRecording();
+                                }
+                            }}
+                            className={getButtonClasses()}
+                        >
+                            {/* Premium Black Filling Hover Effect */}
+                            {isCircular && (
+                                <motion.div
+                                    className="absolute inset-0 bg-zinc-950 rounded-full z-0"
+                                    initial={{ scale: 0 }}
+                                    whileHover={{ scale: 1.2 }}
+                                    transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                                />
+                            )}
+
+                            <motion.div
+                                className="relative z-10 flex flex-col items-center space-y-2 transition-colors duration-700 group-hover:text-white"
+                                whileHover={isCircular ? { scale: 1.05 } : {}}
+                            >
+                                <Mic className={cn(
+                                    isCircular ? "w-12 h-12 mb-2" : isCompact ? "w-4 h-4" : "w-5 h-5",
+                                    isCircular && "animate-pulse"
+                                )} />
+                                <span className={isCircular ? "text-xl font-black uppercase tracking-tighter" : ""}>
+                                    Speak
+                                </span>
+                            </motion.div>
                         </button>
                     </motion.div>
                 )}
 
                 {isRecording && (
                     <motion.div
-                        initial={{ scale: 0.98, opacity: 0 }}
+                        initial={{ scale: 0.9, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
-                        exit={{ scale: 0.98, opacity: 0 }}
-                        className="w-full flex flex-col items-center space-y-4"
+                        exit={{ scale: 0.9, opacity: 0 }}
+                        className="w-full flex flex-col items-center justify-center"
                     >
                         <div
                             className={cn(
-                                "w-full flex items-center justify-center bg-zinc-50 dark:bg-zinc-900/50 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6 relative overflow-hidden transition-all",
-                                isCompact ? "h-24" : "h-32"
+                                "flex flex-col items-center justify-center relative transition-all duration-500 ease-out",
+                                isCircular
+                                    ? "h-64 w-64 bg-transparent"
+                                    : "w-full h-40 rounded-[32px] border border-white dark:border-white/5 p-8 bg-white/40 dark:bg-white/10 backdrop-blur-2xl shadow-xl"
                             )}
                         >
+                            {/* Minimalism Waveform Background */}
                             <MicrophoneWaveform
                                 active={isRecording}
-                                height={isCompact ? 40 : 60}
-                                barWidth={2}
-                                barGap={2}
-                                barRadius={1}
-                                className="w-full opacity-60"
+                                height={60}
+                                barWidth={3}
+                                barGap={4}
+                                barRadius={2}
+                                className="absolute inset-0 m-auto w-[85%] opacity-30 pointer-events-none"
                             />
 
-                            {/* Prominent Stop Button */}
-                            <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="relative z-10 flex flex-col items-center space-y-6 pt-8">
+                                {/* Precise Timer */}
+                                <div className="bg-white/80 dark:bg-zinc-900/80 px-5 py-2.5 rounded-2xl border border-white dark:border-white/10 shadow-sm">
+                                    <span className="text-sm font-mono font-black text-zinc-900 dark:text-zinc-100 tracking-widest">
+                                        {Math.floor(recordingDuration / 60)}:{(recordingDuration % 60).toString().padStart(2, '0')}
+                                        <span className="text-zinc-400 dark:text-zinc-500 ml-1">/ 5:00</span>
+                                    </span>
+                                </div>
+
+                                {/* Tactile Stop Button */}
                                 <button
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         stopRecording();
                                     }}
-                                    className="flex items-center space-x-3 bg-white dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700 px-6 py-3 rounded-full shadow-lg border border-zinc-200 dark:border-zinc-700 transition-all active:scale-95 group"
+                                    className={cn(
+                                        "flex items-center space-x-3 bg-zinc-100 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 px-10 py-5 rounded-[28px] shadow-lg hover:shadow-xl transition-all active:scale-95 border-b-8 border-zinc-200 dark:border-zinc-800 group",
+                                        !isCircular && "px-8 py-4"
+                                    )}
                                 >
-                                    <div className="w-4 h-4 bg-red-500 rounded-sm group-hover:scale-110 transition-transform" />
-                                    <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100 uppercase tracking-tight">Stop Recording</span>
+                                    <div className="w-4 h-4 bg-red-500 rounded-sm group-hover:scale-125 transition-transform shadow-[0_0_10px_rgba(239,68,68,0.5)]" />
+                                    <span className="text-xs font-black uppercase tracking-[0.2em] text-inherit">Stop Recording</span>
                                 </button>
                             </div>
-
-                            {/* Status Indicator */}
-                            <div className="absolute top-3 left-4 flex items-center space-x-1.5 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-sm px-2 py-1 rounded-full border border-zinc-100 dark:border-zinc-800">
-                                <span className="flex h-2 w-2 rounded-full bg-red-500 animate-pulse" />
-                                <span className="text-[10px] font-bold text-red-500 uppercase tracking-widest">Live</span>
-                            </div>
-
-                            {/* Mobile Hint */}
-                            <div className="absolute bottom-3 right-4">
-                                <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-tighter opacity-70">Tap anywhere to stop</span>
-                            </div>
                         </div>
 
-                        <div className="flex flex-col items-center space-y-2">
-                            {recordingDuration >= 270 && (
-                                <motion.p
-                                    initial={{ opacity: 0, y: 5 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    className="text-[11px] font-bold text-red-500 animate-pulse text-center leading-tight mb-1"
-                                >
-                                    Almost at the limit - stopping at 5:00.
-                                </motion.p>
-                            )}
-                            <div className="flex items-center space-x-2 bg-zinc-100 dark:bg-zinc-800/50 px-3 py-1 rounded-full border border-zinc-200/50 dark:border-zinc-700/50">
-                                <span className="w-1.5 h-1.5 rounded-full bg-zinc-400 animate-[pulse_2s_infinite]" />
-                                <span className="text-[11px] font-mono font-medium text-zinc-600 dark:text-zinc-400">
-                                    {Math.floor(recordingDuration / 60)}:{(recordingDuration % 60).toString().padStart(2, '0')} / 5:00
+                        {!isCircular && (
+                            <div className="flex items-center space-x-2 bg-zinc-100 dark:bg-zinc-800 mr-auto mt-4 px-3 py-1.5 rounded-full border border-zinc-200 dark:border-zinc-700">
+                                <span className="w-1.5 h-1.5 rounded-full bg-zinc-400 animate-pulse" />
+                                <span className="text-[11px] font-mono font-bold text-zinc-600 dark:text-zinc-400 uppercase tracking-widest">
+                                    {Math.floor(recordingDuration / 60)}:{(recordingDuration % 60).toString().padStart(2, '0')}
                                 </span>
                             </div>
-                        </div>
+                        )}
                     </motion.div>
                 )}
 
                 {isProcessing && (
                     <motion.div
-                        initial={{ scale: 0.98, opacity: 0 }}
+                        initial={{ scale: 0.9, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
-                        exit={{ scale: 0.98, opacity: 0 }}
-                        className="w-full"
+                        exit={{ scale: 0.9, opacity: 0 }}
+                        className={cn("relative", isCircular ? "" : "w-full")}
                     >
-                        <div className={processingClasses}>
-                            <Loader2 className={isCompact ? "w-4 h-4 animate-spin" : "w-5 h-5 animate-spin"} />
-                            <span>{processingStatus || "Processing..."}</span>
+                        {/* AI Aura during processing */}
+                        {isCircular && (
+                            <div className="absolute inset-0 bg-blue-500/5 dark:bg-blue-400/5 rounded-full blur-3xl animate-pulse" />
+                        )}
+
+                        <div className={getProcessingClasses()}>
+                            <div className="relative">
+                                <Loader2 className={cn("animate-spin text-zinc-400 dark:text-zinc-500", isCircular ? "w-10 h-10 mb-2" : "w-5 h-5")} />
+                                <Sparkles className={cn("absolute -top-1 -right-1 text-blue-500 animate-pulse", isCircular ? "w-4 h-4" : "w-2 h-2")} />
+                            </div>
+                            <span className={cn("font-black uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-500", isCircular ? "text-[10px] px-6 text-center leading-relaxed" : "text-[11px]")}>
+                                {processingStatus || "Analyzing..."}
+                            </span>
                         </div>
                     </motion.div>
                 )}

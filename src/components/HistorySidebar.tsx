@@ -26,25 +26,21 @@ interface HistorySidebarProps {
 const formatLanguage = (lang: string, detected?: string) => {
     const code = (lang === 'auto' && detected && detected !== 'auto') ? detected : lang;
 
-    // Manual mapping for cleaner display
-    const langMap: Record<string, string> = {
-        'hi-IN': 'HINDI',
-        'en-IN': 'ENGLISH',
-        'bn-IN': 'BENGALI',
-        'gu-IN': 'GUJARATI',
-        'kn-IN': 'KANNADA',
-        'ml-IN': 'MALAYALAM',
-        'mr-IN': 'MARATHI',
-        'or-IN': 'ODIA',
-        'pa-IN': 'PUNJABI',
-        'ta-IN': 'TAMIL',
-        'te-IN': 'TELUGU',
-        'hinglish': 'HINGLISH',
-        'auto': 'AUTO'
+    const langMap: Record<string, { label: string, symbol: string }> = {
+        'hi-IN': { label: 'HINDI', symbol: 'अ' },
+        'te-IN': { label: 'TELUGU', symbol: 'అ' },
+        'ta-IN': { label: 'TAMIL', symbol: 'அ' },
+        'mr-IN': { label: 'MARATHI', symbol: 'म' },
+        'bn-IN': { label: 'BENGALI', symbol: 'অ' },
+        'kn-IN': { label: 'KANNADA', symbol: 'ಕ' },
+        'gu-IN': { label: 'GUJARATI', symbol: 'અ' },
+        'ml-IN': { label: 'MALAYALAM', symbol: 'അ' },
+        'en-IN': { label: 'ENGLISH', symbol: 'En' },
+        'hinglish': { label: 'HINGLISH', symbol: 'Hi' },
+        'auto': { label: 'AUTO', symbol: 'A' }
     };
 
-    return langMap[code] || code.split('-')[0].toUpperCase();
-
+    return langMap[code] || { label: code.split('-')[0].toUpperCase(), symbol: '?' };
 };
 
 export default function HistorySidebar({ history, onDelete, onSelect, onClearAll, className }: HistorySidebarProps) {
@@ -57,20 +53,15 @@ export default function HistorySidebar({ history, onDelete, onSelect, onClearAll
         setTimeout(() => setCopiedId(null), 2000);
     };
 
-    const handleDelete = (e: React.MouseEvent, id: string) => {
-        e.stopPropagation();
-        onDelete(id);
-    };
-
     return (
-        <div className={`flex flex-col h-full ${className}`}>
+        <div className={`flex flex-col h-full bg-transparent ${className}`}>
             {/* Header */}
-            <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
-                <h2 className="font-semibold text-xs text-zinc-500 uppercase tracking-widest">Recent Transcriptions</h2>
+            <div className="px-8 py-6 flex items-center justify-between">
+                <h2 className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em]">History</h2>
                 {history.length > 0 && (
                     <button
                         onClick={onClearAll}
-                        className="text-xs text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 font-medium transition-colors"
+                        className="text-[10px] font-black text-red-500/70 hover:text-red-500 uppercase tracking-widest transition-colors"
                     >
                         Clear All
                     </button>
@@ -78,57 +69,67 @@ export default function HistorySidebar({ history, onDelete, onSelect, onClearAll
             </div>
 
             {/* List */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
+            <div className="flex-1 overflow-y-auto px-6 pb-8 space-y-4 custom-scrollbar">
                 {history.length === 0 ? (
-                    <div className="h-full flex flex-col items-center justify-center text-zinc-400 dark:text-zinc-600 space-y-3 opacity-60">
-                        <Clock className="w-8 h-8 stroke-[1.5]" />
-                        <p className="text-xs font-medium">No history yet</p>
+                    <div className="h-full flex flex-col items-center justify-center text-center p-8 space-y-4 opacity-40">
+                        <div className="w-16 h-16 rounded-3xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
+                            <Clock className="w-8 h-8 text-zinc-400" />
+                        </div>
+                        <p className="text-xs font-black uppercase tracking-widest text-zinc-500">No recordings yet</p>
                     </div>
                 ) : (
-                    history.map((item) => (
-                        <motion.div
-                            layout
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.95 }}
-                            transition={{ duration: 0.2 }}
-                            key={item.id}
-                            onClick={() => onSelect(item.text)}
-                            className="group relative bg-white dark:bg-zinc-800/80 hover:bg-zinc-50 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-700/50 hover:border-zinc-300 dark:hover:border-zinc-600 rounded-xl p-4 transition-all cursor-pointer shadow-sm hover:shadow-md"
-                        >
-                            <p className="text-zinc-700 dark:text-zinc-300 text-xs sm:text-sm line-clamp-6 mb-6 pr-14 sm:pr-0 font-normal leading-relaxed text-ellipsis">
-                                {item.text}
-                            </p>
+                    history.map((item) => {
+                        const langInfo = formatLanguage(item.language, item.detectedLanguage);
+                        return (
+                            <motion.div
+                                layout
+                                initial={{ opacity: 0, scale: 0.9 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.9 }}
+                                key={item.id}
+                                onClick={() => onSelect(item.text)}
+                                className="group relative bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 rounded-[32px] p-5 transition-all cursor-pointer hover:bg-white dark:hover:bg-white/10 hover:shadow-xl hover:shadow-black/5 active:scale-[0.98]"
+                            >
+                                <p className="text-zinc-800 dark:text-zinc-200 text-sm line-clamp-4 mb-8 font-medium leading-relaxed pr-2">
+                                    {item.text}
+                                </p>
 
-                            <div className="absolute bottom-3 left-4 right-4 flex justify-between items-center text-[10px] text-zinc-400 dark:text-zinc-500 font-medium">
-                                <span className={`px-2 py-0.5 rounded-full border ${(item.language === 'auto' && (!item.detectedLanguage || item.detectedLanguage === 'auto'))
-                                    ? 'bg-zinc-100 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-500'
-                                    : 'bg-purple-50 dark:bg-purple-900/10 border-purple-100 dark:border-purple-800/20 text-purple-600 dark:text-purple-400'
-                                    } uppercase tracking-wider`}>
-                                    {formatLanguage(item.language, item.detectedLanguage)}
-                                </span>
-                                <span>
-                                    {new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                </span>
-                            </div>
+                                <div className="flex justify-between items-end mt-auto pt-4 border-t border-zinc-100 dark:border-white/5">
+                                    <div className="flex flex-col space-y-1.5">
+                                        <div className="flex items-center space-x-2">
+                                            <div className="w-6 h-6 rounded-lg bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-[10px] font-bold text-zinc-500 dark:text-zinc-400">
+                                                {langInfo.symbol}
+                                            </div>
+                                            <span className="text-[9px] font-black uppercase tracking-widest text-zinc-400">
+                                                {langInfo.label}
+                                            </span>
+                                        </div>
+                                        <span className="text-[9px] font-bold text-zinc-400 pl-1">
+                                            {new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                        </span>
+                                    </div>
 
-                            {/* Hover Actions */}
-                            <div className="absolute top-2 right-2 flex space-x-2 sm:space-x-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity bg-white/90 dark:bg-zinc-800/90 backdrop-blur-sm rounded-lg p-1 border border-zinc-200 dark:border-zinc-700">
-                                <button
-                                    onClick={(e) => handleCopy(e, item.id, item.text)}
-                                    className="p-2 sm:p-1.5 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-md transition-colors"
-                                >
-                                    {copiedId === item.id ? <Check className="w-4 h-4 sm:w-3.5 sm:h-3.5 text-emerald-500" /> : <Copy className="w-4 h-4 sm:w-3.5 sm:h-3.5" />}
-                                </button>
-                                <button
-                                    onClick={(e) => handleDelete(e, item.id)}
-                                    className="p-2 sm:p-1.5 text-zinc-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
-                                >
-                                    <Trash2 className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
-                                </button>
-                            </div>
-                        </motion.div>
-                    ))
+                                    <div className="flex space-x-2">
+                                        <button
+                                            onClick={(e) => handleCopy(e, item.id, item.text)}
+                                            className="p-3 bg-zinc-50 dark:bg-white/5 rounded-2xl border border-zinc-100 dark:border-white/10 text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-all active:scale-90"
+                                        >
+                                            {copiedId === item.id ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+                                        </button>
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                onDelete(item.id);
+                                            }}
+                                            className="p-3 bg-zinc-50 dark:bg-white/5 rounded-2xl border border-zinc-100 dark:border-white/10 text-zinc-400 hover:text-red-500 transition-all active:scale-90"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        );
+                    })
                 )}
             </div>
         </div>
