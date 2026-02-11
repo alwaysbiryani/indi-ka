@@ -209,6 +209,7 @@ Comprehensive guides for developers and contributors:
 - **[Deployment Checklist](DEPLOYMENT_CHECKLIST.md)** - Step-by-step deployment guide
 - **[Architecture](ARCHITECTURE.md)** - System design and visual diagrams
 - **[Safety Plan](DEPLOYMENT_SAFETY_PLAN.md)** - Production safety architecture
+- **[Design Rules](DESIGN_RULES.md)** - Permanent UI rules and constraints
 
 ---
 
