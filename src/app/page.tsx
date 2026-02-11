@@ -230,13 +230,13 @@ export default function Home() {
         <motion.div
           initial={{ scale: 0.98, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          className="w-[390px] h-[844px] bg-[var(--screen-bg)] rounded-[60px] shadow-[0_40px_100px_rgba(0,0,0,0.2)] overflow-hidden border-[10px] border-[var(--phone-frame)] relative flex flex-col scale-[0.9] sm:scale-100 transition-colors duration-500"
+          className="w-full h-[100dvh] md:w-[390px] md:h-[844px] bg-[var(--screen-bg)] md:rounded-[60px] md:shadow-[0_40px_100px_rgba(0,0,0,0.2)] overflow-hidden md:border-[10px] border-0 md:border-[var(--phone-frame)] relative flex flex-col scale-100 md:scale-100 transition-colors duration-500"
         >
           {/* Top Notch Area */}
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-40 h-7 bg-[var(--phone-frame)] rounded-b-[20px] z-[50]" />
+          <div className="hidden md:block absolute top-0 left-1/2 -translate-x-1/2 w-40 h-7 bg-[var(--phone-frame)] rounded-b-[20px] z-[50]" />
 
           {/* Header (LOGO + THEME + HISTORY) */}
-          <header className="px-8 pt-12 pb-3 flex items-center justify-between relative z-10">
+          <header className="px-5 pt-6 md:px-8 md:pt-12 pb-3 flex items-center justify-between relative z-10">
             <div className="flex items-center space-x-3 bg-[var(--surface)] backdrop-blur-md px-4 py-2.5 rounded-[20px] border border-[var(--border)] shadow-sm">
               <MessageSquare className="w-4 h-4 text-[var(--text-secondary)]" />
               <h1 className="text-xl font-black tracking-tighter bg-gradient-to-r from-[#FF9933] via-[var(--accent-tiranga-mid)] to-[#138808] bg-clip-text text-transparent">
@@ -269,7 +269,7 @@ export default function Home() {
           </header>
 
           {/* Main Content Area */}
-          <div className="flex-1 px-8 flex flex-col overflow-hidden">
+          <div className="flex-1 px-5 md:px-8 flex flex-col overflow-hidden">
             <AnimatePresence mode="wait">
               {!transcript ? (
                 /* LANDING EXPERIENCE: Big Circular Button */
@@ -437,7 +437,7 @@ export default function Home() {
           </div>
 
           {/* Swipe Indicator */}
-          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-32 h-1.5 bg-[var(--border)] rounded-full" />
+          <div className="hidden md:block absolute bottom-2 left-1/2 -translate-x-1/2 w-32 h-1.5 bg-[var(--border)] rounded-full" />
         </motion.div>
       </div>
 
