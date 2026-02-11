@@ -224,11 +224,11 @@ export default function AudioRecorder({
     };
 
     const buttonBaseClasses = isCompact
-        ? "w-full h-full bg-zinc-100 border border-zinc-200 hover:bg-zinc-200 text-zinc-900 rounded-3xl font-black text-sm uppercase tracking-widest flex items-center justify-center space-x-3 transition-all active:scale-95 shadow-sm"
+        ? "w-full h-full bg-zinc-100 border border-zinc-200 hover:bg-zinc-200 text-zinc-900 rounded-3xl font-bold text-sm uppercase tracking-widest flex items-center justify-center space-x-3 transition-all active:scale-95 shadow-sm"
         : "w-full py-4 bg-zinc-100 hover:bg-zinc-200 text-zinc-900 rounded-xl font-medium text-lg transition-all active:scale-[0.99] flex items-center justify-center space-x-2 shadow-sm";
 
     const processingClasses = isCompact
-        ? "w-full h-full bg-zinc-50 border border-zinc-100 text-zinc-400 rounded-3xl font-black text-xs uppercase tracking-widest flex items-center justify-center space-x-2 cursor-wait"
+        ? "w-full h-full bg-zinc-50 border border-zinc-100 text-zinc-400 rounded-3xl font-bold text-xs uppercase tracking-widest flex items-center justify-center space-x-2 cursor-wait"
         : "w-full py-4 bg-zinc-50 border border-zinc-100 text-zinc-400 rounded-xl font-medium text-lg flex items-center justify-center space-x-3 cursor-wait";
 
 
@@ -248,7 +248,7 @@ export default function AudioRecorder({
                             <div className="absolute inset-0 bg-gradient-to-br from-zinc-200/20 to-zinc-100/5 rounded-full blur-xl group-hover:blur-2xl transition-all" />
                             <div className="relative w-full h-full bg-white rounded-full flex flex-col items-center justify-center shadow-2xl border-4 border-zinc-100">
                                 <Mic className="w-16 h-16 text-zinc-900 mb-2" />
-                                <span className="text-2xl font-black text-zinc-900 tracking-tight">SPEAK</span>
+                                <span className="text-2xl font-bold text-zinc-900 tracking-tight">SPEAK</span>
                             </div>
                         </motion.button>
                     )}
@@ -271,9 +271,9 @@ export default function AudioRecorder({
                                     <div className="bg-[var(--surface-hover)] px-6 py-3 rounded-[24px] border border-[var(--border)] shadow-sm flex flex-col items-center space-y-1 backdrop-blur-sm">
                                         <div className="flex items-center space-x-2">
                                             <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.5)]" />
-                                            <span className="text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-[0.2em]">Recording</span>
+                                            <span className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-[0.2em]">Recording</span>
                                         </div>
-                                        <span className="text-2xl font-mono font-black text-[var(--text-primary)] tabular-nums tracking-tight">
+                                        <span className="text-2xl font-mono font-bold text-[var(--text-primary)] tabular-nums tracking-tight">
                                             {Math.floor(recordingDuration / 60)}:{(recordingDuration % 60).toString().padStart(2, '0')}
                                         </span>
                                     </div>
@@ -344,7 +344,7 @@ export default function AudioRecorder({
                         >
                             <div className="flex items-center space-x-3">
                                 <div className="w-4 h-4 bg-white rounded-sm animate-pulse" />
-                                <span className="text-sm font-black text-white uppercase tracking-widest">
+                                <span className="text-sm font-bold text-white uppercase tracking-widest">
                                     STOP
                                 </span>
                             </div>

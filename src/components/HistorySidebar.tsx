@@ -66,11 +66,11 @@ export default function HistorySidebar({ history, onDelete, onSelect, onClearAll
         <div className={`flex flex-col h-full ${className} transition-colors duration-300`}>
             {/* Header */}
             <div className="p-4 border-b border-[var(--border)] flex items-center justify-between">
-                <h2 className="font-black text-[10px] text-[var(--text-secondary)] uppercase tracking-[0.2em]">Recent Transcriptions</h2>
+                <h2 className="font-bold text-[10px] text-[var(--text-secondary)] uppercase tracking-[0.2em]">Recent Transcriptions</h2>
                 {history.length > 0 && (
                     <button
                         onClick={onClearAll}
-                        className="text-[10px] font-black text-red-500 hover:text-red-600 uppercase tracking-widest transition-colors"
+                        className="text-[10px] font-bold text-red-500 hover:text-red-600 uppercase tracking-widest transition-colors"
                     >
                         Clear All
                     </button>
@@ -82,7 +82,7 @@ export default function HistorySidebar({ history, onDelete, onSelect, onClearAll
                 {history.length === 0 ? (
                     <div className="h-full flex flex-col items-center justify-center text-[var(--text-secondary)] space-y-4 opacity-40">
                         <Clock className="w-10 h-10 stroke-[1]" />
-                        <p className="text-[10px] font-black uppercase tracking-widest">No history yet</p>
+                        <p className="text-[10px] font-bold uppercase tracking-widest">No history yet</p>
                     </div>
                 ) : (
                     history.map((item) => (
@@ -102,8 +102,8 @@ export default function HistorySidebar({ history, onDelete, onSelect, onClearAll
 
                             <div className="absolute bottom-4 left-6 right-6 flex justify-between items-center text-[10px] text-[var(--text-secondary)] font-bold">
                                 <span className={`px-2 py-1 rounded-lg border shadow-sm ${(item.language === 'auto' && (!item.detectedLanguage || item.detectedLanguage === 'auto'))
-                                        ? 'bg-[var(--surface-hover)] border-[var(--border)] text-[var(--text-secondary)]'
-                                        : 'bg-purple-500/10 border-purple-500/20 text-purple-500'
+                                    ? 'bg-[var(--surface-hover)] border-[var(--border)] text-[var(--text-secondary)]'
+                                    : 'bg-purple-500/10 border-purple-500/20 text-purple-500'
                                     } uppercase tracking-widest`}>
                                     {formatLanguage(item.language, item.detectedLanguage)}
                                 </span>

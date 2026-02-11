@@ -55,7 +55,7 @@ export default function Home() {
     console.log('%c🇮🇳 Indi-क Mobile-First UI', 'font-size: 16px; font-weight: bold; color: #FF9933;');
     console.log('Build Commit:', process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA?.slice(0, 7) || 'local-dev');
     console.log('Build Time:', process.env.NEXT_PUBLIC_BUILD_TIME || 'unknown');
-    console.log('UI Version: mobile-first-v2');
+    console.log('UI Version: refined-v3');
   }, []);
 
   // Update textarea height/scroll
@@ -75,10 +75,16 @@ export default function Home() {
       navigator.clipboard.writeText(transcript);
       setHasCopied(true);
       setShowAutoCopyBanner(true);
+
+      // Button state reverts faster for that "snappy" feel
       setTimeout(() => {
         setHasCopied(false);
+      }, 1200);
+
+      // Toast lingers a bit longer to be readable
+      setTimeout(() => {
         setShowAutoCopyBanner(false);
-      }, 3000);
+      }, 2000);
     }
   };
 
@@ -184,11 +190,11 @@ export default function Home() {
   }, [taglines.length]);
 
   return (
-    <main className="min-h-screen w-full bg-[var(--app-bg)] flex items-center justify-center p-0 md:p-8 font-sans overflow-hidden relative transition-colors duration-300">
-      {/* Subtle Background decoration */}
+    <main className="min-h-screen w-full bg-[var(--app-bg)] flex items-center justify-center p-0 md:p-8 font-sans overflow-hidden relative transition-colors duration-500">
+      {/* Subtle Background decoration - Refined for "Aurora" feel */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] bg-[#FF9933]/[0.03] rounded-full blur-[120px]" />
-        <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-[#138808]/[0.03] rounded-full blur-[120px]" />
+        <div className="absolute top-[-30%] left-[-20%] w-[80%] h-[80%] bg-[#FF9933]/[0.02] rounded-full blur-[150px] animate-pulse" style={{ animationDuration: '8s' }} />
+        <div className="absolute bottom-[-30%] right-[-20%] w-[80%] h-[80%] bg-[#138808]/[0.02] rounded-full blur-[150px] animate-pulse" style={{ animationDuration: '10s', animationDelay: '1s' }} />
       </div>
 
       <div className="relative z-10 w-full flex flex-col items-center">
@@ -199,11 +205,11 @@ export default function Home() {
               initial={{ y: -50, opacity: 0 }}
               animate={{ y: 20, opacity: 1 }}
               exit={{ y: -50, opacity: 0 }}
-              className="absolute top-0 left-4 right-4 bg-[var(--surface)] border border-red-500/50 text-[var(--text-primary)] px-5 py-4 rounded-3xl shadow-2xl z-[100] flex items-center justify-between backdrop-blur-xl"
+              className="absolute top-0 left-4 right-4 bg-[var(--surface)]/95 border border-red-500/30 text-[var(--text-primary)] px-5 py-4 rounded-2xl shadow-xl z-[100] flex items-center justify-between backdrop-blur-xl"
             >
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-3">
                 <AlertCircle className="w-5 h-5 flex-shrink-0 text-red-500" />
-                <span className="text-sm font-bold truncate max-w-[200px]">{errorBanner}</span>
+                <span className="text-sm font-medium truncate max-w-[200px]">{errorBanner}</span>
               </div>
             </motion.div>
           )}
@@ -213,15 +219,16 @@ export default function Home() {
         <AnimatePresence>
           {showAutoCopyBanner && (
             <motion.div
-              initial={{ y: -50, opacity: 0 }}
-              animate={{ y: 20, opacity: 1 }}
-              exit={{ y: -50, opacity: 0 }}
-              className="absolute top-0 left-4 right-4 bg-[var(--surface)] border border-green-500/50 text-[var(--text-primary)] px-5 py-4 rounded-3xl shadow-2xl z-[100] flex items-center justify-between backdrop-blur-xl"
+              initial={{ opacity: 0, y: -20, scale: 0.95 }}
+              animate={{ opacity: 1, y: 16, scale: 1 }}
+              exit={{ opacity: 0, y: -20, scale: 0.95 }}
+              transition={{ type: "spring", stiffness: 400, damping: 25 }}
+              className="absolute top-4 left-1/2 -translate-x-1/2 bg-[var(--surface)]/95 border border-green-500/20 text-[var(--text-primary)] px-6 py-3 rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.08),0_0_0_1px_rgba(34,197,94,0.1)] z-[100] flex items-center space-x-3 backdrop-blur-2xl whitespace-nowrap"
             >
-              <div className="flex items-center space-x-2">
-                <Check className="w-5 h-5 flex-shrink-0 text-green-500" />
-                <span className="text-sm font-bold">Copied to clipboard!</span>
+              <div className="bg-green-500 p-1 rounded-full shadow-sm">
+                <Check className="w-3 h-3 text-white stroke-[3]" />
               </div>
+              <span className="text-sm font-bold tracking-tight">Copied to clipboard</span>
             </motion.div>
           )}
         </AnimatePresence>
@@ -230,16 +237,18 @@ export default function Home() {
         <motion.div
           initial={{ scale: 0.98, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          className="w-full h-[100dvh] md:w-[390px] md:h-[844px] bg-[var(--screen-bg)] md:rounded-[60px] md:shadow-[0_40px_100px_rgba(0,0,0,0.2)] overflow-hidden md:border-[10px] border-0 md:border-[var(--phone-frame)] relative flex flex-col scale-100 md:scale-100 transition-colors duration-500"
+          className="w-full h-[100dvh] md:w-[390px] md:h-[844px] bg-[var(--screen-bg)] md:rounded-[50px] md:shadow-[0_40px_100px_rgba(0,0,0,0.15)] overflow-hidden md:border-[8px] border-0 md:border-[var(--phone-frame)] relative flex flex-col scale-100 md:scale-100 transition-colors duration-500"
         >
           {/* Top Notch Area */}
           <div className="hidden md:block absolute top-0 left-1/2 -translate-x-1/2 w-40 h-7 bg-[var(--phone-frame)] rounded-b-[20px] z-[50]" />
 
           {/* Header (LOGO + THEME + HISTORY) */}
-          <header className="px-5 pt-6 md:px-8 md:pt-12 pb-3 flex items-center justify-between relative z-10">
-            <div className="flex items-center space-x-3 bg-[var(--surface)] backdrop-blur-md px-4 py-2.5 rounded-[20px] border border-[var(--border)] shadow-sm">
-              <MessageSquare className="w-4 h-4 text-[var(--text-secondary)]" />
-              <h1 className="text-xl font-black tracking-tighter bg-gradient-to-r from-[#FF9933] via-[var(--accent-tiranga-mid)] to-[#138808] bg-clip-text text-transparent">
+          <header className="px-6 pt-8 md:px-8 md:pt-14 pb-4 flex items-center justify-between relative z-10">
+            <div className="flex items-center space-x-2">
+              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-br from-[#FF9933] to-[#138808] opacity-90 shadow-[0_2px_8px_rgba(0,0,0,0.1)]">
+                <MessageSquare className="w-4 h-4 text-white fill-current" />
+              </div>
+              <h1 className="text-2xl font-bold tracking-tight text-[var(--text-primary)]">
                 Indi-क
               </h1>
             </div>
@@ -247,21 +256,21 @@ export default function Home() {
             <div className="flex items-center space-x-2">
               <button
                 onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                className="p-2.5 bg-[var(--surface)] rounded-[18px] border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all shadow-sm active:scale-95"
+                className="p-2.5 rounded-full hover:bg-[var(--surface-hover)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all active:scale-95"
               >
-                {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
               </button>
 
               <button
                 onClick={openHistory}
-                className="relative bg-[var(--surface)] px-4 py-2.5 rounded-[18px] border border-[var(--border)] flex items-center space-x-2 transition-all hover:bg-[var(--surface-hover)] active:scale-95 group shadow-sm"
+                className="relative bg-[var(--surface)] hover:bg-[var(--surface-hover)] px-4 py-2 rounded-full border border-[var(--border)] flex items-center space-x-2 transition-all active:scale-95 group shadow-[0_2px_8px_rgba(0,0,0,0.02)]"
               >
                 <Clock className="w-4 h-4 text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] transition-colors" />
-                <span className="text-[10px] font-black text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] uppercase tracking-widest transition-colors">Recent</span>
+                <span className="text-xs font-bold text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] uppercase tracking-wider transition-colors">Recent</span>
                 {hasNewHistory && (
-                  <span className="absolute -top-1 -right-1 flex h-3 w-3 z-20">
+                  <span className="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5 z-20">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500 border-2 border-[var(--screen-bg)]"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500 border-2 border-[var(--screen-bg)]"></span>
                   </span>
                 )}
               </button>
@@ -269,50 +278,50 @@ export default function Home() {
           </header>
 
           {/* Main Content Area */}
-          <div className="flex-1 px-5 md:px-8 flex flex-col overflow-hidden">
+          <div className="flex-1 px-6 md:px-8 flex flex-col overflow-hidden">
             <AnimatePresence mode="wait">
               {!transcript ? (
-                /* LANDING EXPERIENCE: Big Circular Button */
+                /* LANDING EXPERIENCE */
                 <motion.div
                   key="landing"
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  className="flex-1 flex flex-col items-center justify-start pt-2"
+                  exit={{ opacity: 0, scale: 0.98 }}
+                  className="flex-1 flex flex-col items-center justify-start pt-6"
                 >
                   {/* Animated Taglines */}
-                  <div className="h-16 flex flex-col items-center justify-center text-center overflow-hidden mb-4 w-full">
+                  <div className="h-20 flex flex-col items-center justify-center text-center overflow-hidden mb-8 w-full">
                     <AnimatePresence mode="wait">
                       <motion.div
                         key={taglineIndex}
                         initial={{ y: 20, opacity: 0 }}
                         animate={{ y: 0, opacity: 1 }}
                         exit={{ y: -20, opacity: 0 }}
-                        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-                        className="flex flex-col space-y-1"
+                        transition={{ duration: 0.5, ease: "easeOut" }}
+                        className="flex flex-col space-y-2"
                       >
-                        <p className="text-lg font-black text-[var(--text-primary)] leading-tight tracking-tight px-4">
+                        <p className="text-xl font-bold text-[var(--text-primary)] leading-snug tracking-tight">
                           {taglines[taglineIndex].l1}
                         </p>
-                        <p className="text-lg font-black bg-gradient-to-r from-[#FF9933] via-[var(--accent-tiranga-mid)] to-[#138808] bg-clip-text text-transparent leading-tight tracking-tight px-4">
+                        <p className="text-xl font-bold bg-gradient-to-r from-[#FF9933] via-[var(--text-primary)] to-[#138808] bg-clip-text text-transparent leading-snug tracking-tight opacity-90">
                           {taglines[taglineIndex].l2}
                         </p>
                       </motion.div>
                     </AnimatePresence>
                   </div>
 
-                  {/* Language Selector */}
-                  <div className="w-full mb-6 relative z-50">
-                    <div className="bg-[var(--surface)] backdrop-blur-md rounded-[28px] p-5 border border-[var(--border)] shadow-sm">
+                  {/* Language Selector - Cleaner, Floating */}
+                  <div className="w-full mb-10 relative z-50">
+                    <div className="bg-[var(--surface)]/80 backdrop-blur-xl rounded-[24px] p-1 border border-[var(--border)] shadow-[0_8px_30px_rgba(0,0,0,0.04)] hover:shadow-[0_12px_40px_rgba(0,0,0,0.06)] transition-all duration-300">
                       <LanguageSelector
                         selectedLanguage={language}
                         onSelectLanguage={setLanguage}
-                        className="!bg-transparent !border-none !p-0 !m-0"
+                        className="!bg-transparent !border-none !p-4 !m-0"
                       />
                     </div>
                   </div>
 
-                  <div className="flex-1 flex items-center justify-center mb-10">
+                  <div className="flex-1 flex items-center justify-center mb-16">
                     <AudioRecorder
                       onTranscriptionComplete={handleTranscriptionComplete}
                       onError={handleError}
@@ -328,42 +337,40 @@ export default function Home() {
                 /* AFTER TRANSCRIPTION: Canvas + Action Row */
                 <motion.div
                   key="transcribing"
-                  initial={{ opacity: 0, scale: 0.95 }}
+                  initial={{ opacity: 0, scale: 0.98 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, y: 20 }}
                   className="flex-1 flex flex-col h-full"
                 >
-                  <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center justify-between mb-4">
                     <button
                       onClick={() => setTranscript('')}
-                      className="p-3 bg-[var(--surface)] hover:bg-[var(--surface-hover)] rounded-2xl transition-all active:scale-95 border border-[var(--border)] shadow-sm"
+                      className="group flex items-center space-x-1 pl-2 pr-3 py-2 hover:bg-[var(--surface-hover)] rounded-full transition-all text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
                     >
-                      <ArrowLeft className="w-4 h-4 text-[var(--text-secondary)]" />
+                      <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
+                      <span className="text-sm font-medium">Back</span>
                     </button>
                     <div className="flex items-center space-x-2">
-                      <span className="text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-widest">Post-Transcription</span>
-                    </div>
-                    <div className="flex space-x-2">
-                      {/* Copy moved to bottom */}
+                      {/* Optional: Add status indicator here */}
                     </div>
                   </div>
 
                   {/* Transcription Canvas */}
-                  <div className="flex-1 bg-[var(--surface)] rounded-[45px] p-8 border border-[var(--border)] relative overflow-hidden mb-6 flex flex-col shadow-inner group">
+                  <div className="flex-1 bg-[var(--surface)] rounded-[32px] p-6 md:p-8 border border-[var(--border)] relative overflow-hidden mb-6 flex flex-col shadow-[inset_0_2px_10px_rgba(0,0,0,0.02)] group hover:shadow-[inset_0_2px_15px_rgba(0,0,0,0.03)] transition-all duration-300">
                     <textarea
                       ref={transcriptRef}
                       value={transcript}
                       onChange={(e) => setTranscript(e.target.value)}
-                      className="w-full h-full bg-transparent border-none focus:ring-0 text-[var(--text-primary)] text-lg font-bold leading-relaxed resize-none outline-none custom-scrollbar placeholder:text-[var(--text-secondary)]/30"
+                      className="w-full h-full bg-transparent border-none focus:ring-0 text-[var(--text-primary)] text-lg md:text-xl font-medium leading-relaxed resize-none outline-none custom-scrollbar placeholder:text-[var(--text-secondary)]/30"
                       placeholder="Your transcription will appear here..."
                     />
                     <button
                       onClick={() => {
                         setTranscript('');
                       }}
-                      className="absolute top-6 right-6 p-3 bg-[var(--surface)] hover:bg-[var(--surface-hover)] rounded-2xl transition-all active:scale-90 border border-[var(--border)] opacity-100 md:opacity-0 md:group-hover:opacity-100 duration-300 shadow-sm"
+                      className="absolute top-4 right-4 p-2.5 bg-[var(--app-bg)] hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded-xl transition-all active:scale-95 text-[var(--text-secondary)] hover:text-red-500 opacity-100 md:opacity-0 md:group-hover:opacity-100 duration-200"
                     >
-                      <Trash2 className="w-4 h-4 text-red-500" />
+                      <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
 
@@ -371,19 +378,26 @@ export default function Home() {
                     {/* Copy Button */}
                     <button
                       onClick={handleCopy}
-                      className="flex-1 py-4 bg-[var(--surface)] hover:bg-[var(--surface-hover)] rounded-2xl transition-all active:scale-95 border border-[var(--border)] shadow-sm flex items-center justify-center space-x-2 group outline-none focus:ring-2 focus:ring-[var(--accent-tiranga-mid)]/20"
+                      className={cn(
+                        "flex-1 py-3.5 rounded-full transition-all duration-300 active:scale-95 flex items-center justify-center space-x-2 group outline-none focus:ring-2 focus:ring-[var(--accent-tiranga-mid)]/20",
+                        hasCopied
+                          ? "bg-green-500/10 border border-green-500/40 text-green-600 dark:text-green-500"
+                          : "bg-[var(--surface)] hover:bg-[var(--surface-hover)] border border-[var(--border)] text-[var(--text-primary)] shadow-[0_2px_10px_rgba(0,0,0,0.03)]"
+                      )}
                     >
-                      <Copy className={cn("w-5 h-5 transition-colors", hasCopied ? "text-green-500" : "text-[var(--text-secondary)]")} />
-                      <span className="font-bold text-[var(--text-primary)]">Copy</span>
+                      <Copy className={cn("w-4.5 h-4.5 transition-colors duration-300", hasCopied ? "text-green-500" : "text-[var(--text-secondary)] group-hover:text-[var(--text-primary)]")} />
+                      <span className="font-bold text-sm tracking-wide">
+                        {hasCopied ? "Copied" : "Copy Text"}
+                      </span>
                     </button>
 
                     {/* Tap to Speak Button */}
                     <button
                       onClick={() => setTranscript('')}
-                      className="flex-1 py-4 bg-[var(--surface)] hover:bg-[var(--surface-hover)] rounded-2xl transition-all active:scale-95 border border-[var(--border)] shadow-sm flex items-center justify-center space-x-2 outline-none focus:ring-2 focus:ring-[var(--accent-tiranga-mid)]/20"
+                      className="flex-1 py-3.5 bg-[var(--surface)] hover:bg-[var(--surface-hover)] rounded-full transition-all active:scale-95 border border-[var(--border)] shadow-[0_2px_10px_rgba(0,0,0,0.03)] flex items-center justify-center space-x-2 outline-none focus:ring-2 focus:ring-[var(--accent-tiranga-mid)]/20"
                     >
-                      <Mic className="w-5 h-5 text-[var(--text-secondary)]" />
-                      <span className="font-bold text-[var(--text-primary)]">Speak again!</span>
+                      <Mic className="w-4.5 h-4.5 text-[var(--text-secondary)]" />
+                      <span className="font-bold text-sm text-[var(--text-primary)] tracking-wide">Speak Again</span>
                     </button>
                   </div>
                 </motion.div>
@@ -393,7 +407,7 @@ export default function Home() {
 
           {/* Credits (FOOTER MARQUEE) */}
           <div className="mt-auto pb-8 relative z-10">
-            <div className="w-full overflow-hidden flex items-center h-14 bg-[var(--surface)] border-y border-[var(--border)]">
+            <div className="w-full overflow-hidden flex items-center h-12 bg-[var(--surface)]/50 backdrop-blur-sm border-y border-[var(--border)]">
               <motion.div
                 className="flex items-center shrink-0"
                 animate={{
@@ -402,7 +416,7 @@ export default function Home() {
                     x: {
                       repeat: Infinity,
                       repeatType: "loop",
-                      duration: 30,
+                      duration: 40, // Slower for elegance
                       ease: "linear",
                     }
                   }
@@ -417,17 +431,17 @@ export default function Home() {
                     href={credit.link}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center space-x-3 bg-[var(--surface)] hover:bg-[var(--surface-hover)] px-4 py-2 rounded-2xl border border-[var(--border)] mx-2 transition-all group/item shrink-0 shadow-sm"
+                    className="flex items-center space-x-2.5 px-4 mx-2 group/item shrink-0 opacity-60 hover:opacity-100 transition-opacity"
                   >
-                    <div className="text-[var(--text-secondary)] group-hover/item:text-[var(--text-primary)] transition-colors">
+                    <div className="text-[var(--text-primary)]">
                       {credit.icon}
                     </div>
-                    <div className="flex flex-col">
-                      <span className="text-[6px] font-black text-[var(--text-secondary)] uppercase tracking-widest leading-none mb-0.5">
-                        {credit.role}
-                      </span>
-                      <span className="text-[10px] font-black text-[var(--text-primary)] uppercase leading-none transition-colors">
+                    <div className="flex items-baseline space-x-1.5">
+                      <span className="text-[11px] font-bold text-[var(--text-primary)] tracking-wide">
                         {credit.name}
+                      </span>
+                      <span className="text-[9px] font-medium text-[var(--text-secondary)] uppercase tracking-wider">
+                        {credit.role}
                       </span>
                     </div>
                   </a>
@@ -437,7 +451,7 @@ export default function Home() {
           </div>
 
           {/* Swipe Indicator */}
-          <div className="hidden md:block absolute bottom-2 left-1/2 -translate-x-1/2 w-32 h-1.5 bg-[var(--border)] rounded-full" />
+          <div className="hidden md:block absolute bottom-2 left-1/2 -translate-x-1/2 w-32 h-1.5 bg-[var(--border)] rounded-full opacity-60" />
         </motion.div>
       </div>
 
@@ -449,20 +463,20 @@ export default function Home() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsHistoryOpen(false)}
-              className="fixed inset-0 bg-black/30 backdrop-blur-[2px] z-[200]"
+              className="fixed inset-0 bg-black/20 backdrop-blur-[2px] z-[200]"
             />
             <motion.div
               initial={{ x: '100%' }}
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed right-0 top-0 bottom-0 w-full max-w-[340px] bg-zinc-950/90 backdrop-blur-2xl z-[201] flex flex-col shadow-[-20px_0_50px_rgba(0,0,0,0.5)] border-l border-white/5"
+              className="fixed right-0 top-0 bottom-0 w-full max-w-[320px] bg-[var(--surface)] z-[201] flex flex-col shadow-[-20px_0_50px_rgba(0,0,0,0.1)] border-l border-[var(--border)]"
             >
-              <div className="p-10 flex-1 overflow-y-auto custom-scrollbar">
+              <div className="p-8 flex-1 overflow-y-auto custom-scrollbar">
                 <div className="flex items-center justify-between mb-8">
-                  <h2 className="text-xl font-black text-white tracking-tight">Recent</h2>
-                  <button onClick={() => setIsHistoryOpen(false)} className="p-2.5 bg-zinc-900/50 rounded-xl hover:bg-zinc-800 transition-colors border border-white/[0.05]">
-                    <X className="w-4 h-4 text-zinc-500" />
+                  <h2 className="text-lg font-bold text-[var(--text-primary)] tracking-tight">Recent Transcripts</h2>
+                  <button onClick={() => setIsHistoryOpen(false)} className="p-2 rounded-full hover:bg-[var(--surface-hover)] transition-colors border border-[var(--border)]">
+                    <X className="w-4 h-4 text-[var(--text-secondary)]" />
                   </button>
                 </div>
                 <HistorySidebar
