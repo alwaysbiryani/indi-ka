@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Clock, Copy, Check, MessageSquare, AlertCircle, X, Trash2, Cloud, Github, Code, Layout, Cpu, Globe, ArrowLeft, Sun, Moon } from 'lucide-react';
+import { Clock, Copy, Check, MessageSquare, AlertCircle, X, Trash2, Cloud, Github, Code, Layout, Cpu, Globe, ArrowLeft, Sun, Moon, Mic } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import AudioRecorder from '@/components/AudioRecorder';
 import LanguageSelector from '@/components/LanguageSelector';
@@ -335,12 +335,7 @@ export default function Home() {
                       <span className="text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-widest">Post-Transcription</span>
                     </div>
                     <div className="flex space-x-2">
-                      <button
-                        onClick={handleCopy}
-                        className="p-3 bg-[var(--surface)] hover:bg-[var(--surface-hover)] rounded-2xl transition-all active:scale-95 border border-[var(--border)] shadow-sm group"
-                      >
-                        <Copy className={cn("w-4 h-4 transition-colors", hasCopied ? "text-green-500" : "text-[var(--text-secondary)]")} />
-                      </button>
+                      {/* Copy moved to bottom */}
                     </div>
                   </div>
 
@@ -363,16 +358,24 @@ export default function Home() {
                     </button>
                   </div>
 
-                  <div className="flex justify-center mb-8">
-                    <AudioRecorder
-                      onTranscriptionComplete={handleTranscriptionComplete}
-                      onError={handleError}
-                      language={language}
-                      apiKey={apiKey}
-                      variant="default"
-                      onRecordingStart={() => { }}
-                      theme={theme}
-                    />
+                  <div className="flex items-center space-x-4 mb-8 w-full max-w-[400px] mx-auto px-1">
+                    {/* Copy Button */}
+                    <button
+                      onClick={handleCopy}
+                      className="flex-1 py-4 bg-[var(--surface)] hover:bg-[var(--surface-hover)] rounded-2xl transition-all active:scale-95 border border-[var(--border)] shadow-sm flex items-center justify-center space-x-2 group outline-none focus:ring-2 focus:ring-[var(--accent-tiranga-mid)]/20"
+                    >
+                      <Copy className={cn("w-5 h-5 transition-colors", hasCopied ? "text-green-500" : "text-[var(--text-secondary)]")} />
+                      <span className="font-bold text-[var(--text-primary)]">Copy</span>
+                    </button>
+
+                    {/* Tap to Speak Button */}
+                    <button
+                      onClick={() => setTranscript('')}
+                      className="flex-1 py-4 bg-[var(--surface)] hover:bg-[var(--surface-hover)] rounded-2xl transition-all active:scale-95 border border-[var(--border)] shadow-sm flex items-center justify-center space-x-2 outline-none focus:ring-2 focus:ring-[var(--accent-tiranga-mid)]/20"
+                    >
+                      <Mic className="w-5 h-5 text-[var(--text-secondary)]" />
+                      <span className="font-bold text-[var(--text-primary)]">Speak again!</span>
+                    </button>
                   </div>
                 </motion.div>
               )}
