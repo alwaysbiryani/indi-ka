@@ -1,0 +1,7 @@
+# Force Vercel Redeployment
+
+This commit triggers a fresh Vercel deployment with the new vercel.json configuration.
+
+Build: 1770819318
+Commit: 0866ea4
+
