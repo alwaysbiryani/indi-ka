@@ -15,6 +15,11 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Indi-क | The Home for Hinglish",
   description: "Seamless Hinglish voice-to-text powered by Sarvam AI",
+  other: {
+    'build-commit': process.env.VERCEL_GIT_COMMIT_SHA || 'local-dev',
+    'build-time': process.env.NEXT_PUBLIC_BUILD_TIME || new Date().toISOString(),
+    'ui-version': 'mobile-first-v2',
+  },
 };
 
 export default function RootLayout({

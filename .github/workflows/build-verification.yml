@@ -1,0 +1,105 @@
+name: Build Verification & Legacy UI Guard
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  verify-mobile-first-ui:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: 🔍 Verify no legacy UI patterns
+        run: |
+          echo "🔍 Scanning for legacy UI patterns..."
+          
+          # Check for forbidden legacy patterns
+          if grep -r "desktop-view\|legacy\|old-ui\|website-mode\|desktop-only" src/ --include="*.tsx" --include="*.ts" 2>/dev/null; then
+            echo "❌ CRITICAL: Legacy UI patterns detected!"
+            echo "❌ Mobile-first UI must be the only UI"
+            exit 1
+          fi
+          
+          # Verify single page.tsx exists
+          if [ ! -f "src/app/page.tsx" ]; then
+            echo "❌ CRITICAL: Main page.tsx missing!"
+            exit 1
+          fi
+          
+          # Count page files (should be exactly 1 in app directory)
+          PAGE_COUNT=$(find src/app -name "page.tsx" -type f | wc -l | tr -d ' ')
+          if [ "$PAGE_COUNT" -ne 1 ]; then
+            echo "❌ CRITICAL: Multiple page.tsx files detected!"
+            echo "Expected 1, found $PAGE_COUNT"
+            exit 1
+          fi
+          
+          # Verify mobile-first marker exists
+          if ! grep -q "mobile-first" src/app/layout.tsx; then
+            echo "⚠️  WARNING: mobile-first marker not found in layout"
+          fi
+          
+          echo "✅ No legacy UI patterns found"
+          echo "✅ Single page.tsx verified"
+          echo "✅ Mobile-first UI is the only UI"
+          
+      - name: 🏗️ Build application
+        run: npm run build
+        env:
+          NODE_ENV: production
+          
+      - name: 📦 Verify build output
+        run: |
+          echo "🔍 Verifying build output..."
+          
+          if [ ! -d ".next" ]; then
+            echo "❌ Build output directory missing!"
+            exit 1
+          fi
+          
+          if [ ! -f ".next/BUILD_ID" ]; then
+            echo "❌ BUILD_ID file missing!"
+            exit 1
+          fi
+          
+          BUILD_ID=$(cat .next/BUILD_ID)
+          echo "✅ Build ID: $BUILD_ID"
+          
+          # Check for static generation
+          if [ ! -d ".next/static" ]; then
+            echo "❌ Static assets directory missing!"
+            exit 1
+          fi
+          
+          echo "✅ Build output verified"
+          
+      - name: 📊 Check bundle size
+        run: |
+          echo "📦 Analyzing bundle size..."
+          du -sh .next/static/chunks/ 2>/dev/null || echo "No chunks directory"
+          du -sh .next/ 2>/dev/null || echo "No .next directory"
+          
+      - name: ✅ Success notification
+        run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "✅ BUILD VERIFICATION PASSED"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "✅ No legacy UI detected"
+          echo "✅ Mobile-first UI is the only UI"
+          echo "✅ Build completed successfully"
+          echo "✅ Ready for deployment to production"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

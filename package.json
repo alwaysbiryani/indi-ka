@@ -6,7 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "verify": "npm run verify:ui && npm run verify:build",
+    "verify:ui": "echo '🔍 Verifying UI integrity...' && ! grep -r 'legacy\\|old-ui\\|desktop-view' src/ --include='*.tsx' --include='*.ts' 2>/dev/null || (echo '❌ Legacy patterns found!' && exit 1) && echo '✅ UI verification passed'",
+    "verify:build": "npm run build && echo '✅ Build verification passed'",
+    "deploy:check": "npm run verify && echo '✅ Ready for deployment'"
   },
   "dependencies": {
     "clsx": "^2.1.1",
