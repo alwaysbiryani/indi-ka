@@ -802,6 +802,7 @@ export const SimpleScrollingWaveform = ({
     color = "#ffffff",
     height = 40,
     sensitivity = 1.5,
+    mediaStream,
     className,
     ...props
 }: {
@@ -811,18 +812,26 @@ export const SimpleScrollingWaveform = ({
     color?: string;
     height?: number;
     sensitivity?: number;
+    mediaStream?: MediaStream | null;
 } & HTMLAttributes<HTMLCanvasElement>) => {
     const canvasRef = useRef<HTMLCanvasElement>(null)
     const analyserRef = useRef<AnalyserNode | null>(null)
     const audioContextRef = useRef<AudioContext | null>(null)
-    const streamRef = useRef<MediaStream | null>(null)
+    const localStreamRef = useRef<MediaStream | null>(null)
     const animationIdRef = useRef<number | null>(null)
     const historyRef = useRef<number[]>([])
 
     useEffect(() => {
         if (!active) {
-            if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop())
-            if (audioContextRef.current) audioContextRef.current.close()
+            // Only stop tracks if we created the stream locally
+            if (localStreamRef.current) {
+                localStreamRef.current.getTracks().forEach(t => t.stop())
+                localStreamRef.current = null
+            }
+            if (audioContextRef.current) {
+                audioContextRef.current.close().catch(console.error)
+                audioContextRef.current = null
+            }
             if (animationIdRef.current) cancelAnimationFrame(animationIdRef.current)
             historyRef.current = []
             return
@@ -830,8 +839,14 @@ export const SimpleScrollingWaveform = ({
 
         const setup = async () => {
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-                streamRef.current = stream
+                let stream: MediaStream
+                if (mediaStream) {
+                    stream = mediaStream
+                } else {
+                    stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+                    localStreamRef.current = stream
+                }
+
                 const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
                 const analyser = audioContext.createAnalyser()
                 analyser.fftSize = 256
@@ -871,7 +886,7 @@ export const SimpleScrollingWaveform = ({
         }
 
         const draw = (canvas: HTMLCanvasElement, history: number[]) => {
-            const ctx = canvas.getContext('2d')
+            const ctx = canvas.getContext('2d', { alpha: true }) // Hint for transparency optimization
             if (!ctx) return
 
             const dpr = window.devicePixelRatio || 1
@@ -884,24 +899,37 @@ export const SimpleScrollingWaveform = ({
             const step = barWidth + barGap
             const centerY = height / 2
 
-            for (let i = 0; i < history.length; i++) {
+            // Batch draw calls if possible or keep as is for simplicity
+            // Optimization: Skip off-screen bars
+            const startIndex = Math.max(0, history.length - Math.ceil(width / step))
+
+            ctx.beginPath()
+            for (let i = startIndex; i < history.length; i++) {
                 const val = history[i]
                 const x = width - (history.length - i) * step
+                // Safety check
                 if (x + barWidth < 0) continue
 
                 const h = Math.max(1, val * height * 0.9)
-                ctx.fillRect(x, centerY - h / 2, barWidth, h)
+                ctx.rect(x, centerY - h / 2, barWidth, h)
             }
+            ctx.fill()
         }
 
         setup()
 
         return () => {
-            if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop())
-            if (audioContextRef.current) audioContextRef.current.close()
+            if (localStreamRef.current) {
+                localStreamRef.current.getTracks().forEach(t => t.stop())
+                localStreamRef.current = null
+            }
+            if (audioContextRef.current) {
+                audioContextRef.current.close().catch(console.error)
+                audioContextRef.current = null
+            }
             if (animationIdRef.current) cancelAnimationFrame(animationIdRef.current)
         }
-    }, [active, barWidth, barGap, color, sensitivity])
+    }, [active, barWidth, barGap, color, sensitivity, mediaStream])
 
     useEffect(() => {
         const canvas = canvasRef.current

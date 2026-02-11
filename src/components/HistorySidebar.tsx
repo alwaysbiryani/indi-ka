@@ -94,38 +94,57 @@ export default function HistorySidebar({ history, onDelete, onSelect, onClearAll
                             transition={{ duration: 0.2 }}
                             key={item.id}
                             onClick={() => onSelect(item.text)}
-                            className="group relative bg-[var(--surface)] hover:bg-[var(--surface-hover)] border border-[var(--border)] rounded-3xl p-6 transition-all cursor-pointer shadow-sm hover:shadow-xl"
+                            className="group relative bg-[var(--surface)] hover:bg-[var(--surface-hover)] border border-[var(--border)] rounded-2xl p-5 transition-all cursor-pointer shadow-sm active:scale-[0.98]"
                         >
-                            <p className="text-[var(--text-primary)] text-sm line-clamp-6 mb-8 pr-2 font-medium leading-relaxed">
+                            <p className="text-[var(--text-primary)] text-sm line-clamp-4 mb-4 font-medium leading-relaxed">
                                 {item.text}
                             </p>
 
-                            <div className="absolute bottom-4 left-6 right-6 flex justify-between items-center text-[10px] text-[var(--text-secondary)] font-bold">
-                                <span className={`px-2 py-1 rounded-lg border shadow-sm ${(item.language === 'auto' && (!item.detectedLanguage || item.detectedLanguage === 'auto'))
-                                    ? 'bg-[var(--surface-hover)] border-[var(--border)] text-[var(--text-secondary)]'
-                                    : 'bg-purple-500/10 border-purple-500/20 text-purple-500'
-                                    } uppercase tracking-widest`}>
-                                    {formatLanguage(item.language, item.detectedLanguage)}
-                                </span>
-                                <span className="opacity-60">
-                                    {new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                </span>
-                            </div>
+                            <div className="flex flex-col gap-3">
+                                {/* Metadata Row */}
+                                <div className="flex justify-between items-center text-[10px] text-[var(--text-secondary)] font-bold tracking-wider uppercase">
+                                    <span className={`px-2 py-1 rounded-md border ${(item.language === 'auto' && (!item.detectedLanguage || item.detectedLanguage === 'auto'))
+                                        ? 'bg-[var(--surface)] border-[var(--border)] text-[var(--text-secondary)]'
+                                        : 'bg-purple-500/5 border-purple-500/20 text-purple-500'
+                                        }`}>
+                                        {formatLanguage(item.language, item.detectedLanguage)}
+                                    </span>
+                                    <span className="opacity-60">
+                                        {new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    </span>
+                                </div>
 
-                            {/* Hover Actions */}
-                            <div className="absolute top-4 right-4 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity bg-[var(--surface)] shadow-2xl rounded-xl p-1 border border-[var(--border)] z-10">
-                                <button
-                                    onClick={(e) => handleCopy(e, item.id, item.text)}
-                                    className="p-1.5 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)] rounded-lg transition-all"
-                                >
-                                    {copiedId === item.id ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
-                                </button>
-                                <button
-                                    onClick={(e) => handleDelete(e, item.id)}
-                                    className="p-1.5 text-[var(--text-secondary)] hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all"
-                                >
-                                    <Trash2 className="w-4 h-4" />
-                                </button>
+                                {/* Action Row - Always visible, distinct touch targets */}
+                                <div className="flex items-center gap-2 pt-2 border-t border-[var(--border)]/50">
+                                    <button
+                                        onClick={(e) => handleCopy(e, item.id, item.text)}
+                                        className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-bold transition-all ${copiedId === item.id
+                                            ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20'
+                                            : 'bg-[var(--app-bg)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)] border border-[var(--border)]'
+                                            }`}
+                                    >
+                                        {copiedId === item.id ? (
+                                            <>
+                                                <Check className="w-3.5 h-3.5" />
+                                                <span>Copied</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Copy className="w-3.5 h-3.5" />
+                                                <span>Copy</span>
+                                            </>
+                                        )}
+                                    </button>
+
+                                    <button
+                                        onClick={(e) => handleDelete(e, item.id)}
+                                        className="flex-none flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-bold text-red-500/80 hover:text-red-600 bg-red-500/5 hover:bg-red-500/10 border border-red-500/10 transition-all"
+                                        aria-label="Delete"
+                                    >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                        <span>Delete</span>
+                                    </button>
+                                </div>
                             </div>
                         </motion.div>
                     ))

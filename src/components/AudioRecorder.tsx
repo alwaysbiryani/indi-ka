@@ -5,7 +5,7 @@ import React, { useState, useRef } from 'react';
 import { Mic, Square, Loader2, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { sliceAudioBuffer, bufferToWav } from '@/utils/audioProcessing';
-import { MicrophoneWaveform, CircularMicrophoneWaveform, SimpleScrollingWaveform } from '@/components/ui/Waveform';
+import { SimpleScrollingWaveform } from '@/components/ui/Waveform';
 import { cn } from '@/utils/cn';
 
 interface AudioRecorderProps {
@@ -35,6 +35,7 @@ export default function AudioRecorder({
     const [isProcessing, setIsProcessing] = useState(false);
     const [processingStatus, setProcessingStatus] = useState("");
     const [recordingDuration, setRecordingDuration] = useState(0);
+    const [activeStream, setActiveStream] = useState<MediaStream | null>(null);
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const chunksRef = useRef<Blob[]>([]);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -61,6 +62,7 @@ export default function AudioRecorder({
         if (onRecordingStart) onRecordingStart();
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            setActiveStream(stream);
             const mediaRecorder = new MediaRecorder(stream);
             mediaRecorderRef.current = mediaRecorder;
             chunksRef.current = [];
@@ -187,6 +189,7 @@ export default function AudioRecorder({
                     setIsProcessing(false);
                     setProcessingStatus("");
                     stream.getTracks().forEach(track => track.stop());
+                    setActiveStream(null);
                 }
             };
 
@@ -265,6 +268,7 @@ export default function AudioRecorder({
                                         barWidth={1}
                                         barGap={2}
                                         sensitivity={2}
+                                        mediaStream={activeStream}
                                     />
                                 </div>
                                 <div className="flex flex-col items-center space-y-2">
