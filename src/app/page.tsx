@@ -96,15 +96,7 @@ export default function Home() {
 
     setTranscript(text);
 
-    // Auto-copy
-    navigator.clipboard.writeText(text).then(() => {
-      setHasCopied(true);
-      setShowAutoCopyBanner(true);
-      setTimeout(() => {
-        setHasCopied(false);
-        setShowAutoCopyBanner(false);
-      }, 3000);
-    });
+
 
     const newItem: HistoryItem = {
       id: Date.now().toString(),
@@ -212,6 +204,23 @@ export default function Home() {
               <div className="flex items-center space-x-2">
                 <AlertCircle className="w-5 h-5 flex-shrink-0 text-red-500" />
                 <span className="text-sm font-bold truncate max-w-[200px]">{errorBanner}</span>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Copy Banner */}
+        <AnimatePresence>
+          {showAutoCopyBanner && (
+            <motion.div
+              initial={{ y: -50, opacity: 0 }}
+              animate={{ y: 20, opacity: 1 }}
+              exit={{ y: -50, opacity: 0 }}
+              className="absolute top-0 left-4 right-4 bg-[var(--surface)] border border-green-500/50 text-[var(--text-primary)] px-5 py-4 rounded-3xl shadow-2xl z-[100] flex items-center justify-between backdrop-blur-xl"
+            >
+              <div className="flex items-center space-x-2">
+                <Check className="w-5 h-5 flex-shrink-0 text-green-500" />
+                <span className="text-sm font-bold">Copied to clipboard!</span>
               </div>
             </motion.div>
           )}
