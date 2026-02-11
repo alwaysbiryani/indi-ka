@@ -5,7 +5,7 @@ import React, { useState, useRef } from 'react';
 import { Mic, Square, Loader2, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { sliceAudioBuffer, bufferToWav } from '@/utils/audioProcessing';
-import { MicrophoneWaveform } from '@/components/ui/Waveform';
+import { MicrophoneWaveform, CircularMicrophoneWaveform, SimpleScrollingWaveform } from '@/components/ui/Waveform';
 import { cn } from '@/utils/cn';
 
 interface AudioRecorderProps {
@@ -15,10 +15,22 @@ interface AudioRecorderProps {
     apiKey: string;
     className?: string;
     isCompact?: boolean;
+    variant?: 'default' | 'circular';
     onRecordingStart?: () => void;
+    theme?: 'light' | 'dark';
 }
 
-export default function AudioRecorder({ onTranscriptionComplete, onError, language, apiKey, className, isCompact, onRecordingStart }: AudioRecorderProps) {
+export default function AudioRecorder({
+    onTranscriptionComplete,
+    onError,
+    language,
+    apiKey,
+    className,
+    isCompact,
+    variant = 'default',
+    onRecordingStart,
+    theme = 'dark'
+}: AudioRecorderProps) {
     const [isRecording, setIsRecording] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
     const [processingStatus, setProcessingStatus] = useState("");
@@ -53,70 +65,106 @@ export default function AudioRecorder({ onTranscriptionComplete, onError, langua
             mediaRecorderRef.current = mediaRecorder;
             chunksRef.current = [];
 
-            mediaRecorder.ondataavailable = async (e) => {
+            mediaRecorder.ondataavailable = (e) => {
                 if (e.data.size > 0) {
                     chunksRef.current.push(e.data);
-
-                    // Background transcription: if we have enough for a new 30s segment
-                    // and we're not currently transcribing a part
-                    const currentTotalDuration = chunksRef.current.length * 30; // approx if timeslice is 30s
-                    // Better to check recordingDuration for more accuracy
                 }
             };
 
             const processAvailableSegments = async (isFinal = false) => {
                 if (isTranscribingPartRef.current && !isFinal) return;
 
-                const audioBlob = new Blob(chunksRef.current, { type: 'audio/webm' });
+                if (chunksRef.current.length === 0) {
+                    console.log("No audio chunks available yet");
+                    return;
+                }
+
+                const audioBlob = new Blob(chunksRef.current, { type: mediaRecorder.mimeType || 'audio/webm' });
+                console.log(`Processing segments, blob size: ${audioBlob.size}, isFinal: ${isFinal}`);
+
                 if (audioBlob.size === 0) return;
 
                 try {
                     const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
                     const arrayBuffer = await audioBlob.arrayBuffer();
-                    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+
+                    // decodeAudioData can fail for short/incomplete blobs in some browsers
+                    let audioBuffer;
+                    try {
+                        audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+                    } catch (decodeErr) {
+                        console.error("decodeAudioData failed", decodeErr);
+                        // Fallback: If final and decoding failed, we can't do regular segmenting
+                        // but maybe we can try sending the whole blob if it's the first attempt
+                        if (isFinal && lastProcessedTimeRef.current === 0) {
+                            console.log("Attempting full blob transcription fallback...");
+                            await transcribeSegment(audioBlob, 0);
+                        }
+                        return;
+                    }
+
                     const duration = audioBuffer.duration;
+                    console.log(`Audio duration: ${duration}s, Last processed: ${lastProcessedTimeRef.current}s`);
 
                     while (lastProcessedTimeRef.current + 30 <= duration || (isFinal && lastProcessedTimeRef.current < duration)) {
                         const start = lastProcessedTimeRef.current;
                         const end = isFinal ? Math.min(start + 30, duration) : start + 30;
 
-                        if (end - start < 0.5 && isFinal) break; // too short
+                        if (end - start < 0.5 && isFinal && lastProcessedTimeRef.current > 0) break; // too short and not the first segment
 
-                        isTranscribingPartRef.current = true;
+                        console.log(`Transcribing segment: ${start}s to ${end}s`);
                         const slicedBuffer = sliceAudioBuffer(audioBuffer, start, end, audioContext);
                         const slicedBlob = bufferToWav(slicedBuffer);
 
-                        const formData = new FormData();
-                        formData.append('audio', slicedBlob, `segment_${start}.wav`);
-                        formData.append('language', language);
-
-                        const response = await fetch('/api/transcribe', {
-                            method: 'POST',
-                            headers: { 'x-api-key': apiKey },
-                            body: formData,
-                        });
-
-                        if (response.ok) {
-                            const data = await response.json();
-                            const newText = data.transcript;
-                            accumulatedTranscriptRef.current += (accumulatedTranscriptRef.current ? " " : "") + newText;
-                            if (data.detected_language_code) detectedLanguageRef.current = data.detected_language_code;
-
-                            // Live update the UI
-                            onTranscriptionComplete(accumulatedTranscriptRef.current, detectedLanguageRef.current, true);
-                        }
-
+                        await transcribeSegment(slicedBlob, start);
                         lastProcessedTimeRef.current = end;
+
                         if (isFinal && lastProcessedTimeRef.current >= duration) break;
                     }
                 } catch (err) {
-                    console.error("Background transcription error:", err);
+                    console.error("Transcription processing error:", err);
+                } finally {
+                    isTranscribingPartRef.current = false;
+                }
+            };
+
+            const transcribeSegment = async (blob: Blob, startTime: number) => {
+                isTranscribingPartRef.current = true;
+                try {
+                    const formData = new FormData();
+                    formData.append('audio', blob, `segment_${startTime}.wav`);
+                    formData.append('language', language);
+
+                    const response = await fetch('/api/transcribe', {
+                        method: 'POST',
+                        headers: { 'x-api-key': apiKey },
+                        body: formData,
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        const newText = data.transcript;
+                        console.log(`Segment transcription success: "${newText}"`);
+                        if (newText) {
+                            accumulatedTranscriptRef.current += (accumulatedTranscriptRef.current ? " " : "") + newText;
+                            if (data.detected_language_code) detectedLanguageRef.current = data.detected_language_code;
+                            // Live update the UI
+                            onTranscriptionComplete(accumulatedTranscriptRef.current, detectedLanguageRef.current, true);
+                        }
+                    } else {
+                        const errData = await response.json();
+                        console.error("API Error:", errData);
+                        onError(errData.details || errData.error || "Transcription failed");
+                    }
+                } catch (err) {
+                    console.error("Segment transcription request failed", err);
                 } finally {
                     isTranscribingPartRef.current = false;
                 }
             };
 
             mediaRecorder.onstop = async () => {
+                console.log("MediaRecorder stopped. Finalizing...");
                 setIsProcessing(true);
                 setProcessingStatus("Finalizing transcription...");
 
@@ -126,11 +174,15 @@ export default function AudioRecorder({ onTranscriptionComplete, onError, langua
                 }
 
                 try {
+                    // Give a small delay to ensure the final ondataavailable has been processed
+                    await new Promise(resolve => setTimeout(resolve, 200));
                     await processAvailableSegments(true);
+
+                    console.log(`Final transcription: "${accumulatedTranscriptRef.current}"`);
                     onTranscriptionComplete(accumulatedTranscriptRef.current, detectedLanguageRef.current, false);
                 } catch (error: any) {
-                    console.error("Transcription error:", error);
-                    onError(error.message || "Failed to process audio");
+                    console.error("Finalization error:", error);
+                    onError(error.message || "Failed to finalize transcription");
                 } finally {
                     setIsProcessing(false);
                     setProcessingStatus("");
@@ -172,26 +224,106 @@ export default function AudioRecorder({ onTranscriptionComplete, onError, langua
     };
 
     const buttonBaseClasses = isCompact
-        ? "w-full min-h-[48px] px-4 bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-800 dark:hover:bg-zinc-200 text-zinc-50 dark:text-zinc-950 rounded-xl font-semibold text-sm transition-all active:scale-[0.99] flex items-center justify-center space-x-2 shadow-sm"
-        : "w-full py-4 bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-800 dark:hover:bg-zinc-200 text-zinc-50 dark:text-zinc-950 rounded-xl font-medium text-lg transition-all active:scale-[0.99] flex items-center justify-center space-x-2 shadow-sm";
+        ? "w-full h-full bg-zinc-100 border border-zinc-200 hover:bg-zinc-200 text-zinc-900 rounded-3xl font-black text-sm uppercase tracking-widest flex items-center justify-center space-x-3 transition-all active:scale-95 shadow-sm"
+        : "w-full py-4 bg-zinc-100 hover:bg-zinc-200 text-zinc-900 rounded-xl font-medium text-lg transition-all active:scale-[0.99] flex items-center justify-center space-x-2 shadow-sm";
 
     const processingClasses = isCompact
-        ? "w-full min-h-[48px] px-4 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 rounded-xl font-semibold text-sm flex items-center justify-center space-x-2 cursor-wait"
-        : "w-full py-4 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 rounded-xl font-medium text-lg flex items-center justify-center space-x-3 cursor-wait";
+        ? "w-full h-full bg-zinc-50 border border-zinc-100 text-zinc-400 rounded-3xl font-black text-xs uppercase tracking-widest flex items-center justify-center space-x-2 cursor-wait"
+        : "w-full py-4 bg-zinc-50 border border-zinc-100 text-zinc-400 rounded-xl font-medium text-lg flex items-center justify-center space-x-3 cursor-wait";
+
+
+    if (variant === 'circular') {
+        return (
+            <div className={cn("flex flex-col items-center justify-center w-full", className)}>
+                <AnimatePresence mode="wait">
+                    {!isRecording && !isProcessing && (
+                        <motion.button
+                            initial={{ scale: 0.95, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={startRecording}
+                            className="relative group w-64 h-64"
+                        >
+                            <div className="absolute inset-0 bg-gradient-to-br from-zinc-200/20 to-zinc-100/5 rounded-full blur-xl group-hover:blur-2xl transition-all" />
+                            <div className="relative w-full h-full bg-white rounded-full flex flex-col items-center justify-center shadow-2xl border-4 border-zinc-100">
+                                <Mic className="w-16 h-16 text-zinc-900 mb-2" />
+                                <span className="text-2xl font-black text-zinc-900 tracking-tight">SPEAK</span>
+                            </div>
+                        </motion.button>
+                    )}
+
+                    {isRecording && (
+                        <div className="flex flex-col items-center justify-center w-full space-y-12 py-10">
+                            {/* Minimal Linear Waveform */}
+                            <div className="w-full flex flex-col items-center space-y-6">
+                                <div className="w-full h-10 flex items-center px-4">
+                                    <SimpleScrollingWaveform
+                                        active={true}
+                                        height={30}
+                                        color={theme === 'dark' ? '#f4f4f5' : '#18181b'}
+                                        barWidth={1}
+                                        barGap={2}
+                                        sensitivity={2}
+                                    />
+                                </div>
+                                <div className="flex flex-col items-center space-y-2">
+                                    <div className="bg-[var(--surface-hover)] px-6 py-3 rounded-[24px] border border-[var(--border)] shadow-sm flex flex-col items-center space-y-1 backdrop-blur-sm">
+                                        <div className="flex items-center space-x-2">
+                                            <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.5)]" />
+                                            <span className="text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-[0.2em]">Recording</span>
+                                        </div>
+                                        <span className="text-2xl font-mono font-black text-[var(--text-primary)] tabular-nums tracking-tight">
+                                            {Math.floor(recordingDuration / 60)}:{(recordingDuration % 60).toString().padStart(2, '0')}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Minimal Stop Button */}
+                            <button
+                                onClick={stopRecording}
+                                className="group flex flex-col items-center space-y-4 active:scale-95 transition-all outline-none"
+                            >
+                                <div className="w-20 h-20 rounded-full border-[1.5px] border-zinc-100 flex items-center justify-center group-hover:border-red-500/50 transition-colors">
+                                    <div className="w-7 h-7 bg-red-500 rounded-[4px] shadow-sm" />
+                                </div>
+                                <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-[0.2em] group-hover:text-red-500 transition-colors">
+                                    Stop Recording
+                                </span>
+                            </button>
+                        </div>
+                    )}
+
+                    {isProcessing && (
+                        <div className="relative w-64 h-64">
+                            <div className="absolute inset-0 bg-blue-500/5 rounded-full blur-xl" />
+                            <div className="w-full h-full bg-white/90 rounded-full flex flex-col items-center justify-center border-4 border-zinc-50 backdrop-blur-sm">
+                                <Loader2 className="w-12 h-12 text-blue-500 animate-spin mb-4" />
+                                <span className="text-sm font-bold text-zinc-500 uppercase tracking-widest px-8 text-center leading-tight">
+                                    {processingStatus || "Processing..."}
+                                </span>
+                            </div>
+                        </div>
+                    )}
+                </AnimatePresence>
+            </div>
+        );
+    }
 
     return (
-        <div className={`flex flex-col items-center justify-center w-full ${className}`}>
+        <div className={cn("flex flex-col items-center justify-center w-full", isCompact ? "h-full" : "", className)}>
             <AnimatePresence mode="wait">
                 {!isRecording && !isProcessing && (
                     <motion.div
                         initial={{ scale: 0.98, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
                         exit={{ scale: 0.98, opacity: 0 }}
-                        className="w-full"
+                        className={cn("w-full", isCompact ? "h-full" : "")}
                     >
                         <button onClick={startRecording} className={buttonBaseClasses}>
-                            <Mic className={isCompact ? "w-4 h-4" : "w-5 h-5"} />
-                            <span>Tap to Speak</span>
+                            <Mic className={isCompact ? "w-5 h-5" : "w-5 h-5"} />
+                            <span>{isCompact ? "Speak" : "Tap to Speak"}</span>
                         </button>
                     </motion.div>
                 )}
@@ -201,63 +333,19 @@ export default function AudioRecorder({ onTranscriptionComplete, onError, langua
                         initial={{ scale: 0.98, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
                         exit={{ scale: 0.98, opacity: 0 }}
-                        className="w-full flex flex-col items-center space-y-4"
+                        className={cn("w-full", isCompact ? "h-full" : "flex flex-col items-center justify-center")}
                     >
                         <div
                             className={cn(
-                                "w-full flex items-center justify-center bg-zinc-50 dark:bg-zinc-900/50 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6 relative overflow-hidden transition-all",
-                                isCompact ? "h-24" : "h-32"
+                                "w-full flex items-center justify-center bg-red-600 rounded-3xl transition-all shadow-xl active:scale-95 cursor-pointer",
+                                isCompact ? "h-full" : "h-32 bg-zinc-50 dark:bg-zinc-900/50 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6"
                             )}
+                            onClick={stopRecording}
                         >
-                            <MicrophoneWaveform
-                                active={isRecording}
-                                height={isCompact ? 40 : 60}
-                                barWidth={2}
-                                barGap={2}
-                                barRadius={1}
-                                className="w-full opacity-60"
-                            />
-
-                            {/* Prominent Stop Button */}
-                            <div className="absolute inset-0 flex items-center justify-center">
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        stopRecording();
-                                    }}
-                                    className="flex items-center space-x-3 bg-white dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700 px-6 py-3 rounded-full shadow-lg border border-zinc-200 dark:border-zinc-700 transition-all active:scale-95 group"
-                                >
-                                    <div className="w-4 h-4 bg-red-500 rounded-sm group-hover:scale-110 transition-transform" />
-                                    <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100 uppercase tracking-tight">Stop Recording</span>
-                                </button>
-                            </div>
-
-                            {/* Status Indicator */}
-                            <div className="absolute top-3 left-4 flex items-center space-x-1.5 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-sm px-2 py-1 rounded-full border border-zinc-100 dark:border-zinc-800">
-                                <span className="flex h-2 w-2 rounded-full bg-red-500 animate-pulse" />
-                                <span className="text-[10px] font-bold text-red-500 uppercase tracking-widest">Live</span>
-                            </div>
-
-                            {/* Mobile Hint */}
-                            <div className="absolute bottom-3 right-4">
-                                <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-tighter opacity-70">Tap anywhere to stop</span>
-                            </div>
-                        </div>
-
-                        <div className="flex flex-col items-center space-y-2">
-                            {recordingDuration >= 270 && (
-                                <motion.p
-                                    initial={{ opacity: 0, y: 5 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    className="text-[11px] font-bold text-red-500 animate-pulse text-center leading-tight mb-1"
-                                >
-                                    Almost at the limit - stopping at 5:00.
-                                </motion.p>
-                            )}
-                            <div className="flex items-center space-x-2 bg-zinc-100 dark:bg-zinc-800/50 px-3 py-1 rounded-full border border-zinc-200/50 dark:border-zinc-700/50">
-                                <span className="w-1.5 h-1.5 rounded-full bg-zinc-400 animate-[pulse_2s_infinite]" />
-                                <span className="text-[11px] font-mono font-medium text-zinc-600 dark:text-zinc-400">
-                                    {Math.floor(recordingDuration / 60)}:{(recordingDuration % 60).toString().padStart(2, '0')} / 5:00
+                            <div className="flex items-center space-x-3">
+                                <div className="w-4 h-4 bg-white rounded-sm animate-pulse" />
+                                <span className="text-sm font-black text-white uppercase tracking-widest">
+                                    STOP
                                 </span>
                             </div>
                         </div>
@@ -269,11 +357,11 @@ export default function AudioRecorder({ onTranscriptionComplete, onError, langua
                         initial={{ scale: 0.98, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
                         exit={{ scale: 0.98, opacity: 0 }}
-                        className="w-full"
+                        className={cn("w-full", isCompact ? "h-full" : "")}
                     >
                         <div className={processingClasses}>
-                            <Loader2 className={isCompact ? "w-4 h-4 animate-spin" : "w-5 h-5 animate-spin"} />
-                            <span>{processingStatus || "Processing..."}</span>
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                            <span>{isCompact ? "Processing" : (processingStatus || "Processing...")}</span>
                         </div>
                     </motion.div>
                 )}

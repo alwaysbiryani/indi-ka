@@ -1,22 +1,17 @@
-
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Copy, Check, MessageSquare, AlertCircle, Clock, X } from 'lucide-react';
+import { Clock, Copy, Check, MessageSquare, AlertCircle, X, Trash2, Cloud, Github, Code, Layout, Cpu, Globe, ArrowLeft, Sun, Moon } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import AudioRecorder from '@/components/AudioRecorder';
 import LanguageSelector from '@/components/LanguageSelector';
-import SettingsModal from '@/components/SettingsModal';
 import HistorySidebar, { HistoryItem } from '@/components/HistorySidebar';
-import NetworkStatus from '@/components/NetworkStatus';
-import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/utils/cn';
 
 export default function Home() {
   const [transcript, setTranscript] = useState('');
-  const mobileRef = useRef<HTMLTextAreaElement>(null);
-  const desktopRef = useRef<HTMLTextAreaElement>(null);
+  const transcriptRef = useRef<HTMLTextAreaElement>(null);
   const [language, setLanguage] = useState('auto');
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [apiKey, setApiKey] = useState('');
   const [hasCopied, setHasCopied] = useState(false);
@@ -24,6 +19,21 @@ export default function Home() {
   const [lastViewedTimestamp, setLastViewedTimestamp] = useState<number>(0);
   const [errorBanner, setErrorBanner] = useState<string | null>(null);
   const [showAutoCopyBanner, setShowAutoCopyBanner] = useState(false);
+  const [theme, setTheme] = useState<'light' | 'dark'>('dark');
+
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('app_theme') as 'light' | 'dark';
+    if (savedTheme) {
+      setTheme(savedTheme);
+    } else if (window.matchMedia('(prefers-color-scheme: light)').matches) {
+      setTheme('light');
+    }
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('app_theme', theme);
+  }, [theme]);
 
   useEffect(() => {
     const storedKey = localStorage.getItem('sarvam_api_key');
@@ -40,35 +50,24 @@ export default function Home() {
 
     const storedLastViewed = localStorage.getItem('last_viewed_history');
     if (storedLastViewed) setLastViewedTimestamp(parseInt(storedLastViewed));
+
+    // Build verification info
+    console.log('%c🇮🇳 Indi-क Mobile-First UI', 'font-size: 16px; font-weight: bold; color: #FF9933;');
+    console.log('Build Commit:', process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA?.slice(0, 7) || 'local-dev');
+    console.log('Build Time:', process.env.NEXT_PUBLIC_BUILD_TIME || 'unknown');
+    console.log('UI Version: mobile-first-v2');
   }, []);
 
-  // Handle transcript textarea updates (scrolling for desktop, expanding for mobile)
+  // Update textarea height/scroll
   useEffect(() => {
-    // For mobile
-    if (mobileRef.current) {
-      mobileRef.current.style.height = 'auto';
-      mobileRef.current.style.height = `${mobileRef.current.scrollHeight}px`;
-
-      // Also scroll the parent container to bottom if we're near the bottom
-      const container = mobileRef.current.closest('.overflow-y-auto');
-      if (container) {
-        container.scrollTop = container.scrollHeight;
-      }
-    }
-    // For desktop
-    if (desktopRef.current) {
-      desktopRef.current.scrollTop = desktopRef.current.scrollHeight;
+    if (transcriptRef.current) {
+      transcriptRef.current.scrollTop = transcriptRef.current.scrollHeight;
     }
   }, [transcript]);
 
   const saveHistory = (newHistory: HistoryItem[]) => {
     setHistory(newHistory);
     localStorage.setItem('transcription_history', JSON.stringify(newHistory));
-  };
-
-  const handleSaveApiKey = (key: string) => {
-    setApiKey(key);
-    localStorage.setItem('sarvam_api_key', key);
   };
 
   const handleCopy = () => {
@@ -89,21 +88,23 @@ export default function Home() {
       return;
     }
 
+    if (!text || text.trim() === '') {
+      console.log("Empty transcription received, skipping history save.");
+      setTranscript(''); // Ensure it's empty but don't save
+      return;
+    }
+
     setTranscript(text);
 
-    // Auto-copy to clipboard
-    if (text) {
-      navigator.clipboard.writeText(text).then(() => {
-        setHasCopied(true);
-        setShowAutoCopyBanner(true);
-        setTimeout(() => {
-          setHasCopied(false);
-          setShowAutoCopyBanner(false);
-        }, 3000);
-      }).catch(err => {
-        console.error('Failed to auto-copy: ', err);
-      });
-    }
+    // Auto-copy
+    navigator.clipboard.writeText(text).then(() => {
+      setHasCopied(true);
+      setShowAutoCopyBanner(true);
+      setTimeout(() => {
+        setHasCopied(false);
+        setShowAutoCopyBanner(false);
+      }, 3000);
+    });
 
     const newItem: HistoryItem = {
       id: Date.now().toString(),
@@ -133,28 +134,18 @@ export default function Home() {
 
   const animateClear = () => {
     if (!transcript) return;
-
     const initialText = transcript;
-    const duration = 400; // ms - snappy but visible
+    const duration = 400;
     const start = performance.now();
-
     const frame = (now: number) => {
       const elapsed = now - start;
       const progress = Math.min(elapsed / duration, 1);
-
-      // Cubic easing for a "vacuum" effect
       const remainingProgress = 1 - Math.pow(progress, 3);
       const currentLength = Math.floor(initialText.length * remainingProgress);
-
       setTranscript(initialText.substring(0, currentLength));
-
-      if (progress < 1) {
-        requestAnimationFrame(frame);
-      } else {
-        setTranscript('');
-      }
+      if (progress < 1) requestAnimationFrame(frame);
+      else setTranscript('');
     };
-
     requestAnimationFrame(frame);
   };
 
@@ -167,252 +158,277 @@ export default function Home() {
     localStorage.setItem('last_viewed_history', now.toString());
   };
 
+  const credits = [
+    { name: 'Sarvam AI', role: 'Transcription', icon: <Cloud className="w-3.5 h-3.5" />, link: 'https://www.sarvam.ai/' },
+    { name: 'Google Antigravity', role: 'IDE', icon: <Cpu className="w-3.5 h-3.5" />, link: 'https://antigravity.google/' },
+    { name: 'Vercel', role: 'Deployment', icon: <Globe className="w-3.5 h-3.5" />, link: 'https://vercel.com/' },
+    { name: 'Excalidraw', role: 'Wireframing', icon: <Layout className="w-3.5 h-3.5" />, link: 'https://excalidraw.com/' },
+    { name: 'Developer', role: 'Repo', icon: <Github className="w-3.5 h-3.5" />, link: 'https://github.com/alwaysbiryani/indi-ka' },
+  ];
+
+  const [taglineIndex, setTaglineIndex] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+
+  const taglines = [
+    { l1: "Baat karo dil se,", l2: "Typing kyu? Chill se." },
+    { l1: "बकवास नहीं, काम की बात।", l2: "बोल के देखो, मज़ा आएगा।" },
+    { l1: "Speak your mind,", l2: "Let Indi-क write." },
+    { l1: "গল্প করো মন খুলে,", l2: "Indi-কাল আছে আপনার সাথে!" },
+    { l1: "મોજથી બોલો,", l2: "લખવાની માથાકૂટ છોડો!" },
+    { l1: "પટ પટ ಅಂತ ಹೇಳಿ,", l2: "Indi-ಕ ಇದೆ ನೋಡಿ!" },
+    { l1: "ನನ್ನಾಗಿ സംസാರಿಸೂ,", l2: "ಇನಿ Indi-ಕ എഴുದುಮ್!" },
+    { l1: "मस्त गप्पा मारा,", l2: "Indi-क करेल सगळं काम!" },
+    { l1: "ମନ ଭରି କୁହ,", l2: "Indi-କ ଅଛି ସାଥିରେ!" },
+    { l1: "ਖੁੱਲ ਕੇ ਬੋਲੋ ਜੀ,", l2: "Indi-ਕ ਕਰੇਗਾ ਬਾਕੀ ਕੰਮ!" },
+    { l1: "மனசு விட்டு பேசுங்க,", l2: "Indi-க பாத்துக்கும்!" },
+    { l1: "మనసు విప్పి మాట్లాడు,", l2: "Indi-క రాసి పెడుతుంది!" },
+  ];
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTaglineIndex((prev) => (prev + 1) % taglines.length);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [taglines.length]);
+
   return (
-    <main className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-50 flex flex-col font-sans transition-colors duration-300">
-
-      {/* Header */}
-      <header className="relative z-20 flex items-center justify-between px-6 py-4 border-b border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md sticky top-0">
-        <div className="flex items-center space-x-3">
-          <div className="w-9 h-9 bg-zinc-900 dark:bg-zinc-100 rounded-xl flex items-center justify-center shadow-sm shrink-0">
-            <MessageSquare className="w-5 h-5 text-zinc-50 dark:text-zinc-950" />
-          </div>
-          <div className="whitespace-nowrap">
-            <h1 className="text-2xl font-black tracking-tighter bg-gradient-to-r from-[#FF9933] via-zinc-400 dark:via-white to-[#138808] bg-clip-text text-transparent select-none">
-              Indi-क
-            </h1>
-          </div>
-        </div>
-
-        <div className="absolute left-1/2 -translate-x-1/2 hidden sm:flex items-center space-x-2 whitespace-nowrap">
-          <span className="text-[10px] md:text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-[0.2em] flex items-center space-x-2">
-            <span>🇮🇳</span>
-            <span className="opacity-30">|</span>
-            <span>your home for Voice-To-Text</span>
-          </span>
-        </div>
-
-        <div className="flex items-center space-x-2">
-          <button
-            onClick={openHistory}
-            className="relative px-4 py-2 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-xl text-[11px] font-bold uppercase tracking-widest text-zinc-500 transition-colors flex items-center space-x-2 border border-zinc-200 dark:border-zinc-700"
-          >
-            <Clock className="w-3.5 h-3.5" />
-            <span>HISTORY</span>
-            {hasNewHistory && (
-              <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500 border-2 border-white dark:border-zinc-950"></span>
-              </span>
-            )}
-          </button>
-        </div>
-      </header>
-
-      {/* Error Banner */}
-      <AnimatePresence>
-        {errorBanner && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            className="bg-red-50 dark:bg-red-900/20 border-b border-red-200 dark:border-red-800 px-6 py-3 flex items-center justify-center space-x-2 text-red-600 dark:text-red-400 text-sm font-medium z-50"
-          >
-            <AlertCircle className="w-4 h-4 flex-shrink-0" />
-            <div className="flex flex-col md:flex-row items-center space-y-2 md:space-y-0 md:space-x-4 text-center md:text-left">
-              <span>{errorBanner}</span>
-              <div className="flex items-center space-x-3">
-                {errorBanner.includes('API Key') && (
-                  <button
-                    onClick={() => {
-                      setIsSettingsOpen(true);
-                      setErrorBanner(null);
-                    }}
-                    className="px-3 py-1 bg-red-600 text-white rounded-md text-xs hover:bg-red-700 transition-colors"
-                  >
-                    Open Settings
-                  </button>
-                )}
-                <button onClick={() => setErrorBanner(null)} className="underline opacity-75 hover:opacity-100 text-xs text-white">Dismiss</button>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <div className="relative flex-1 flex flex-col overflow-hidden">
-
-        {/* Mobile Layout (Visible on Small Screens) */}
-        <div className="md:hidden flex flex-col flex-1 p-5 space-y-6 overflow-y-auto">
-
-          {/* Tap to Speak and Language Selector */}
-          <div className="grid grid-cols-12 gap-3 items-center">
-            <div className="col-span-12 xs:col-span-7">
-              <LanguageSelector
-                selectedLanguage={language}
-                onSelectLanguage={setLanguage}
-                className="!mb-0"
-              />
-            </div>
-            <div className="col-span-12 xs:col-span-5">
-              <AudioRecorder
-                onTranscriptionComplete={handleTranscriptionComplete}
-                onError={handleError}
-                language={language}
-                apiKey={apiKey}
-                isCompact={true}
-                className="h-full"
-                onRecordingStart={animateClear}
-              />
-            </div>
-          </div>
-
-          {/* Transcription Canvas */}
-          <div className="flex-none min-h-[30vh] bg-white dark:bg-zinc-900/50 backdrop-blur-sm rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-xl relative group">
-            <textarea
-              ref={mobileRef}
-              value={transcript}
-              onChange={(e) => setTranscript(e.target.value)}
-              className="w-full bg-transparent border-none focus:ring-0 text-lg md:text-xl text-zinc-800 dark:text-zinc-200 leading-relaxed p-7 resize-none placeholder-zinc-300 font-normal outline-none overflow-hidden"
-              placeholder="Start speaking to transcribe..."
-            />
-            {transcript && (
-              <div className="absolute top-5 right-5 flex items-center space-x-2">
-                <AnimatePresence>
-                  {showAutoCopyBanner && (
-                    <motion.div
-                      initial={{ opacity: 0, x: 10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: 10 }}
-                      className="px-3 py-1.5 bg-zinc-900 dark:bg-zinc-100 text-zinc-50 dark:text-zinc-950 rounded-xl text-[10px] font-bold uppercase tracking-wider shadow-lg border border-zinc-200 dark:border-zinc-800 whitespace-nowrap"
-                    >
-                      Copied!
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-                <button
-                  onClick={handleCopy}
-                  className="p-2.5 bg-zinc-100 dark:bg-zinc-800/80 backdrop-blur-md rounded-xl border border-zinc-200 dark:border-zinc-700 shadow-sm transition-all hover:scale-110 active:scale-95"
-                >
-                  {hasCopied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4 text-zinc-400" />}
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Footers */}
-          <div className="space-y-4 pt-2">
-            <div className="bg-orange-50/50 dark:bg-orange-950/10 rounded-3xl border border-orange-100/50 dark:border-orange-900/20 p-6 flex flex-col items-center justify-center">
-              <div className="flex items-center space-x-2">
-                <span className="text-[10px] text-orange-600/70 dark:text-orange-400/70 uppercase tracking-[0.2em] font-bold">POWERED USING</span>
-                <img
-                  src="/logos/sarvam-wordmark-black.svg"
-                  alt="Sarvam AI"
-                  className="h-4 dark:invert opacity-80"
-                />
-              </div>
-            </div>
-
-            <div className="bg-zinc-100/50 dark:bg-zinc-900/30 rounded-3xl border border-zinc-200 dark:border-zinc-800/50 p-4 px-5 flex items-center justify-between overflow-hidden">
-              <div className="flex items-center space-x-2.5 min-w-0">
-                <div className="w-7 h-7 rounded-lg bg-zinc-900 dark:bg-zinc-100 flex items-center justify-center text-[10px] font-bold text-zinc-50 dark:text-zinc-950 shrink-0">N</div>
-                <p className="text-[10px] text-zinc-500 font-medium truncate">
-                  Created by <a href="https://github.com/alwaysbiryani/indi-ka" target="_blank" rel="noopener noreferrer" className="text-zinc-800 dark:text-zinc-200 font-bold hover:underline">Manideep</a> / AI for India
-                </p>
-              </div>
-              <div className="shrink-0 scale-90 origin-right">
-                <NetworkStatus fixed={false} />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Desktop Layout (Visible on Medium+ Screens) */}
-        <div className="hidden md:grid md:grid-cols-12 gap-0 flex-1 md:h-[calc(100vh-65px)] border-t border-zinc-100 dark:border-zinc-800/50">
-
-          <aside className="md:col-span-3 lg:col-span-2 border-r border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/20 p-6 flex flex-col">
-            <div className="mb-6">
-              <LanguageSelector
-                selectedLanguage={language}
-                onSelectLanguage={setLanguage}
-                className="mb-4"
-              />
-            </div>
-
-            <div className="p-5 bg-blue-50/50 dark:bg-blue-900/10 rounded-2xl border border-blue-100 dark:border-blue-900/20">
-              <h3 className="text-blue-600 dark:text-blue-400 font-semibold text-xs mb-1 uppercase tracking-wider">Pro Tip</h3>
-              <p className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-relaxed">
-                Speaking naturally in Hinglish, English or your local language? Set language to 'Auto' for best results.
-              </p>
-            </div>
-
-            <div className="mt-auto pt-4 border-t border-zinc-200 dark:border-zinc-800 flex flex-col items-center space-y-4">
-              <NetworkStatus fixed={false} />
-              <p className="text-[10px] text-zinc-400 text-center">
-                Created by <a href="https://github.com/alwaysbiryani/indi-ka" target="_blank" rel="noopener noreferrer" className="font-bold text-zinc-600 dark:text-zinc-300 hover:underline">Manideep</a> / AI for India
-              </p>
-            </div>
-          </aside>
-
-          <section className="md:col-span-9 lg:col-span-10 flex flex-col bg-white dark:bg-zinc-950 p-8 overflow-hidden">
-            <div className="max-w-4xl w-full mx-auto flex flex-col h-full space-y-6">
-              <AudioRecorder
-                onTranscriptionComplete={handleTranscriptionComplete}
-                onError={handleError}
-                language={language}
-                apiKey={apiKey}
-                className="max-w-xl mx-auto"
-                onRecordingStart={animateClear}
-              />
-
-              <div className="flex-1 bg-zinc-50 dark:bg-zinc-900/30 rounded-[32px] border border-zinc-200 dark:border-zinc-800 relative group overflow-hidden">
-                <textarea
-                  ref={desktopRef}
-                  value={transcript}
-                  onChange={(e) => setTranscript(e.target.value)}
-                  className="w-full h-full bg-transparent border-none focus:ring-0 text-xl text-zinc-800 dark:text-zinc-200 leading-relaxed p-10 resize-none placeholder-zinc-300 font-normal outline-none"
-                  placeholder="Transcribed text will appear here..."
-                />
-                <div className={cn(
-                  "absolute top-8 right-8 flex items-center space-x-3 transition-all duration-300",
-                  showAutoCopyBanner ? "opacity-100" : "opacity-0 group-hover:opacity-100"
-                )}>
-                  <AnimatePresence>
-                    {showAutoCopyBanner && (
-                      <motion.div
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: 20 }}
-                        className="px-4 py-2 bg-zinc-900 dark:bg-zinc-100 text-zinc-50 dark:text-zinc-950 rounded-2xl text-[10px] font-bold uppercase tracking-[0.15em] shadow-xl border border-zinc-200 dark:border-zinc-800 whitespace-nowrap"
-                      >
-                        Copied to Clipboard
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                  <button
-                    onClick={handleCopy}
-                    className="p-3 bg-white dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700 shadow-md border border-zinc-200 dark:border-zinc-800 rounded-2xl text-zinc-400 transition-all"
-                  >
-                    {hasCopied ? <Check className="w-5 h-5 text-green-500" /> : <Copy className="w-5 h-5" />}
-                  </button>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-center px-6 py-4 bg-orange-50/30 dark:bg-orange-950/10 rounded-2xl border border-orange-100/30 dark:border-orange-900/10">
-                <div className="flex items-center space-x-3">
-                  <span className="text-[10px] text-orange-600/70 dark:text-orange-400/70 uppercase tracking-[0.2em] font-bold">POWERED USING</span>
-                  <img
-                    src="/logos/sarvam-wordmark-black.svg"
-                    alt="Sarvam AI"
-                    className="h-4 dark:invert opacity-80"
-                  />
-                </div>
-              </div>
-            </div>
-          </section>
-        </div>
+    <main className="min-h-screen w-full bg-[var(--app-bg)] flex items-center justify-center p-0 md:p-8 font-sans overflow-hidden relative transition-colors duration-300">
+      {/* Subtle Background decoration */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] bg-[#FF9933]/[0.03] rounded-full blur-[120px]" />
+        <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-[#138808]/[0.03] rounded-full blur-[120px]" />
       </div>
 
-      {/* Mobile History Drawer */}
+      <div className="relative z-10 w-full flex flex-col items-center">
+        {/* Error Banner */}
+        <AnimatePresence>
+          {errorBanner && (
+            <motion.div
+              initial={{ y: -50, opacity: 0 }}
+              animate={{ y: 20, opacity: 1 }}
+              exit={{ y: -50, opacity: 0 }}
+              className="absolute top-0 left-4 right-4 bg-[var(--surface)] border border-red-500/50 text-[var(--text-primary)] px-5 py-4 rounded-3xl shadow-2xl z-[100] flex items-center justify-between backdrop-blur-xl"
+            >
+              <div className="flex items-center space-x-2">
+                <AlertCircle className="w-5 h-5 flex-shrink-0 text-red-500" />
+                <span className="text-sm font-bold truncate max-w-[200px]">{errorBanner}</span>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Phone Mockup Container (iPhone 12 Pro: 390x844) */}
+        <motion.div
+          initial={{ scale: 0.98, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          className="w-[390px] h-[844px] bg-[var(--screen-bg)] rounded-[60px] shadow-[0_40px_100px_rgba(0,0,0,0.2)] overflow-hidden border-[10px] border-[var(--phone-frame)] relative flex flex-col scale-[0.9] sm:scale-100 transition-colors duration-500"
+        >
+          {/* Top Notch Area */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-40 h-7 bg-[var(--phone-frame)] rounded-b-[20px] z-[50]" />
+
+          {/* Header (LOGO + THEME + HISTORY) */}
+          <header className="px-8 pt-12 pb-3 flex items-center justify-between relative z-10">
+            <div className="flex items-center space-x-3 bg-[var(--surface)] backdrop-blur-md px-4 py-2.5 rounded-[20px] border border-[var(--border)] shadow-sm">
+              <MessageSquare className="w-4 h-4 text-[var(--text-secondary)]" />
+              <h1 className="text-xl font-black tracking-tighter bg-gradient-to-r from-[#FF9933] via-[var(--accent-tiranga-mid)] to-[#138808] bg-clip-text text-transparent">
+                Indi-क
+              </h1>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                className="p-2.5 bg-[var(--surface)] rounded-[18px] border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all shadow-sm active:scale-95"
+              >
+                {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              </button>
+
+              <button
+                onClick={openHistory}
+                className="relative bg-[var(--surface)] px-4 py-2.5 rounded-[18px] border border-[var(--border)] flex items-center space-x-2 transition-all hover:bg-[var(--surface-hover)] active:scale-95 group shadow-sm"
+              >
+                <Clock className="w-4 h-4 text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] transition-colors" />
+                <span className="text-[10px] font-black text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] uppercase tracking-widest transition-colors">Recent</span>
+                {hasNewHistory && (
+                  <span className="absolute -top-1 -right-1 flex h-3 w-3 z-20">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500 border-2 border-[var(--screen-bg)]"></span>
+                  </span>
+                )}
+              </button>
+            </div>
+          </header>
+
+          {/* Main Content Area */}
+          <div className="flex-1 px-8 flex flex-col overflow-hidden">
+            <AnimatePresence mode="wait">
+              {!transcript ? (
+                /* LANDING EXPERIENCE: Big Circular Button */
+                <motion.div
+                  key="landing"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  className="flex-1 flex flex-col items-center justify-start pt-2"
+                >
+                  {/* Animated Taglines */}
+                  <div className="h-16 flex flex-col items-center justify-center text-center overflow-hidden mb-4 w-full">
+                    <AnimatePresence mode="wait">
+                      <motion.div
+                        key={taglineIndex}
+                        initial={{ y: 20, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        exit={{ y: -20, opacity: 0 }}
+                        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                        className="flex flex-col space-y-1"
+                      >
+                        <p className="text-lg font-black text-[var(--text-primary)] leading-tight tracking-tight px-4">
+                          {taglines[taglineIndex].l1}
+                        </p>
+                        <p className="text-lg font-black bg-gradient-to-r from-[#FF9933] via-[var(--accent-tiranga-mid)] to-[#138808] bg-clip-text text-transparent leading-tight tracking-tight px-4">
+                          {taglines[taglineIndex].l2}
+                        </p>
+                      </motion.div>
+                    </AnimatePresence>
+                  </div>
+
+                  {/* Language Selector */}
+                  <div className="w-full mb-6 relative z-50">
+                    <div className="bg-[var(--surface)] backdrop-blur-md rounded-[28px] p-5 border border-[var(--border)] shadow-sm">
+                      <LanguageSelector
+                        selectedLanguage={language}
+                        onSelectLanguage={setLanguage}
+                        className="!bg-transparent !border-none !p-0 !m-0"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex-1 flex items-center justify-center mb-10">
+                    <AudioRecorder
+                      onTranscriptionComplete={handleTranscriptionComplete}
+                      onError={handleError}
+                      language={language}
+                      apiKey={apiKey}
+                      variant="circular"
+                      onRecordingStart={animateClear}
+                      theme={theme}
+                    />
+                  </div>
+                </motion.div>
+              ) : (
+                /* AFTER TRANSCRIPTION: Canvas + Action Row */
+                <motion.div
+                  key="transcribing"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, y: 20 }}
+                  className="flex-1 flex flex-col h-full"
+                >
+                  <div className="flex items-center justify-between mb-6">
+                    <button
+                      onClick={() => setTranscript('')}
+                      className="p-3 bg-[var(--surface)] hover:bg-[var(--surface-hover)] rounded-2xl transition-all active:scale-95 border border-[var(--border)] shadow-sm"
+                    >
+                      <ArrowLeft className="w-4 h-4 text-[var(--text-secondary)]" />
+                    </button>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-widest">Post-Transcription</span>
+                    </div>
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={handleCopy}
+                        className="p-3 bg-[var(--surface)] hover:bg-[var(--surface-hover)] rounded-2xl transition-all active:scale-95 border border-[var(--border)] shadow-sm group"
+                      >
+                        <Copy className={cn("w-4 h-4 transition-colors", hasCopied ? "text-green-500" : "text-[var(--text-secondary)]")} />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Transcription Canvas */}
+                  <div className="flex-1 bg-[var(--surface)] rounded-[45px] p-8 border border-[var(--border)] relative overflow-hidden mb-6 flex flex-col shadow-inner group">
+                    <textarea
+                      ref={transcriptRef}
+                      value={transcript}
+                      onChange={(e) => setTranscript(e.target.value)}
+                      className="w-full h-full bg-transparent border-none focus:ring-0 text-[var(--text-primary)] text-lg font-bold leading-relaxed resize-none outline-none custom-scrollbar placeholder:text-[var(--text-secondary)]/30"
+                      placeholder="Your transcription will appear here..."
+                    />
+                    <button
+                      onClick={() => {
+                        setTranscript('');
+                      }}
+                      className="absolute top-6 right-6 p-3 bg-[var(--surface)] hover:bg-[var(--surface-hover)] rounded-2xl transition-all active:scale-90 border border-[var(--border)] opacity-0 group-hover:opacity-100 duration-300 shadow-sm"
+                    >
+                      <Trash2 className="w-4 h-4 text-red-400" />
+                    </button>
+                  </div>
+
+                  <div className="flex justify-center mb-8">
+                    <AudioRecorder
+                      onTranscriptionComplete={handleTranscriptionComplete}
+                      onError={handleError}
+                      language={language}
+                      apiKey={apiKey}
+                      variant="default"
+                      onRecordingStart={() => { }}
+                      theme={theme}
+                    />
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* Credits (FOOTER MARQUEE) */}
+          <div className="mt-auto pb-8 relative z-10">
+            <div className="w-full overflow-hidden flex items-center h-14 bg-[var(--surface)] border-y border-[var(--border)]">
+              <motion.div
+                className="flex items-center shrink-0"
+                animate={{
+                  x: isPaused ? 0 : [0, -1000],
+                  transition: {
+                    x: {
+                      repeat: Infinity,
+                      repeatType: "loop",
+                      duration: 30,
+                      ease: "linear",
+                    }
+                  }
+                }}
+                onHoverStart={() => setIsPaused(true)}
+                onHoverEnd={() => setIsPaused(false)}
+              >
+                {/* Double the credits array for seamless loop */}
+                {[...credits, ...credits].map((credit, idx) => (
+                  <a
+                    key={idx}
+                    href={credit.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center space-x-3 bg-[var(--surface)] hover:bg-[var(--surface-hover)] px-4 py-2 rounded-2xl border border-[var(--border)] mx-2 transition-all group/item shrink-0 shadow-sm"
+                  >
+                    <div className="text-[var(--text-secondary)] group-hover/item:text-[var(--text-primary)] transition-colors">
+                      {credit.icon}
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[6px] font-black text-[var(--text-secondary)] uppercase tracking-widest leading-none mb-0.5">
+                        {credit.role}
+                      </span>
+                      <span className="text-[10px] font-black text-[var(--text-primary)] uppercase leading-none transition-colors">
+                        {credit.name}
+                      </span>
+                    </div>
+                  </a>
+                ))}
+              </motion.div>
+            </div>
+          </div>
+
+          {/* Swipe Indicator */}
+          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-32 h-1.5 bg-[var(--border)] rounded-full" />
+        </motion.div>
+      </div>
+
       <AnimatePresence>
         {isHistoryOpen && (
           <>
@@ -421,31 +437,22 @@ export default function Home() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsHistoryOpen(false)}
-              className="fixed inset-0 bg-black/60 backdrop-blur-md z-[100]"
+              className="fixed inset-0 bg-black/30 backdrop-blur-[2px] z-[200]"
             />
             <motion.div
               initial={{ x: '100%' }}
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed right-0 top-0 bottom-0 w-full max-w-sm md:max-w-md bg-zinc-50 dark:bg-zinc-950 z-[101] flex flex-col shadow-2xl overflow-hidden border-l border-zinc-200 dark:border-zinc-800"
+              className="fixed right-0 top-0 bottom-0 w-full max-w-[340px] bg-zinc-950/90 backdrop-blur-2xl z-[201] flex flex-col shadow-[-20px_0_50px_rgba(0,0,0,0.5)] border-l border-white/5"
             >
-              <div className="flex items-center justify-between p-6 border-b border-zinc-200 dark:border-zinc-800">
-                <div className="flex items-center space-x-2">
-                  <div className="w-8 h-8 rounded-lg bg-zinc-900 dark:bg-zinc-100 flex items-center justify-center">
-                    <Clock className="w-4 h-4 text-zinc-50 dark:text-zinc-950" />
-                  </div>
-                  <h2 className="text-lg font-bold tracking-tight">Recent History</h2>
+              <div className="p-10 flex-1 overflow-y-auto custom-scrollbar">
+                <div className="flex items-center justify-between mb-8">
+                  <h2 className="text-xl font-black text-white tracking-tight">Recent</h2>
+                  <button onClick={() => setIsHistoryOpen(false)} className="p-2.5 bg-zinc-900/50 rounded-xl hover:bg-zinc-800 transition-colors border border-white/[0.05]">
+                    <X className="w-4 h-4 text-zinc-500" />
+                  </button>
                 </div>
-                <button
-                  onClick={() => setIsHistoryOpen(false)}
-                  className="p-2 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded-full transition-colors"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
                 <HistorySidebar
                   history={history}
                   onDelete={handleDeleteHistory}
@@ -454,29 +461,13 @@ export default function Home() {
                     setIsHistoryOpen(false);
                   }}
                   onClearAll={handleClearHistory}
-                  className="bg-transparent border-none shadow-none"
+                  className="!bg-transparent !border-none !p-0"
                 />
-              </div>
-
-              <div className="p-6 bg-white dark:bg-zinc-900 border-t border-zinc-200 dark:border-zinc-800">
-                <button
-                  onClick={() => setIsHistoryOpen(false)}
-                  className="w-full py-4 bg-zinc-900 dark:bg-zinc-100 text-zinc-50 dark:text-zinc-950 rounded-2xl font-bold transition-all active:scale-[0.98]"
-                >
-                  Close History
-                </button>
               </div>
             </motion.div>
           </>
         )}
       </AnimatePresence>
-
-      <SettingsModal
-        isOpen={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
-        apiKey={apiKey}
-        onSaveApiKey={handleSaveApiKey}
-      />
     </main>
   );
 }

@@ -653,23 +653,279 @@ export const MicrophoneWaveform = ({
     return <Waveform data={data} {...props} />
 }
 
-export type StaticWaveformProps = WaveformProps & {
-    bars?: number
-    seed?: number
+export const CircularMicrophoneWaveform = ({
+    active = false,
+    processing = false,
+    size = 200,
+    fftSize = 256,
+    smoothingTimeConstant = 0.8,
+    sensitivity = 1,
+    color = "#ffffff",
+    onError,
+    className,
+    ...props
+}: MicrophoneWaveformProps & { size?: number; color?: string }) => {
+    const canvasRef = useRef<HTMLCanvasElement>(null)
+    const analyserRef = useRef<AnalyserNode | null>(null)
+    const audioContextRef = useRef<AudioContext | null>(null)
+    const streamRef = useRef<MediaStream | null>(null)
+    const animationIdRef = useRef<number | null>(null)
+    const [amplitude, setAmplitude] = useState(0)
+
+    useEffect(() => {
+        if (!active) {
+            if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop())
+            if (audioContextRef.current) audioContextRef.current.close()
+            if (animationIdRef.current) cancelAnimationFrame(animationIdRef.current)
+            setAmplitude(0)
+            return
+        }
+
+        const setupMicrophone = async () => {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+                streamRef.current = stream
+                const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+                const analyser = audioContext.createAnalyser()
+                analyser.fftSize = fftSize
+                analyser.smoothingTimeConstant = smoothingTimeConstant
+                const source = audioContext.createMediaStreamSource(stream)
+                source.connect(analyser)
+                audioContextRef.current = audioContext
+                analyserRef.current = analyser
+
+                const dataArray = new Uint8Array(analyser.frequencyBinCount)
+                const update = () => {
+                    analyser.getByteFrequencyData(dataArray)
+                    let sum = 0
+                    for (let i = 0; i < dataArray.length; i++) sum += dataArray[i]
+                    const avg = sum / dataArray.length
+                    setAmplitude(avg / 255 * sensitivity)
+                    animationIdRef.current = requestAnimationFrame(update)
+                }
+                update()
+            } catch (err) {
+                onError?.(err as Error)
+            }
+        }
+        setupMicrophone()
+        return () => {
+            if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop())
+            if (audioContextRef.current) audioContextRef.current.close()
+            if (animationIdRef.current) cancelAnimationFrame(animationIdRef.current)
+        }
+    }, [active, fftSize, smoothingTimeConstant, sensitivity])
+
+    useEffect(() => {
+        const canvas = canvasRef.current
+        if (!canvas) return
+        const ctx = canvas.getContext("2d")
+        if (!ctx) return
+
+        const dpr = window.devicePixelRatio || 1
+        canvas.width = size * dpr
+        canvas.height = size * dpr
+        ctx.scale(dpr, dpr)
+
+        let time = 0
+        const render = () => {
+            time += 0.05
+            ctx.clearRect(0, 0, size, size)
+            const cx = size / 2
+            const cy = size / 2
+            const baseRadius = size * 0.35
+
+            // Draw multiple layers of circles
+            for (let i = 0; i < 3; i++) {
+                const layerOffset = i * 0.5
+                const layerAmplitude = amplitude * (1 - i * 0.2)
+                const layerTime = time + i * 2
+
+                ctx.beginPath()
+                ctx.strokeStyle = color
+                ctx.lineWidth = 2
+                ctx.globalAlpha = 0.2 / (i + 1)
+
+                if (active || processing) {
+                    for (let angle = 0; angle < Math.PI * 2; angle += 0.05) {
+                        const noise = Math.sin(angle * 4 + layerTime) * 10 * layerAmplitude
+                        const r = baseRadius + noise + (Math.sin(angle * 8 - layerTime * 0.5) * 5 * layerAmplitude)
+                        const x = cx + Math.cos(angle) * r
+                        const y = cy + Math.sin(angle) * r
+                        if (angle === 0) ctx.moveTo(x, y)
+                        else ctx.lineTo(x, y)
+                    }
+                    ctx.closePath()
+                    ctx.stroke()
+
+                    // Pulse fill
+                    ctx.globalAlpha = 0.05 * layerAmplitude
+                    ctx.fill()
+                } else {
+                    ctx.arc(cx, cy, baseRadius, 0, Math.PI * 2)
+                    ctx.stroke()
+                }
+            }
+
+            // Core circle
+            ctx.globalAlpha = 0.8
+            ctx.beginPath()
+            ctx.fillStyle = color
+            const corePulse = (active || processing) ? (1 + amplitude * 0.2) : 1
+            ctx.arc(cx, cy, baseRadius * 0.8 * corePulse, 0, Math.PI * 2)
+            ctx.fill()
+
+            if (active || processing) {
+                animationIdRef.current = requestAnimationFrame(render)
+            }
+        }
+
+        render()
+        return () => {
+            if (animationIdRef.current) cancelAnimationFrame(animationIdRef.current)
+        }
+    }, [amplitude, size, color, active, processing])
+
+    return (
+        <canvas
+            ref={canvasRef}
+            className={cn("block", className)}
+            style={{ width: size, height: size }}
+        />
+    )
 }
 
-export const StaticWaveform = ({
-    bars = 40,
-    seed = 42,
+export const SimpleScrollingWaveform = ({
+    active = false,
+    barWidth = 2,
+    barGap = 2,
+    color = "#ffffff",
+    height = 40,
+    sensitivity = 1.5,
+    className,
     ...props
-}: StaticWaveformProps) => {
-    const data = useMemo(() => {
-        const random = (seedValue: number) => {
-            const x = Math.sin(seedValue) * 10000
-            return x - Math.floor(x)
-        }
-        return Array.from({ length: bars }, (_, i) => 0.2 + random(seed + i) * 0.6)
-    }, [bars, seed])
+}: {
+    active?: boolean;
+    barWidth?: number;
+    barGap?: number;
+    color?: string;
+    height?: number;
+    sensitivity?: number;
+} & HTMLAttributes<HTMLCanvasElement>) => {
+    const canvasRef = useRef<HTMLCanvasElement>(null)
+    const analyserRef = useRef<AnalyserNode | null>(null)
+    const audioContextRef = useRef<AudioContext | null>(null)
+    const streamRef = useRef<MediaStream | null>(null)
+    const animationIdRef = useRef<number | null>(null)
+    const historyRef = useRef<number[]>([])
 
-    return <Waveform data={data} {...props} />
+    useEffect(() => {
+        if (!active) {
+            if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop())
+            if (audioContextRef.current) audioContextRef.current.close()
+            if (animationIdRef.current) cancelAnimationFrame(animationIdRef.current)
+            historyRef.current = []
+            return
+        }
+
+        const setup = async () => {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+                streamRef.current = stream
+                const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+                const analyser = audioContext.createAnalyser()
+                analyser.fftSize = 256
+                const source = audioContext.createMediaStreamSource(stream)
+                source.connect(analyser)
+                audioContextRef.current = audioContext
+                analyserRef.current = analyser
+
+                const dataArray = new Uint8Array(analyser.frequencyBinCount)
+
+                const update = () => {
+                    analyser.getByteFrequencyData(dataArray)
+                    let sum = 0
+                    for (let i = 0; i < dataArray.length; i++) sum += dataArray[i]
+                    const avg = (sum / dataArray.length) / 255 * sensitivity
+
+                    historyRef.current.push(avg)
+
+                    const canvas = canvasRef.current
+                    if (canvas) {
+                        const dpr = window.devicePixelRatio || 1
+                        const width = canvas.width / dpr
+                        const maxBars = Math.ceil(width / (barWidth + barGap))
+                        if (historyRef.current.length > maxBars) {
+                            historyRef.current.shift()
+                        }
+                        draw(canvas, historyRef.current)
+                    }
+
+                    animationIdRef.current = requestAnimationFrame(update)
+                }
+
+                animationIdRef.current = requestAnimationFrame(update)
+            } catch (err) {
+                console.error("Microphone access failed", err)
+            }
+        }
+
+        const draw = (canvas: HTMLCanvasElement, history: number[]) => {
+            const ctx = canvas.getContext('2d')
+            if (!ctx) return
+
+            const dpr = window.devicePixelRatio || 1
+            const width = canvas.width / dpr
+            const height = canvas.height / dpr
+
+            ctx.clearRect(0, 0, width, height)
+            ctx.fillStyle = color
+
+            const step = barWidth + barGap
+            const centerY = height / 2
+
+            for (let i = 0; i < history.length; i++) {
+                const val = history[i]
+                const x = width - (history.length - i) * step
+                if (x + barWidth < 0) continue
+
+                const h = Math.max(1, val * height * 0.9)
+                ctx.fillRect(x, centerY - h / 2, barWidth, h)
+            }
+        }
+
+        setup()
+
+        return () => {
+            if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop())
+            if (audioContextRef.current) audioContextRef.current.close()
+            if (animationIdRef.current) cancelAnimationFrame(animationIdRef.current)
+        }
+    }, [active, barWidth, barGap, color, sensitivity])
+
+    useEffect(() => {
+        const canvas = canvasRef.current
+        if (!canvas) return
+        const dpr = window.devicePixelRatio || 1
+        const resize = () => {
+            const rect = canvas.getBoundingClientRect()
+            if (rect.width === 0 || rect.height === 0) return
+            canvas.width = rect.width * dpr
+            canvas.height = rect.height * dpr
+            const ctx = canvas.getContext('2d')
+            if (ctx) ctx.scale(dpr, dpr)
+        }
+        resize()
+        window.addEventListener('resize', resize)
+        return () => window.removeEventListener('resize', resize)
+    }, [])
+
+    return (
+        <canvas
+            ref={canvasRef}
+            className={cn("w-full block opacity-60", className)}
+            style={{ height }}
+            {...props}
+        />
+    )
 }

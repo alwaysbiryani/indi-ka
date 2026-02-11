@@ -40,23 +40,24 @@ export default function LanguageSelector({ selectedLanguage, onSelectLanguage, c
 
     return (
         <div className={cn("relative w-full font-sans", className)}>
-            <label className="block text-xs font-semibold text-zinc-500 dark:text-zinc-400 mb-2 uppercase tracking-wide">
-                Select Language
-            </label>
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="w-full flex items-center justify-between px-3 py-2.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg hover:border-zinc-300 dark:hover:border-zinc-700 transition-all duration-200 active:scale-[0.99] group shadow-sm"
+                className="w-full flex items-center justify-between px-1 bg-transparent border-none rounded-[20px] hover:bg-[var(--surface-hover)] transition-all duration-200 active:scale-[0.99] group"
             >
-                <div className="flex items-center space-x-3">
-                    <div className="flex items-center justify-center w-8 h-8 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-bold text-sm border border-zinc-200 dark:border-zinc-700">
+                <div className="flex items-center space-x-4">
+                    <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-zinc-900 text-zinc-300 font-bold text-sm border border-black/5 transition-all shadow-md group-hover:scale-105">
                         {selected?.id}
                     </div>
-                    <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                        {selected?.label}
-                    </span>
+                    <div className="text-left">
+                        <p className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-widest mb-0.5">Target Language</p>
+                        <span className="text-sm font-black text-[var(--text-primary)] transition-colors">
+                            {selected?.label}
+                        </span>
+                    </div>
                 </div>
-                <ChevronDown className={`w-4 h-4 text-zinc-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`w-5 h-5 text-[var(--text-secondary)] transition-transform duration-300 ${isOpen ? 'rotate-180 text-[var(--text-primary)]' : ''}`} />
             </button>
+
 
             <AnimatePresence>
                 {isOpen && (
@@ -69,7 +70,7 @@ export default function LanguageSelector({ selectedLanguage, onSelectLanguage, c
                             initial={{ opacity: 0, y: -10, scale: 0.98 }}
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: -10, scale: 0.98 }}
-                            className="absolute left-0 right-0 mt-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-xl overflow-hidden z-40 max-h-[320px] overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-200 dark:scrollbar-thumb-zinc-800 scrollbar-track-transparent ring-1 ring-black/5"
+                            className="absolute left-0 right-0 mt-2 bg-[var(--surface)] border border-[var(--border)] rounded-[32px] shadow-2xl overflow-hidden z-[400] max-h-[400px] overflow-y-auto custom-scrollbar p-2"
                         >
                             <div className="p-1.5 grid grid-cols-1 gap-0.5">
                                 {languages.map((lang) => (
@@ -80,27 +81,28 @@ export default function LanguageSelector({ selectedLanguage, onSelectLanguage, c
                                             setIsOpen(false);
                                         }}
                                         className={cn(
-                                            "w-full px-3 py-2 text-left text-sm rounded-lg transition-colors flex items-center justify-between group",
+                                            "w-full px-4 py-3 text-left text-sm rounded-2xl transition-all flex items-center justify-between group mb-1",
                                             selectedLanguage === lang.code
-                                                ? 'bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50'
-                                                : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 hover:text-zinc-900 dark:hover:text-zinc-200'
+                                                ? 'bg-[var(--surface-hover)] text-[var(--text-primary)] shadow-sm'
+                                                : 'text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]'
                                         )}
                                     >
                                         <span className="flex items-center space-x-3">
                                             <span className={cn(
-                                                "flex items-center justify-center w-6 h-6 rounded text-xs font-bold transition-all",
+                                                "flex items-center justify-center w-8 h-8 rounded-lg text-xs font-bold transition-all",
                                                 selectedLanguage === lang.code
-                                                    ? "bg-white dark:bg-zinc-700 shadow-sm text-zinc-900 dark:text-zinc-100"
-                                                    : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 group-hover:bg-white dark:group-hover:bg-zinc-700 group-hover:text-zinc-800 dark:group-hover:text-zinc-200"
+                                                    ? "bg-zinc-900 text-white shadow-md font-bold"
+                                                    : "bg-[var(--surface-hover)] text-[var(--text-secondary)] group-hover:text-[var(--text-primary)]"
                                             )}>
                                                 {lang.id}
                                             </span>
-                                            <span className="font-medium">{lang.label}</span>
+                                            <span className="font-bold tracking-tight">{lang.label}</span>
                                         </span>
                                         {selectedLanguage === lang.code && (
-                                            <Check className="w-4 h-4 text-zinc-900 dark:text-zinc-100" />
+                                            <Check className="w-4 h-4 text-[var(--text-primary)]" />
                                         )}
                                     </button>
+
                                 ))}
                             </div>
                         </motion.div>

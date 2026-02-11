@@ -63,14 +63,14 @@ export default function HistorySidebar({ history, onDelete, onSelect, onClearAll
     };
 
     return (
-        <div className={`flex flex-col h-full ${className}`}>
+        <div className={`flex flex-col h-full ${className} transition-colors duration-300`}>
             {/* Header */}
-            <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
-                <h2 className="font-semibold text-xs text-zinc-500 uppercase tracking-widest">Recent Transcriptions</h2>
+            <div className="p-4 border-b border-[var(--border)] flex items-center justify-between">
+                <h2 className="font-black text-[10px] text-[var(--text-secondary)] uppercase tracking-[0.2em]">Recent Transcriptions</h2>
                 {history.length > 0 && (
                     <button
                         onClick={onClearAll}
-                        className="text-xs text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 font-medium transition-colors"
+                        className="text-[10px] font-black text-red-500 hover:text-red-600 uppercase tracking-widest transition-colors"
                     >
                         Clear All
                     </button>
@@ -78,11 +78,11 @@ export default function HistorySidebar({ history, onDelete, onSelect, onClearAll
             </div>
 
             {/* List */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
                 {history.length === 0 ? (
-                    <div className="h-full flex flex-col items-center justify-center text-zinc-400 dark:text-zinc-600 space-y-3 opacity-60">
-                        <Clock className="w-8 h-8 stroke-[1.5]" />
-                        <p className="text-xs font-medium">No history yet</p>
+                    <div className="h-full flex flex-col items-center justify-center text-[var(--text-secondary)] space-y-4 opacity-40">
+                        <Clock className="w-10 h-10 stroke-[1]" />
+                        <p className="text-[10px] font-black uppercase tracking-widest">No history yet</p>
                     </div>
                 ) : (
                     history.map((item) => (
@@ -94,37 +94,37 @@ export default function HistorySidebar({ history, onDelete, onSelect, onClearAll
                             transition={{ duration: 0.2 }}
                             key={item.id}
                             onClick={() => onSelect(item.text)}
-                            className="group relative bg-white dark:bg-zinc-800/80 hover:bg-zinc-50 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-700/50 hover:border-zinc-300 dark:hover:border-zinc-600 rounded-xl p-4 transition-all cursor-pointer shadow-sm hover:shadow-md"
+                            className="group relative bg-[var(--surface)] hover:bg-[var(--surface-hover)] border border-[var(--border)] rounded-3xl p-6 transition-all cursor-pointer shadow-sm hover:shadow-xl"
                         >
-                            <p className="text-zinc-700 dark:text-zinc-300 text-xs sm:text-sm line-clamp-6 mb-6 pr-14 sm:pr-0 font-normal leading-relaxed text-ellipsis">
+                            <p className="text-[var(--text-primary)] text-sm line-clamp-6 mb-8 pr-2 font-medium leading-relaxed">
                                 {item.text}
                             </p>
 
-                            <div className="absolute bottom-3 left-4 right-4 flex justify-between items-center text-[10px] text-zinc-400 dark:text-zinc-500 font-medium">
-                                <span className={`px-2 py-0.5 rounded-full border ${(item.language === 'auto' && (!item.detectedLanguage || item.detectedLanguage === 'auto'))
-                                    ? 'bg-zinc-100 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-500'
-                                    : 'bg-purple-50 dark:bg-purple-900/10 border-purple-100 dark:border-purple-800/20 text-purple-600 dark:text-purple-400'
-                                    } uppercase tracking-wider`}>
+                            <div className="absolute bottom-4 left-6 right-6 flex justify-between items-center text-[10px] text-[var(--text-secondary)] font-bold">
+                                <span className={`px-2 py-1 rounded-lg border shadow-sm ${(item.language === 'auto' && (!item.detectedLanguage || item.detectedLanguage === 'auto'))
+                                        ? 'bg-[var(--surface-hover)] border-[var(--border)] text-[var(--text-secondary)]'
+                                        : 'bg-purple-500/10 border-purple-500/20 text-purple-500'
+                                    } uppercase tracking-widest`}>
                                     {formatLanguage(item.language, item.detectedLanguage)}
                                 </span>
-                                <span>
+                                <span className="opacity-60">
                                     {new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                 </span>
                             </div>
 
                             {/* Hover Actions */}
-                            <div className="absolute top-2 right-2 flex space-x-2 sm:space-x-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity bg-white/90 dark:bg-zinc-800/90 backdrop-blur-sm rounded-lg p-1 border border-zinc-200 dark:border-zinc-700">
+                            <div className="absolute top-4 right-4 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity bg-[var(--surface)] shadow-2xl rounded-xl p-1 border border-[var(--border)] z-10">
                                 <button
                                     onClick={(e) => handleCopy(e, item.id, item.text)}
-                                    className="p-2 sm:p-1.5 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-md transition-colors"
+                                    className="p-1.5 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)] rounded-lg transition-all"
                                 >
-                                    {copiedId === item.id ? <Check className="w-4 h-4 sm:w-3.5 sm:h-3.5 text-emerald-500" /> : <Copy className="w-4 h-4 sm:w-3.5 sm:h-3.5" />}
+                                    {copiedId === item.id ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
                                 </button>
                                 <button
                                     onClick={(e) => handleDelete(e, item.id)}
-                                    className="p-2 sm:p-1.5 text-zinc-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
+                                    className="p-1.5 text-[var(--text-secondary)] hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all"
                                 >
-                                    <Trash2 className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
+                                    <Trash2 className="w-4 h-4" />
                                 </button>
                             </div>
                         </motion.div>
