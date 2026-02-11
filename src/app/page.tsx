@@ -361,9 +361,9 @@ export default function Home() {
                       onClick={() => {
                         setTranscript('');
                       }}
-                      className="absolute top-6 right-6 p-3 bg-[var(--surface)] hover:bg-[var(--surface-hover)] rounded-2xl transition-all active:scale-90 border border-[var(--border)] opacity-0 group-hover:opacity-100 duration-300 shadow-sm"
+                      className="absolute top-6 right-6 p-3 bg-[var(--surface)] hover:bg-[var(--surface-hover)] rounded-2xl transition-all active:scale-90 border border-[var(--border)] opacity-100 md:opacity-0 md:group-hover:opacity-100 duration-300 shadow-sm"
                     >
-                      <Trash2 className="w-4 h-4 text-red-400" />
+                      <Trash2 className="w-4 h-4 text-red-500" />
                     </button>
                   </div>
 
