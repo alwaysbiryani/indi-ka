@@ -9,8 +9,9 @@
 ---
 
 ## 📱 Experience
-
-> **Note:** Screenshots coming soon! Visit the [live demo](https://indi-ka.vercel.app/) to experience it yourself.
+| Mobile | Web | 
+|---|---|
+| <img width="1450" height="2936" alt="indi-ka vercel app_(iPhone 14 Pro Max)-portrait" src="https://github.com/user-attachments/assets/fde0cea6-1505-4cb2-ae80-901120d22dc2" /> | <img width="2000" height="2000" alt="Screenshot 2026-02-12 at 1 12 01 AM-front" src="https://github.com/user-attachments/assets/4691af81-c5d7-412e-9cbc-615a042d8411" /> | 
 
 ### 🌅 Light Mode (Day Theme)
 *A clean, bright interface perfect for daytime use*
