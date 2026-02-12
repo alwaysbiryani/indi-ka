@@ -9,7 +9,7 @@ async function runQA() {
     console.log('\n--- Running Playwright Tests ---');
     try {
         // We use --reporter=json to capture results for the reporting script
-        execSync('npx playwright test --reporter=json,html', {
+        execSync('npx playwright test', {
             stdio: 'inherit',
             env: { ...process.env, PW_TEST_HTML_REPORT_OPEN: 'never' }
         });
