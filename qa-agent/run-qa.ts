@@ -3,6 +3,11 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 async function runQA() {
+    if (!process.env.GITHUB_ACTIONS && process.env.NODE_ENV !== 'test') {
+        console.log('ℹ️ Skipping QA Agent: This script is intended to run only on GitHub Actions.');
+        process.exit(0);
+    }
+
     console.log('🚀 Starting Post-Deployment QA Agent...');
 
     // 1. Run Playwright Tests
@@ -34,10 +39,10 @@ async function runQA() {
 
     // 4. Check Known Issues Registry
     console.log('\n--- Known Issues Regression Status ---');
-    const knownIssuesPath = path.join(__dirname, 'config/known-issues.json');
+    const knownIssuesPath = path.join(process.cwd(), 'qa-agent/config/known-issues.json');
     if (fs.existsSync(knownIssuesPath)) {
         const knownIssues = JSON.parse(fs.readFileSync(knownIssuesPath, 'utf8'));
-        const resultsPath = path.join(__dirname, 'results/results.json');
+        const resultsPath = path.join(process.cwd(), 'qa-agent/results/results.json');
 
         if (fs.existsSync(resultsPath)) {
             const results = JSON.parse(fs.readFileSync(resultsPath, 'utf8'));

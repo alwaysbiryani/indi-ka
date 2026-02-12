@@ -5,9 +5,6 @@ import * as path from 'path';
 const resultsPath = path.join(process.cwd(), 'qa-agent/results/results.json');
 const apiKey = process.env.LINEAR_API_KEY;
 
-// Debugging: Log available environment keys (sans values) to trace secret injection
-console.log('Environment keys:', Object.keys(process.env).filter(k => k.includes('API') || k.includes('KEY')));
-
 if (!apiKey) {
     console.error('LINEAR_API_KEY is not set. Skipping Linear reporting.');
     process.exit(0);
