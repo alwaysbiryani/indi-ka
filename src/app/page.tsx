@@ -20,6 +20,7 @@ export default function Home() {
   const [errorBanner, setErrorBanner] = useState<string | null>(null);
   const [showAutoCopyBanner, setShowAutoCopyBanner] = useState(false);
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
+  const [transcriptionTime, setTranscriptionTime] = useState<number | null>(null);
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('app_theme') as 'light' | 'dark';
@@ -88,10 +89,14 @@ export default function Home() {
     }
   };
 
-  const handleTranscriptionComplete = (text: string, detectedLanguage?: string, isPartial?: boolean) => {
+  const handleTranscriptionComplete = (text: string, detectedLanguage?: string, isPartial?: boolean, processingTime?: number) => {
     if (isPartial) {
       setTranscript(text);
       return;
+    }
+
+    if (processingTime) {
+      setTranscriptionTime(processingTime);
     }
 
     if (!text || text.trim() === '') {
@@ -243,7 +248,7 @@ export default function Home() {
           <div className="hidden lg:block absolute top-0 left-1/2 -translate-x-1/2 w-40 h-7 bg-[var(--phone-frame)] rounded-b-[20px] z-[50]" />
 
           {/* Header (LOGO + THEME + HISTORY) */}
-          <header className="px-6 pt-8 lg:px-8 lg:pt-14 pb-4 flex items-center justify-between relative z-10 pt-[env(safe-area-inset-top)]">
+          <header className="px-6 pb-4 flex items-center justify-between relative z-10 pt-[calc(env(safe-area-inset-top)+2rem)] lg:px-8 lg:pt-14 lg:pb-4">
             <div className="flex items-center space-x-2">
               <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-br from-[#FF9933] to-[#138808] opacity-90 shadow-[0_2px_8px_rgba(0,0,0,0.1)]">
                 <MessageSquare className="w-4 h-4 text-white fill-current" />
@@ -351,7 +356,11 @@ export default function Home() {
                       <span className="text-sm font-medium">Back</span>
                     </button>
                     <div className="flex items-center space-x-2">
-                      {/* Optional: Add status indicator here */}
+                      {transcriptionTime && (
+                        <span className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider bg-[var(--surface-hover)] px-3 py-1.5 rounded-full border border-[var(--border)]">
+                          Ready in {transcriptionTime.toFixed(1)}s
+                        </span>
+                      )}
                     </div>
                   </div>
 

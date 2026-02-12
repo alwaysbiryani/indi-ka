@@ -2,14 +2,14 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
-import { Mic, Square, Loader2, Sparkles } from 'lucide-react';
+import { Mic, Square, Loader2, Sparkles, StopCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { sliceAudioBuffer, bufferToWav } from '@/utils/audioProcessing';
 import { SimpleScrollingWaveform } from '@/components/ui/Waveform';
 import { cn } from '@/utils/cn';
 
 interface AudioRecorderProps {
-    onTranscriptionComplete: (text: string, detectedLanguage?: string, isPartial?: boolean) => void;
+    onTranscriptionComplete: (text: string, detectedLanguage?: string, isPartial?: boolean, processingTime?: number) => void;
     onError: (msg: string) => void;
     language: string;
     apiKey: string;
@@ -43,7 +43,10 @@ export default function AudioRecorder({
     const isTranscribingPartRef = useRef(false);
     const accumulatedTranscriptRef = useRef("");
     const detectedLanguageRef = useRef("auto");
-    const [hasInteracted, setHasInteracted] = useState(true); // Default to true to avoid flash before effect
+    const [hasInteracted, setHasInteracted] = useState(true);
+    const [processingTime, setProcessingTime] = useState<number | null>(null);
+    const processingStartTimeRef = useRef<number | null>(null);
+    const audioContextRef = useRef<AudioContext | null>(null);
 
     React.useEffect(() => {
         const interacted = localStorage.getItem('audio_recorder_interacted');
@@ -57,14 +60,26 @@ export default function AudioRecorder({
         }
     }, [recordingDuration]);
 
-    // Cleanup timer on unmount
+    // Cleanup on unmount
     React.useEffect(() => {
         return () => {
             if (timerRef.current) clearInterval(timerRef.current);
+            if (audioContextRef.current) {
+                audioContextRef.current.close().catch(console.error);
+            }
         };
     }, []);
 
+    const getAudioContext = () => {
+        if (!audioContextRef.current || audioContextRef.current.state === 'closed') {
+            audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+        }
+        return audioContextRef.current;
+    };
+
     const startRecording = async () => {
+        setProcessingTime(null);
+        processingStartTimeRef.current = null;
         if (!hasInteracted) {
             setHasInteracted(true);
             localStorage.setItem('audio_recorder_interacted', 'true');
@@ -85,52 +100,35 @@ export default function AudioRecorder({
 
             const processAvailableSegments = async (isFinal = false) => {
                 if (isTranscribingPartRef.current && !isFinal) return;
-
-                if (chunksRef.current.length === 0) {
-                    console.log("No audio chunks available yet");
-                    return;
-                }
+                if (chunksRef.current.length === 0) return;
 
                 const audioBlob = new Blob(chunksRef.current, { type: mediaRecorder.mimeType || 'audio/webm' });
-                console.log(`Processing segments, blob size: ${audioBlob.size}, isFinal: ${isFinal}`);
-
                 if (audioBlob.size === 0) return;
 
                 try {
-                    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+                    const audioContext = getAudioContext();
                     const arrayBuffer = await audioBlob.arrayBuffer();
-
-                    // decodeAudioData can fail for short/incomplete blobs in some browsers
                     let audioBuffer;
                     try {
                         audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
                     } catch (decodeErr) {
                         console.error("decodeAudioData failed", decodeErr);
-                        // Fallback: If final and decoding failed, we can't do regular segmenting
-                        // but maybe we can try sending the whole blob if it's the first attempt
                         if (isFinal && lastProcessedTimeRef.current === 0) {
-                            console.log("Attempting full blob transcription fallback...");
                             await transcribeSegment(audioBlob, 0);
                         }
                         return;
                     }
 
                     const duration = audioBuffer.duration;
-                    console.log(`Audio duration: ${duration}s, Last processed: ${lastProcessedTimeRef.current}s`);
-
                     while (lastProcessedTimeRef.current + 30 <= duration || (isFinal && lastProcessedTimeRef.current < duration)) {
                         const start = lastProcessedTimeRef.current;
                         const end = isFinal ? Math.min(start + 30, duration) : start + 30;
+                        if (end - start < 0.5 && isFinal && lastProcessedTimeRef.current > 0) break;
 
-                        if (end - start < 0.5 && isFinal && lastProcessedTimeRef.current > 0) break; // too short and not the first segment
-
-                        console.log(`Transcribing segment: ${start}s to ${end}s`);
                         const slicedBuffer = sliceAudioBuffer(audioBuffer, start, end, audioContext);
                         const slicedBlob = bufferToWav(slicedBuffer);
-
                         await transcribeSegment(slicedBlob, start);
                         lastProcessedTimeRef.current = end;
-
                         if (isFinal && lastProcessedTimeRef.current >= duration) break;
                     }
                 } catch (err) {
@@ -156,16 +154,13 @@ export default function AudioRecorder({
                     if (response.ok) {
                         const data = await response.json();
                         const newText = data.transcript;
-                        console.log(`Segment transcription success: "${newText}"`);
                         if (newText) {
                             accumulatedTranscriptRef.current += (accumulatedTranscriptRef.current ? " " : "") + newText;
                             if (data.detected_language_code) detectedLanguageRef.current = data.detected_language_code;
-                            // Live update the UI
                             onTranscriptionComplete(accumulatedTranscriptRef.current, detectedLanguageRef.current, true);
                         }
                     } else {
                         const errData = await response.json();
-                        console.error("API Error:", errData);
                         onError(errData.details || errData.error || "Transcription failed");
                     }
                 } catch (err) {
@@ -176,25 +171,22 @@ export default function AudioRecorder({
             };
 
             mediaRecorder.onstop = async () => {
-                console.log("MediaRecorder stopped. Finalizing...");
                 setIsProcessing(true);
-                setProcessingStatus("Finalizing transcription...");
-
+                setProcessingStatus("Finalizing...");
                 if (timerRef.current) {
                     clearInterval(timerRef.current);
                     timerRef.current = null;
                 }
-
                 try {
-                    // Give a small delay to ensure the final ondataavailable has been processed
                     await new Promise(resolve => setTimeout(resolve, 200));
                     await processAvailableSegments(true);
 
-                    console.log(`Final transcription: "${accumulatedTranscriptRef.current}"`);
-                    onTranscriptionComplete(accumulatedTranscriptRef.current, detectedLanguageRef.current, false);
-                } catch (error: any) {
-                    console.error("Finalization error:", error);
-                    onError(error.message || "Failed to finalize transcription");
+                    if (processingStartTimeRef.current) {
+                        const duration = (Date.now() - processingStartTimeRef.current) / 1000;
+                        onTranscriptionComplete(accumulatedTranscriptRef.current, detectedLanguageRef.current, false, duration);
+                    } else {
+                        onTranscriptionComplete(accumulatedTranscriptRef.current, detectedLanguageRef.current, false);
+                    }
                 } finally {
                     setIsProcessing(false);
                     setProcessingStatus("");
@@ -203,7 +195,7 @@ export default function AudioRecorder({
                 }
             };
 
-            mediaRecorder.start(30000); // Fire ondataavailable every 30s
+            mediaRecorder.start(30000);
             setIsRecording(true);
             setRecordingDuration(0);
             lastProcessedTimeRef.current = 0;
@@ -221,13 +213,13 @@ export default function AudioRecorder({
                 });
             }, 1000);
         } catch (err) {
-            console.error("Error accessing microphone:", err);
             onError("Could not access microphone. Please check permissions.");
         }
     };
 
     const stopRecording = () => {
         if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+            processingStartTimeRef.current = Date.now();
             mediaRecorderRef.current.stop();
             setIsRecording(false);
             if (timerRef.current) {
@@ -245,7 +237,6 @@ export default function AudioRecorder({
         ? "w-full h-full bg-zinc-50 border border-zinc-100 text-zinc-400 rounded-3xl font-bold text-xs uppercase tracking-widest flex items-center justify-center space-x-2 cursor-wait"
         : "w-full py-4 bg-zinc-50 border border-zinc-100 text-zinc-400 rounded-xl font-medium text-lg flex items-center justify-center space-x-3 cursor-wait";
 
-
     if (variant === 'circular') {
         return (
             <div className={cn("flex flex-col items-center justify-center w-full", className)}>
@@ -259,49 +250,30 @@ export default function AudioRecorder({
                             onClick={startRecording}
                             className="relative group w-64 h-64"
                         >
-                            {/* Visual cue: Dual Pulse Halo for better aesthetics */}
                             {!hasInteracted && (
                                 <>
                                     <motion.div
                                         className="absolute inset-0 rounded-full border-2 border-zinc-500/20"
-                                        initial={{ scale: 1, opacity: 0 }}
-                                        animate={{
-                                            scale: [1, 1.4],
-                                            opacity: [0, 0.4, 0]
-                                        }}
-                                        transition={{
-                                            duration: 2.4,
-                                            repeat: Infinity,
-                                            ease: "easeOut"
-                                        }}
+                                        animate={{ scale: [1, 1.4], opacity: [0, 0.4, 0] }}
+                                        transition={{ duration: 2.4, repeat: Infinity, ease: "easeOut" }}
                                     />
                                     <motion.div
                                         className="absolute inset-0 rounded-full border-2 border-zinc-500/20"
-                                        initial={{ scale: 1, opacity: 0 }}
-                                        animate={{
-                                            scale: [1, 1.4],
-                                            opacity: [0, 0.4, 0]
-                                        }}
-                                        transition={{
-                                            duration: 2.4,
-                                            repeat: Infinity,
-                                            ease: "easeOut",
-                                            delay: 1.2
-                                        }}
+                                        animate={{ scale: [1, 1.4], opacity: [0, 0.4, 0] }}
+                                        transition={{ duration: 2.4, repeat: Infinity, ease: "easeOut", delay: 1.2 }}
                                     />
                                 </>
                             )}
                             <div className="absolute inset-0 bg-gradient-to-br from-zinc-200/20 to-zinc-100/5 rounded-full blur-xl group-hover:blur-2xl transition-all" />
                             <div className="relative w-full h-full bg-white rounded-full flex flex-col items-center justify-center shadow-2xl border-4 border-zinc-100">
                                 <Mic className="w-16 h-16 text-zinc-900 mb-2" />
-                                <span className="text-2xl font-bold text-zinc-900 tracking-tight">SPEAK</span>
+                                <span className="text-xl font-bold text-zinc-900 tracking-tight uppercase">Tap to Speak</span>
                             </div>
                         </motion.button>
                     )}
 
                     {isRecording && (
                         <div className="flex flex-col items-center justify-center w-full space-y-12 py-10">
-                            {/* Minimal Linear Waveform */}
                             <div className="w-full flex flex-col items-center space-y-6">
                                 <div className="w-full h-10 flex items-center px-4">
                                     <SimpleScrollingWaveform
@@ -326,8 +298,6 @@ export default function AudioRecorder({
                                     </div>
                                 </div>
                             </div>
-
-                            {/* Minimal Stop Button */}
                             <button
                                 onClick={stopRecording}
                                 className="group flex flex-col items-center space-y-4 active:scale-95 transition-all outline-none"
@@ -363,20 +333,22 @@ export default function AudioRecorder({
             <AnimatePresence mode="wait">
                 {!isRecording && !isProcessing && (
                     <motion.div
+                        key="idle"
                         initial={{ scale: 0.98, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
                         exit={{ scale: 0.98, opacity: 0 }}
                         className={cn("w-full", isCompact ? "h-full" : "")}
                     >
                         <button onClick={startRecording} className={buttonBaseClasses}>
-                            <Mic className={isCompact ? "w-5 h-5" : "w-5 h-5"} />
-                            <span>{isCompact ? "Speak" : "Tap to Speak"}</span>
+                            <Mic className="w-5 h-5" />
+                            <span>{isCompact ? "Tap" : "Tap to Speak"}</span>
                         </button>
                     </motion.div>
                 )}
 
                 {isRecording && (
                     <motion.div
+                        key="recording"
                         initial={{ scale: 0.98, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
                         exit={{ scale: 0.98, opacity: 0 }}
@@ -391,9 +363,7 @@ export default function AudioRecorder({
                         >
                             <div className="flex items-center space-x-3">
                                 <div className="w-4 h-4 bg-white rounded-sm animate-pulse" />
-                                <span className="text-sm font-bold text-white uppercase tracking-widest">
-                                    STOP
-                                </span>
+                                <span className="text-sm font-bold text-white uppercase tracking-widest">STOP</span>
                             </div>
                         </div>
                     </motion.div>
@@ -401,6 +371,7 @@ export default function AudioRecorder({
 
                 {isProcessing && (
                     <motion.div
+                        key="processing"
                         initial={{ scale: 0.98, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
                         exit={{ scale: 0.98, opacity: 0 }}
@@ -416,3 +387,4 @@ export default function AudioRecorder({
         </div>
     );
 }
+

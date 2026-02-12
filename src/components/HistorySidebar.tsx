@@ -77,40 +77,40 @@ export default function HistorySidebar({ history, onDelete, onSelect, onClearAll
                             transition={{ duration: 0.2 }}
                             key={item.id}
                             onClick={() => onSelect(item.text)}
-                            className="group relative bg-[var(--surface)] hover:bg-[var(--surface-hover)] border border-[var(--border)] rounded-[24px] p-5 transition-all cursor-pointer active:scale-[0.98] shadow-sm hover:shadow-md"
+                            className="group relative bg-[var(--surface)] hover:bg-[var(--surface-hover)] border border-[var(--border)] rounded-[20px] p-4 transition-all cursor-pointer active:scale-[0.99] shadow-sm"
                         >
-                            <p className="text-[var(--text-primary)] text-sm line-clamp-4 mb-5 font-medium leading-relaxed">
+                            <p className="text-[var(--text-primary)] text-sm line-clamp-3 mb-4 font-medium leading-relaxed opacity-90">
                                 {item.text}
                             </p>
 
-                            <div className="flex flex-col gap-4">
+                            <div className="flex flex-col gap-3">
                                 {/* Metadata Row */}
-                                <div className="flex justify-between items-center text-[10px] text-[var(--text-secondary)] font-medium tracking-wider uppercase">
-                                    <span className="px-2 py-0.5 rounded-md border border-[var(--border)] bg-[var(--app-bg)] text-[var(--text-secondary)] font-bold">
+                                <div className="flex justify-between items-center text-[9px] text-[var(--text-secondary)] font-bold tracking-widest uppercase opacity-60">
+                                    <span className="px-1.5 py-0.5 rounded-md border border-[var(--border)] bg-[var(--surface-hover)]">
                                         {formatLanguage(item.language, item.detectedLanguage)}
                                     </span>
-                                    <span className="opacity-40">
+                                    <span>
                                         {new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                     </span>
                                 </div>
 
-                                {/* Action Row - More prominent CTAs */}
-                                <div className="flex items-center gap-2 pt-2 border-t border-[var(--border)]">
+                                {/* Action Row */}
+                                <div className="flex items-center gap-2 pt-3 border-t border-[var(--border)]">
                                     <button
                                         onClick={(e) => handleCopy(e, item.id, item.text)}
-                                        className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-[11px] font-bold transition-all ${copiedId === item.id
-                                            ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 shadow-sm shadow-emerald-500/10'
-                                            : 'bg-[var(--app-bg)] text-[var(--text-primary)] hover:bg-[var(--surface-hover)] border border-[var(--border)] shadow-sm'
+                                        className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg text-[10px] font-bold transition-all ${copiedId === item.id
+                                            ? 'text-emerald-500 bg-emerald-500/5'
+                                            : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)]'
                                             }`}
                                     >
                                         {copiedId === item.id ? (
                                             <>
-                                                <Check className="w-3.5 h-3.5" />
+                                                <Check className="w-3 h-3" />
                                                 <span>Copied</span>
                                             </>
                                         ) : (
                                             <>
-                                                <Copy className="w-3.5 h-3.5 text-[var(--text-secondary)]" />
+                                                <Copy className="w-3 h-3" />
                                                 <span>Copy</span>
                                             </>
                                         )}
@@ -118,10 +118,10 @@ export default function HistorySidebar({ history, onDelete, onSelect, onClearAll
 
                                     <button
                                         onClick={(e) => handleDelete(e, item.id)}
-                                        className="flex-none flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-[11px] font-bold text-[var(--text-secondary)] hover:text-red-500 bg-[var(--app-bg)] hover:bg-red-500/5 border border-[var(--border)] hover:border-red-500/20 shadow-sm transition-all"
+                                        className="flex-none flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg text-[10px] font-bold text-[var(--text-secondary)] hover:text-red-500/80 hover:bg-red-500/5 transition-all"
                                         aria-label="Delete"
                                     >
-                                        <Trash2 className="w-3.5 h-3.5" />
+                                        <Trash2 className="w-3 h-3" />
                                         <span>Delete</span>
                                     </button>
                                 </div>

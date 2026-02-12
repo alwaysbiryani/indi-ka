@@ -18,9 +18,17 @@ export const metadata: Metadata = {
   other: {
     'build-commit': process.env.VERCEL_GIT_COMMIT_SHA || 'local-dev',
     'build-time': process.env.NEXT_PUBLIC_BUILD_TIME || new Date().toISOString(),
-    'ui-version': 'mobile-first-v2',
+    'ui-version': 'mobile-first-v3',
   },
 };
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: 'cover',
+}
 
 export default function RootLayout({
   children,
