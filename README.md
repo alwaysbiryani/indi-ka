@@ -206,11 +206,8 @@ We believe the best experiences are designed for mobile **first**, then adapted 
 
 Comprehensive guides for developers and contributors:
 
-- **[Quick Reference](QUICK_REFERENCE.md)** - Common commands and quick tips
-- **[Deployment Checklist](DEPLOYMENT_CHECKLIST.md)** - Step-by-step deployment guide
-- **[Architecture](ARCHITECTURE.md)** - System design and visual diagrams
-- **[Safety Plan](DEPLOYMENT_SAFETY_PLAN.md)** - Production safety architecture
-- **[Design Rules](DESIGN_RULES.md)** - Permanent UI rules and constraints
+- **[Design Rules](#-design--ui-rules)** - Permanent UI rules and constraints
+- **[Development Safety](#-production-safety)** - How we ensure production stays stable
 
 ---
 
@@ -277,6 +274,39 @@ Have an idea to make Indi-क even better?
 - **Vercel** - For seamless deployment and hosting
 - **Next.js Team** - For an amazing framework
 - **Open Source Community** - For inspiration and tools
+
+---
+
+## 📱 Design & UI Rules
+
+To maintain the premium mobile-first experience, follow these rules:
+
+### 1. Transcription Canvas Actions
+- **Mobile**: The delete (trash can) icon must be **ALWAYS VISIBLE** (opacity 100%).
+- **Desktop**: The delete icon should appear on hover (`group-hover`).
+- **Implementation**: Use `opacity-100 lg:opacity-0 lg:group-hover:opacity-100` for action buttons inside the canvas.
+
+### 2. Theming
+- Ensure all transitions use `transition-colors duration-500`.
+- All surface elements should use `var(--surface)` or `var(--surface-hover)`.
+
+---
+
+## 🛡️ Production Safety
+
+We use a multi-layer safety system to prevent legacy code from reaching production:
+
+1. **GitHub Actions**: Automatically runs `npm run verify` on every push.
+2. **UI Integrity Check**: `npm run verify:ui` blocks commits containing legacy patterns.
+3. **Deployment Lock**: Production is strictly locked to the `main` branch via `vercel.json`.
+4. **Version Stamping**: The browser console logs the build commit and UI version for traceability.
+
+### Quick Commands
+```bash
+npm run dev          # Start development server
+npm run verify       # Run full verification (UI + Build)
+npm run deploy:check # Final check before pushing to main
+```
 
 ---
 

@@ -44,3 +44,8 @@ next-env.d.ts
 /playwright-report/
 /test-results/
 /qa-agent/results/
+/qa-agent/tests/visual-regression.spec.ts-snapshots/
+
+# misc
+.vercel-deploy-trigger
+.DS_Store
