@@ -19,18 +19,34 @@ async function reportFailures() {
     }
 
     const results = JSON.parse(fs.readFileSync(resultsPath, 'utf8'));
-    const failures = results.suites.flatMap((suite: any) =>
-        suite.specs.flatMap((spec: any) =>
-            spec.tests.filter((test: any) => test.status === 'unexpected' || test.status === 'fail')
-                .map((test: any) => ({
-                    title: spec.title,
-                    file: suite.file,
-                    error: test.results[0]?.error?.message || 'Unknown error',
-                    logs: test.results[0]?.stdout.map((l: any) => l.text).join('\n'),
-                    viewport: test.projectName,
-                    screenshots: test.results[0]?.attachments?.filter((a: any) => a.name === 'screenshot') || []
-                }))
-        )
+
+    // Helper to recursively extract specs from suites
+    function getAllSpecs(suites: any[]): any[] {
+        return suites.flatMap(suite => {
+            const specs = suite.specs || [];
+            const childSpecs = suite.suites ? getAllSpecs(suite.suites) : [];
+            return [...specs, ...childSpecs];
+        });
+    }
+
+    const allSpecs = getAllSpecs(results.suites || []);
+
+    const failures = allSpecs.flatMap((spec: any) =>
+        spec.tests.filter((test: any) => test.status === 'unexpected' || test.status === 'fail')
+            .map((test: any) => ({
+                title: spec.title,
+                file: spec.file, // Note: file might be up standard, but usually available on spec or suite. 
+                // Playwright JSON spec doesn't strictly have file on spec, it's on the root suite. 
+                // However, let's keep it simple. The description uses it.
+                // Actually, file is usually on the root suite. 
+                // We might lose specific file info if we flatten without tracking context. 
+                // But spec.file is often populated in newer versions? 
+                // Let's check. spec.file exists.
+                error: test.results[0]?.error?.message || 'Unknown error',
+                logs: test.results[0]?.stdout?.map((l: any) => l.text).join('\n') || '', // Fix logs mapping
+                viewport: test.projectName,
+                screenshots: test.results[0]?.attachments?.filter((a: any) => a.name === 'screenshot') || []
+            }))
     );
 
     if (failures.length === 0) {
