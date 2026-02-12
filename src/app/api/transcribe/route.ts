@@ -26,15 +26,12 @@ export async function POST(req: NextRequest) {
 
         const sarvamFormData = new FormData();
 
-        // Normalize mime type: Sarvam is strict and doesn't like parameters like ;codecs=opus
-        let mimeType = audioFile.type;
-        if (mimeType.includes('audio/webm')) mimeType = 'audio/webm';
-        if (mimeType.includes('video/webm')) mimeType = 'video/webm';
-
         const arrayBuffer = await audioFile.arrayBuffer();
-        const blob = new Blob([arrayBuffer], { type: mimeType });
+        // application/octet-stream bypasses strict mime-type validation in many APIs
+        // while the .webm extension still tells the server what it is.
+        const blob = new Blob([arrayBuffer], { type: 'application/octet-stream' });
 
-        sarvamFormData.append('file', blob, 'audio.webm');
+        sarvamFormData.append('file', blob, 'recording.webm');
         sarvamFormData.append('model', 'saaras:v3');
 
         // Map language to Sarvam parameters
