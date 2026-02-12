@@ -79,8 +79,8 @@ ${failure.error}
 \`\`\`
 
 ### reproduction steps
-1. Run \`npx playwright test ${failure.file}\`
-2. Observer failure in ${failure.viewport} viewport.
+1. Re-run the failing scenario in the antigravity browser testing environment.
+2. Observe the failure in ${failure.viewport} viewport.
 
 ### console logs
 \`\`\`

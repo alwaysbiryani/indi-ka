@@ -31,7 +31,6 @@ jobs:
       
     - name: Run QA Agent
       env:
-        LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
         # If your app needs other env vars (like Sarvam API keys)
         SARVAM_API_KEY: ${{ secrets.SARVAM_API_KEY }}
         # The agent expects the app to be running at localhost:3000 by default (webServer handles this)

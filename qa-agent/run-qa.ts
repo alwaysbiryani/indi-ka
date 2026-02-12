@@ -3,8 +3,9 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 async function runQA() {
-    if (!process.env.GITHUB_ACTIONS && process.env.NODE_ENV !== 'test') {
-        console.log('ℹ️ Skipping QA Agent: This script is intended to run only on GitHub Actions.');
+    if (process.env.GITHUB_ACTIONS !== 'true') {
+        console.log('ℹ️ Local QA Agent execution is disabled. Browser testing is handled by antigravity.');
+        console.log('ℹ️ This script runs only in GitHub Actions.');
         process.exit(0);
     }
 
@@ -29,13 +30,9 @@ async function runQA() {
     // Simple check: we could run a specific test and log timing.
     // Playwright tests already report duration.
 
-    // 3. Report to Linear
-    console.log('\n--- Reporting Failures to Linear ---');
-    try {
-        execSync('npx ts-node qa-agent/scripts/report-failures.ts', { stdio: 'inherit' });
-    } catch (error) {
-        console.error('❌ Failed to report to Linear:', error);
-    }
+    // 3. Linear reporting intentionally disabled for GitHub QA Agent
+    console.log('\n--- Linear Reporting ---');
+    console.log('ℹ️ Skipping Linear issue creation by configuration.');
 
     // 4. Check Known Issues Registry
     console.log('\n--- Known Issues Regression Status ---');
