@@ -88,7 +88,7 @@ const AudioRecorder = React.memo(({
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             setActiveStream(stream);
-            const mediaRecorder = new MediaRecorder(stream);
+            const mediaRecorder = new MediaRecorder(stream, { audioBitsPerSecond: 16000 });
             mediaRecorderRef.current = mediaRecorder;
             chunksRef.current = [];
 
@@ -156,11 +156,14 @@ const AudioRecorder = React.memo(({
                     formData.append('audio', blob, `segment_${startTime}.wav`);
                     formData.append('language', language);
 
+                    const apiStart = Date.now();
                     const response = await fetch('/api/transcribe', {
                         method: 'POST',
                         headers: { 'x-api-key': apiKey },
                         body: formData,
                     });
+                    const apiEnd = Date.now();
+                    console.log(`[Timer] Client-to-Backend fetch took ${apiEnd - apiStart}ms`);
 
                     if (response.ok) {
                         const data = await response.json();
@@ -189,7 +192,9 @@ const AudioRecorder = React.memo(({
                     timerRef.current = null;
                 }
                 try {
+                    const stopTime = Date.now();
                     await processAvailableSegments(true);
+                    console.log(`[Timer] Total processing time (after stop): ${Date.now() - stopTime}ms`);
 
                     if (processingStartTimeRef.current) {
                         const duration = (Date.now() - processingStartTimeRef.current) / 1000;

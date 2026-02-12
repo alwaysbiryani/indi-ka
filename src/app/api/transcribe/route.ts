@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(req: NextRequest) {
     try {
+        const startTime = Date.now();
         const formData = await req.formData();
         const audioFile = formData.get('audio') as File;
         const language = formData.get('language') as string;
@@ -40,9 +41,16 @@ export async function POST(req: NextRequest) {
             sarvamFormData.append('mode', 'translit');
         } else if (language === 'hi-IN') {
             sarvamFormData.append('language_code', 'hi-IN');
+            sarvamFormData.append('mode', 'transcribe');
         } else if (language === 'en-IN') {
             sarvamFormData.append('language_code', 'en-IN');
+            sarvamFormData.append('mode', 'transcribe');
+        } else {
+            // Default to transcribe if not specified
+            sarvamFormData.append('mode', 'transcribe');
         }
+
+        const asrStart = Date.now();
 
         const asrResponse = await fetch('https://api.sarvam.ai/speech-to-text', {
             method: 'POST',
@@ -51,6 +59,9 @@ export async function POST(req: NextRequest) {
             },
             body: sarvamFormData as any,
         });
+
+        const asrEnd = Date.now();
+        console.log(`[Timer] Sarvam API (model: saaras:v3, lang: ${language}) took ${asrEnd - asrStart}ms`);
 
         if (!asrResponse.ok) {
             const errorText = await asrResponse.text();
@@ -69,6 +80,7 @@ export async function POST(req: NextRequest) {
         }
 
         const asrData = await asrResponse.json();
+        console.log(`[Timer] Total Backend Route time: ${Date.now() - startTime}ms`);
 
         return NextResponse.json({
             transcript: asrData.transcript || "",
