@@ -102,6 +102,15 @@ const AudioRecorder = React.memo(({
                 if (isTranscribingPartRef.current && !isFinal) return;
                 if (chunksRef.current.length === 0) return;
 
+                // Optimization: For short utterances (or the final segment), 
+                // send the raw chunks directly without decoding/re-encoding to WAV.
+                // This saves significant client-side CPU and reduces latency.
+                if (isFinal && lastProcessedTimeRef.current === 0) {
+                    const audioBlob = new Blob(chunksRef.current, { type: mediaRecorder.mimeType || 'audio/webm' });
+                    await transcribeSegment(audioBlob, 0);
+                    return;
+                }
+
                 const audioBlob = new Blob(chunksRef.current, { type: mediaRecorder.mimeType || 'audio/webm' });
                 if (audioBlob.size === 0) return;
 
@@ -112,14 +121,15 @@ const AudioRecorder = React.memo(({
                     try {
                         audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
                     } catch (decodeErr) {
-                        console.error("decodeAudioData failed", decodeErr);
-                        if (isFinal && lastProcessedTimeRef.current === 0) {
+                        console.error("decodeAudioData failed, falling back to raw upload", decodeErr);
+                        if (isFinal) {
                             await transcribeSegment(audioBlob, 0);
                         }
                         return;
                     }
 
                     const duration = audioBuffer.duration;
+                    // For longer recordings, we slice and transcribe in 30s segments
                     while (lastProcessedTimeRef.current + 30 <= duration || (isFinal && lastProcessedTimeRef.current < duration)) {
                         const start = lastProcessedTimeRef.current;
                         const end = isFinal ? Math.min(start + 30, duration) : start + 30;
@@ -127,6 +137,7 @@ const AudioRecorder = React.memo(({
 
                         const slicedBuffer = sliceAudioBuffer(audioBuffer, start, end, audioContext);
                         const slicedBlob = bufferToWav(slicedBuffer);
+
                         await transcribeSegment(slicedBlob, start);
                         lastProcessedTimeRef.current = end;
                         if (isFinal && lastProcessedTimeRef.current >= duration) break;
@@ -178,7 +189,6 @@ const AudioRecorder = React.memo(({
                     timerRef.current = null;
                 }
                 try {
-                    await new Promise(resolve => setTimeout(resolve, 200));
                     await processAvailableSegments(true);
 
                     if (processingStartTimeRef.current) {

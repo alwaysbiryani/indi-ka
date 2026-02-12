@@ -13,8 +13,6 @@ import LanguageSelector from '@/components/LanguageSelector';
 import { cn } from '@/utils/cn';
 import type { HistoryItem } from '@/components/HistorySidebar';
 
-
-
 import { TaglineCycler } from '@/components/TaglineCycler';
 import { BackgroundBlobs } from '@/components/BackgroundBlobs';
 
@@ -198,6 +196,7 @@ export default function Home() {
               <button
                 onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
                 className="p-2.5 rounded-full hover:bg-[var(--surface-hover)] text-[var(--text-secondary)] transition-all active:scale-95"
+                data-testid={theme === 'dark' ? 'sun-icon' : 'moon-icon'}
               >
                 {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
               </button>
@@ -205,6 +204,7 @@ export default function Home() {
               <button
                 onClick={openHistory}
                 className="relative bg-[var(--surface)] hover:bg-[var(--surface-hover)] px-4 py-2 rounded-full border border-[var(--border)] flex items-center space-x-2 transition-all active:scale-95 group shadow-sm"
+                data-testid="history-button"
               >
                 <Clock className="w-4 h-4 text-[var(--text-secondary)] group-hover:text-[var(--text-primary)]" />
                 <span className="text-xs font-bold text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] uppercase tracking-wider">Recent</span>
@@ -236,6 +236,7 @@ export default function Home() {
                         selectedLanguage={language}
                         onSelectLanguage={setLanguage}
                         className="!bg-transparent !border-none !p-4 !m-0"
+                        data-testid="language-selector"
                       />
                     </div>
                   </div>
@@ -282,6 +283,7 @@ export default function Home() {
                       onChange={(e) => setTranscript(e.target.value)}
                       className="w-full h-full bg-transparent border-none focus:ring-0 text-[var(--text-primary)] text-lg lg:text-xl font-medium leading-relaxed resize-none outline-none custom-scrollbar"
                       placeholder="Your transcription will appear here..."
+                      data-testid="transcription-canvas"
                     />
                     <button
                       onClick={() => setTranscript('')}
@@ -300,6 +302,7 @@ export default function Home() {
                           ? "bg-green-500/10 border border-green-500/40 text-green-600 dark:text-green-500"
                           : "bg-[var(--surface)] hover:bg-[var(--surface-hover)] border border-[var(--border)] text-[var(--text-primary)]"
                       )}
+                      data-testid="copy-button"
                     >
                       <Copy className={cn("w-4.5 h-4.5 transition-colors", hasCopied ? "text-green-500" : "text-[var(--text-secondary)] group-hover:text-[var(--text-primary)]")} />
                       <span className="font-bold text-sm tracking-wide">{hasCopied ? "Copied" : "Copy Text"}</span>
@@ -308,6 +311,7 @@ export default function Home() {
                     <button
                       onClick={() => setTranscript('')}
                       className="flex-1 py-3.5 bg-[var(--surface)] hover:bg-[var(--surface-hover)] rounded-full transition-all active:scale-95 border border-[var(--border)] flex items-center justify-center space-x-2 outline-none"
+                      data-testid="speak-again-button"
                     >
                       <Mic className="w-4.5 h-4.5 text-[var(--text-secondary)]" />
                       <span className="font-bold text-sm text-[var(--text-primary)] tracking-wide">Speak Again</span>
