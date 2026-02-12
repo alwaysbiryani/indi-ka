@@ -7,6 +7,8 @@ test.describe('Core User Journeys', () => {
         // Inject a fake API key if needed by the app
         await page.addInitScript(() => {
             window.localStorage.setItem('sarvam_api_key', 'test-api-key');
+            // Force dark theme for consistent testing
+            window.localStorage.setItem('app_theme', 'dark');
         });
         await page.goto('/');
     });
