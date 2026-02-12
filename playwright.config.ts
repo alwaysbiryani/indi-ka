@@ -28,9 +28,6 @@ export default defineConfig({
         screenshot: 'only-on-failure',
         video: 'on-first-retry',
         permissions: ['microphone'],
-        launchOptions: {
-            args: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream'],
-        },
     },
 
     /* Configure projects for major browsers */
