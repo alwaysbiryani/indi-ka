@@ -13,7 +13,7 @@ import LanguageSelector from '@/components/LanguageSelector';
 import { cn } from '@/utils/cn';
 import type { HistoryItem } from '@/components/HistorySidebar';
 
-import { TaglineSkeleton } from '@/components/ui/Skeleton';
+
 
 import { TaglineCycler } from '@/components/TaglineCycler';
 import { BackgroundBlobs } from '@/components/BackgroundBlobs';
@@ -172,7 +172,7 @@ export default function Home() {
   }, []);
 
   return (
-    <main className="min-h-screen w-full bg-[var(--app-bg)] flex items-center justify-center p-0 lg:p-8 font-sans overflow-hidden relative transition-colors duration-500">
+    <main className="min-h-dvh w-full bg-[var(--app-bg)] flex items-center justify-center p-0 lg:p-8 font-sans overflow-hidden relative transition-colors duration-500">
       <BackgroundBlobs />
 
       <div className="relative z-10 w-full flex flex-col items-center">
@@ -182,11 +182,11 @@ export default function Home() {
         <m.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="w-full h-[100dvh] lg:w-[390px] lg:h-[844px] bg-[var(--screen-bg)] lg:rounded-[50px] lg:shadow-[0_40px_100px_rgba(0,0,0,0.15)] overflow-hidden lg:border-[8px] border-0 lg:border-[var(--phone-frame)] relative flex flex-col transition-colors duration-500"
+          className="w-full h-dvh lg:w-[390px] lg:h-[844px] bg-[var(--screen-bg)] lg:rounded-[50px] lg:shadow-[0_40px_100px_rgba(0,0,0,0.15)] overflow-hidden lg:border-[8px] border-0 lg:border-[var(--phone-frame)] relative flex flex-col transition-colors duration-500"
         >
           <div className="hidden lg:block absolute top-0 left-1/2 -translate-x-1/2 w-40 h-7 bg-[var(--phone-frame)] rounded-b-[20px] z-[50]" />
 
-          <header className="px-6 pb-4 flex items-center justify-between relative z-10 pt-[calc(env(safe-area-inset-top)+2rem)] lg:px-8 lg:pt-14 lg:pb-4">
+          <header className="px-6 pb-2 sm:pb-4 flex items-center justify-between relative z-10 pt-[max(env(safe-area-inset-top),1.5rem)] lg:px-8 lg:pt-14 lg:pb-4">
             <div className="flex items-center space-x-2">
               <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-br from-[#FF9933] to-[#138808]">
                 <MessageSquare className="w-4 h-4 text-white fill-current" />
@@ -218,7 +218,7 @@ export default function Home() {
             </div>
           </header>
 
-          <div className="flex-1 px-6 lg:px-8 flex flex-col overflow-hidden">
+          <div className="flex-1 px-6 lg:px-8 flex flex-col overflow-hidden min-h-0">
             <AnimatePresence mode="wait">
               {!transcript ? (
                 <m.div
@@ -226,11 +226,11 @@ export default function Home() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.98 }}
-                  className="flex-1 flex flex-col items-center justify-start pt-6"
+                  className="flex-1 flex flex-col items-center justify-between pb-6 h-full min-h-0"
                 >
                   <TaglineCycler />
 
-                  <div className="w-full mb-10 relative z-50">
+                  <div className="w-full relative z-50 mb-4">
                     <div className="bg-[var(--surface)]/80 backdrop-blur-xl rounded-[24px] p-1 border border-[var(--border)] shadow-sm transition-all duration-300">
                       <LanguageSelector
                         selectedLanguage={language}
@@ -240,7 +240,7 @@ export default function Home() {
                     </div>
                   </div>
 
-                  <div className="flex-1 flex items-center justify-center mb-16">
+                  <div className="flex-1 flex items-center justify-center min-h-0 w-full overflow-visible">
                     <AudioRecorder
                       onTranscriptionComplete={handleTranscriptionComplete}
                       onError={handleErrorAction}
@@ -291,7 +291,7 @@ export default function Home() {
                     </button>
                   </div>
 
-                  <div className="flex items-center space-x-4 mb-8 w-full max-w-full lg:max-w-[400px] mx-auto px-1 pb-[env(safe-area-inset-bottom)]">
+                  <div className="flex items-center space-x-4 mb-4 lg:mb-8 w-full max-w-full lg:max-w-[400px] mx-auto px-1 pb-[max(env(safe-area-inset-bottom),1rem)]">
                     <button
                       onClick={handleCopy}
                       className={cn(

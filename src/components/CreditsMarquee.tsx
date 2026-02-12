@@ -27,8 +27,8 @@ export function CreditsMarquee() {
     if (!mounted) return <div className="mt-auto h-12 bg-transparent border-y border-transparent" />;
 
     return (
-        <div className="mt-auto pb-8 relative z-10">
-            <div className="w-full overflow-hidden flex items-center h-12 bg-[var(--surface)]/50 backdrop-blur-sm border-y border-[var(--border)]">
+        <div className="mt-auto pb-[max(env(safe-area-inset-bottom),1.5rem)] relative z-10 w-full">
+            <div className="w-full overflow-hidden flex items-center h-10 bg-[var(--surface)]/50 backdrop-blur-sm border-y border-[var(--border)]">
                 <motion.div
                     className="flex items-center shrink-0"
                     animate={{

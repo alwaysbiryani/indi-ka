@@ -274,8 +274,8 @@ const AudioRecorder = React.memo(({
                     )}
 
                     {isRecording && (
-                        <div className="flex flex-col items-center justify-center w-full space-y-12 py-10">
-                            <div className="w-full flex flex-col items-center space-y-6">
+                        <div className="flex flex-col items-center justify-between w-full h-full py-2 sm:py-6 space-y-4 sm:space-y-8">
+                            <div className="w-full flex-1 flex flex-col items-center justify-center min-h-0 space-y-6 sm:space-y-8">
                                 <div className="w-full h-10 flex items-center px-4">
                                     <SimpleScrollingWaveform
                                         active={true}
@@ -302,10 +302,10 @@ const AudioRecorder = React.memo(({
                             <button
                                 onClick={stopRecording}
                                 data-testid="stop-button"
-                                className="group flex flex-col items-center space-y-4 active:scale-95 transition-all outline-none"
+                                className="group flex flex-col items-center space-y-2 sm:space-y-4 active:scale-95 transition-all outline-none pb-4"
                             >
-                                <div className="w-20 h-20 rounded-full border-[1.5px] border-zinc-100 flex items-center justify-center group-hover:border-red-500/50 transition-colors">
-                                    <div className="w-7 h-7 bg-red-500 rounded-[4px] shadow-sm" />
+                                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-[1.5px] border-zinc-100 flex items-center justify-center group-hover:border-red-500/50 transition-colors">
+                                    <div className="w-6 h-6 sm:w-7 sm:h-7 bg-red-500 rounded-[4px] shadow-sm" />
                                 </div>
                                 <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-[0.2em] group-hover:text-red-500 transition-colors">
                                     Stop Recording
