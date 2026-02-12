@@ -46,18 +46,20 @@ body {
   0%,
   100% {
     opacity: 0.02;
-    transform: scale(1);
+    transform: scale(1) translateZ(0);
   }
 
   50% {
     opacity: 0.04;
-    transform: scale(1.1);
+    transform: scale(1.05) translateZ(0);
   }
 }
 
 .aurora-animate {
-  animation: aurora-pulse 10s ease-in-out infinite;
+  animation: aurora-pulse 12s ease-in-out infinite;
   will-change: opacity, transform;
+  filter: blur(64px);
+  /* Optimized for mobile GPU */
 }
 
 /* Custom scrollbar */

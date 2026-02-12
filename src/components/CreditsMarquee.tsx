@@ -18,10 +18,13 @@ export function CreditsMarquee() {
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
-        setMounted(true);
+        const timer = setTimeout(() => {
+            setMounted(true);
+        }, 2000);
+        return () => clearTimeout(timer);
     }, []);
 
-    if (!mounted) return <div className="mt-auto h-20 border-y border-[var(--border)] bg-[var(--surface)]/50" />;
+    if (!mounted) return <div className="mt-auto h-12 bg-transparent border-y border-transparent" />;
 
     return (
         <div className="mt-auto pb-8 relative z-10">
