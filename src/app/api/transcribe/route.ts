@@ -25,9 +25,16 @@ export async function POST(req: NextRequest) {
         }
 
         const sarvamFormData = new FormData();
-        // Just pass through the file blob directly to Sarvam. 
-        // Sarvam supports WebM, WAV, etc. directly.
-        sarvamFormData.append('file', audioFile);
+
+        // Normalize mime type: Sarvam is strict and doesn't like parameters like ;codecs=opus
+        let mimeType = audioFile.type;
+        if (mimeType.includes('audio/webm')) mimeType = 'audio/webm';
+        if (mimeType.includes('video/webm')) mimeType = 'video/webm';
+
+        const arrayBuffer = await audioFile.arrayBuffer();
+        const blob = new Blob([arrayBuffer], { type: mimeType });
+
+        sarvamFormData.append('file', blob, 'audio.webm');
         sarvamFormData.append('model', 'saaras:v3');
 
         // Map language to Sarvam parameters
