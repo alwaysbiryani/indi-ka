@@ -88,6 +88,7 @@ const AudioRecorder = React.memo(({
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             setActiveStream(stream);
+            // Low bitrate optimization for faster upload
             const mediaRecorder = new MediaRecorder(stream, { audioBitsPerSecond: 16000 });
             mediaRecorderRef.current = mediaRecorder;
             chunksRef.current = [];
@@ -104,7 +105,6 @@ const AudioRecorder = React.memo(({
 
                 // Optimization: For short utterances (or the final segment), 
                 // send the raw chunks directly without decoding/re-encoding to WAV.
-                // This saves significant client-side CPU and reduces latency.
                 if (isFinal && lastProcessedTimeRef.current === 0) {
                     const audioBlob = new Blob(chunksRef.current, { type: mediaRecorder.mimeType || 'audio/webm' });
                     await transcribeSegment(audioBlob, 0);
@@ -129,7 +129,6 @@ const AudioRecorder = React.memo(({
                     }
 
                     const duration = audioBuffer.duration;
-                    // For longer recordings, we slice and transcribe in 30s segments
                     while (lastProcessedTimeRef.current + 30 <= duration || (isFinal && lastProcessedTimeRef.current < duration)) {
                         const start = lastProcessedTimeRef.current;
                         const end = isFinal ? Math.min(start + 30, duration) : start + 30;
@@ -153,17 +152,13 @@ const AudioRecorder = React.memo(({
                 isTranscribingPartRef.current = true;
                 try {
                     const formData = new FormData();
-                    formData.append('audio', blob, `segment_${startTime}.wav`);
-                    formData.append('language', language);
+                    formData.append('audio', blob, 'segment.bin');
 
-                    const apiStart = Date.now();
-                    const response = await fetch('/api/transcribe', {
+                    const response = await fetch(`/api/transcribe?language=${encodeURIComponent(language)}`, {
                         method: 'POST',
                         headers: { 'x-api-key': apiKey },
                         body: formData,
                     });
-                    const apiEnd = Date.now();
-                    console.log(`[Timer] Client-to-Backend fetch took ${apiEnd - apiStart}ms`);
 
                     if (response.ok) {
                         const data = await response.json();
@@ -192,9 +187,7 @@ const AudioRecorder = React.memo(({
                     timerRef.current = null;
                 }
                 try {
-                    const stopTime = Date.now();
                     await processAvailableSegments(true);
-                    console.log(`[Timer] Total processing time (after stop): ${Date.now() - stopTime}ms`);
 
                     if (processingStartTimeRef.current) {
                         const duration = (Date.now() - processingStartTimeRef.current) / 1000;
@@ -406,4 +399,3 @@ const AudioRecorder = React.memo(({
 });
 
 export default AudioRecorder;
-

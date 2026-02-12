@@ -3,54 +3,41 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(req: NextRequest) {
     try {
-        const startTime = Date.now();
-        const formData = await req.formData();
-        const audioFile = formData.get('audio') as File;
-        const language = formData.get('language') as string;
+        const { searchParams } = new URL(req.url);
+        const language = searchParams.get('language') || 'hinglish';
 
-        // Priority: Header > Env Variable
         const headerKey = req.headers.get('x-api-key');
         let apiKey = (headerKey && headerKey !== 'undefined' && headerKey !== 'null') ? headerKey : (process.env.SARVAM_API_KEY || process.env.NEXT_PUBLIC_SARVAM_API_KEY);
-
         apiKey = apiKey?.trim();
 
         if (!apiKey || apiKey === 'your_api_key_here' || apiKey === '') {
-            return NextResponse.json({
-                error: 'CONFIG_ERROR: API Key missing',
-                details: 'Sarvam AI API key is missing. Please provide it in the settings or set SARVAM_API_KEY in your environment variables.'
-            }, { status: 401 });
+            return NextResponse.json({ error: 'CONFIG_ERROR: API Key missing' }, { status: 401 });
         }
+
+        const formData = await req.formData();
+        const audioFile = formData.get('audio') as File;
 
         if (!audioFile) {
             return NextResponse.json({ error: 'Audio file missing' }, { status: 400 });
         }
 
         const sarvamFormData = new FormData();
-
         const arrayBuffer = await audioFile.arrayBuffer();
-        // application/octet-stream bypasses strict mime-type validation in many APIs
-        // while the .webm extension still tells the server what it is.
         const blob = new Blob([arrayBuffer], { type: 'application/octet-stream' });
 
         sarvamFormData.append('file', blob, 'recording.webm');
         sarvamFormData.append('model', 'saaras:v3');
 
-        // Map language to Sarvam parameters
-        if (language === 'hinglish') {
+        if (language === 'hinglish' || language === 'auto') {
             sarvamFormData.append('language_code', 'hi-IN');
             sarvamFormData.append('mode', 'translit');
         } else if (language === 'hi-IN') {
             sarvamFormData.append('language_code', 'hi-IN');
             sarvamFormData.append('mode', 'transcribe');
-        } else if (language === 'en-IN') {
+        } else {
             sarvamFormData.append('language_code', 'en-IN');
             sarvamFormData.append('mode', 'transcribe');
-        } else {
-            // Default to transcribe if not specified
-            sarvamFormData.append('mode', 'transcribe');
         }
-
-        const asrStart = Date.now();
 
         const asrResponse = await fetch('https://api.sarvam.ai/speech-to-text', {
             method: 'POST',
@@ -59,9 +46,6 @@ export async function POST(req: NextRequest) {
             },
             body: sarvamFormData as any,
         });
-
-        const asrEnd = Date.now();
-        console.log(`[Timer] Sarvam API (model: saaras:v3, lang: ${language}) took ${asrEnd - asrStart}ms`);
 
         if (!asrResponse.ok) {
             const errorText = await asrResponse.text();
@@ -80,7 +64,6 @@ export async function POST(req: NextRequest) {
         }
 
         const asrData = await asrResponse.json();
-        console.log(`[Timer] Total Backend Route time: ${Date.now() - startTime}ms`);
 
         return NextResponse.json({
             transcript: asrData.transcript || "",
