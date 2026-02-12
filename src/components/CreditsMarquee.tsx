@@ -15,16 +15,6 @@ const credits = [
 
 export function CreditsMarquee() {
     const [isPaused, setIsPaused] = useState(false);
-    const [mounted, setMounted] = useState(false);
-
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            setMounted(true);
-        }, 2000);
-        return () => clearTimeout(timer);
-    }, []);
-
-    if (!mounted) return <div className="mt-auto h-12 bg-transparent border-y border-transparent" />;
 
     return (
         <div className="mt-auto pb-8 relative z-10">

@@ -68,8 +68,6 @@ export default function Home() {
 
     const storedLastViewed = localStorage.getItem('last_viewed_history');
     if (storedLastViewed) setLastViewedTimestamp(parseInt(storedLastViewed));
-
-    console.log('%c🇮🇳 Indi-क Performance-Optimized v5', 'font-size: 16px; font-weight: bold; color: #FF9933;');
   }, []);
 
   useEffect(() => {
@@ -223,7 +221,7 @@ export default function Home() {
               {!transcript ? (
                 <m.div
                   key="landing"
-                  initial={{ opacity: 0, y: 10 }}
+                  initial={{ opacity: 1, y: 0 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.98 }}
                   className="flex-1 flex flex-col items-center justify-start pt-6"

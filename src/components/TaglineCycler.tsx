@@ -27,9 +27,7 @@ export function TaglineCycler() {
             setIndex((prev) => (prev + 1) % taglines.length);
         }, 3000);
 
-        return () => {
-            clearInterval(interval);
-        }
+        return () => clearInterval(interval);
     }, []);
 
     return (
