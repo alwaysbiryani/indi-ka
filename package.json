@@ -10,7 +10,8 @@
     "verify": "npm run verify:ui && npm run verify:build",
     "verify:ui": "echo '🔍 Verifying UI integrity...' && ! grep -r 'legacy\\|old-ui\\|desktop-view' src/ --include='*.tsx' --include='*.ts' 2>/dev/null || (echo '❌ Legacy patterns found!' && exit 1) && echo '✅ UI verification passed'",
     "verify:build": "npm run build && echo '✅ Build verification passed'",
-    "deploy:check": "npm run verify && echo '✅ Ready for deployment'"
+    "deploy:check": "npm run verify && echo '✅ Ready for deployment'",
+    "qa:post-deploy": "npx ts-node qa-agent/run-qa.ts"
   },
   "dependencies": {
     "clsx": "^2.1.1",
@@ -22,13 +23,17 @@
     "tailwind-merge": "^3.4.0"
   },
   "devDependencies": {
+    "@linear/sdk": "^75.0.0",
+    "@playwright/test": "^1.58.2",
     "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
+    "@types/node": "^20.19.33",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "axe-playwright": "^2.2.2",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "tailwindcss": "^4",
+    "ts-node": "^10.9.2",
     "typescript": "^5"
   }
 }

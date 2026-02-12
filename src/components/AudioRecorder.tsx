@@ -248,6 +248,7 @@ export default function AudioRecorder({
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
                             onClick={startRecording}
+                            data-testid="record-button"
                             className="relative group w-64 h-64"
                         >
                             {!hasInteracted && (
@@ -300,6 +301,7 @@ export default function AudioRecorder({
                             </div>
                             <button
                                 onClick={stopRecording}
+                                data-testid="stop-button"
                                 className="group flex flex-col items-center space-y-4 active:scale-95 transition-all outline-none"
                             >
                                 <div className="w-20 h-20 rounded-full border-[1.5px] border-zinc-100 flex items-center justify-center group-hover:border-red-500/50 transition-colors">

@@ -1,0 +1,14 @@
+[
+    {
+        "id": "BUG-001",
+        "description": "Transcription area should not append text from history",
+        "testName": "History Replacement Test",
+        "status": "resolved"
+    },
+    {
+        "id": "BUG-002",
+        "description": "Mobile view should not be constrained by device mock",
+        "testName": "Mobile Responsiveness Test",
+        "status": "resolved"
+    }
+]

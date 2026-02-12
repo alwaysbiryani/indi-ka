@@ -14,9 +14,10 @@ interface LanguageSelectorProps {
     selectedLanguage: string;
     onSelectLanguage: (lang: string) => void;
     className?: string;
+    'data-testid'?: string;
 }
 
-export default function LanguageSelector({ selectedLanguage, onSelectLanguage, className }: LanguageSelectorProps) {
+export default function LanguageSelector({ selectedLanguage, onSelectLanguage, className, 'data-testid': testId }: LanguageSelectorProps) {
     const [isOpen, setIsOpen] = useState(false);
 
     const languages = [
@@ -38,7 +39,7 @@ export default function LanguageSelector({ selectedLanguage, onSelectLanguage, c
     const selected = languages.find(l => l.code === selectedLanguage);
 
     return (
-        <div className={cn("relative w-full font-sans", className)}>
+        <div className={cn("relative w-full font-sans", className)} data-testid={testId}>
             <button
                 onClick={() => setIsOpen(!isOpen)}
                 className="w-full flex items-center justify-between px-1 bg-transparent border-none rounded-[20px] hover:bg-[var(--surface-hover)] transition-all duration-200 active:scale-[0.99] group"

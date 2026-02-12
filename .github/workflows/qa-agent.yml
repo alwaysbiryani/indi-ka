@@ -1,0 +1,47 @@
+name: Post-Deployment QA Agent
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  # Allow manual triggering
+  workflow_dispatch:
+
+jobs:
+  qa-agent:
+    timeout-minutes: 20
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - uses: actions/setup-node@v4
+      with:
+        node-version: lts/*
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm install
+      
+    - name: Install Playwright Browsers
+      run: npx playwright install --with-deps
+      
+    - name: Build Application
+      run: npm run build
+      
+    - name: Run QA Agent
+      env:
+        LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+        # If your app needs other env vars (like Sarvam API keys)
+        SARVAM_API_KEY: ${{ secrets.SARVAM_API_KEY }}
+        # The agent expects the app to be running at localhost:3000 by default (webServer handles this)
+        NODE_ENV: production
+      run: npm run qa:post-deploy
+      
+    - name: Upload QA Results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: qa-report
+        path: qa-agent/results/
+        retention-days: 30

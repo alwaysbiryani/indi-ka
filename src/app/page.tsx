@@ -263,11 +263,12 @@ export default function Home() {
                 onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
                 className="p-2.5 rounded-full hover:bg-[var(--surface-hover)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all active:scale-95"
               >
-                {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+                {theme === 'dark' ? <Sun className="w-5 h-5" data-testid="sun-icon" /> : <Moon className="w-5 h-5" data-testid="moon-icon" />}
               </button>
 
               <button
                 onClick={openHistory}
+                data-testid="history-button"
                 className="relative bg-[var(--surface)] hover:bg-[var(--surface-hover)] px-4 py-2 rounded-full border border-[var(--border)] flex items-center space-x-2 transition-all active:scale-95 group shadow-[0_2px_8px_rgba(0,0,0,0.02)]"
               >
                 <Clock className="w-4 h-4 text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] transition-colors" />
@@ -322,6 +323,7 @@ export default function Home() {
                         selectedLanguage={language}
                         onSelectLanguage={setLanguage}
                         className="!bg-transparent !border-none !p-4 !m-0"
+                        data-testid="language-selector"
                       />
                     </div>
                   </div>
@@ -372,6 +374,7 @@ export default function Home() {
                       onChange={(e) => setTranscript(e.target.value)}
                       className="w-full h-full bg-transparent border-none focus:ring-0 text-[var(--text-primary)] text-lg lg:text-xl font-medium leading-relaxed resize-none outline-none custom-scrollbar placeholder:text-[var(--text-secondary)]/30"
                       placeholder="Your transcription will appear here..."
+                      data-testid="transcription-canvas"
                     />
                     <button
                       onClick={() => {
@@ -387,6 +390,7 @@ export default function Home() {
                     {/* Copy Button */}
                     <button
                       onClick={handleCopy}
+                      data-testid="copy-button"
                       className={cn(
                         "flex-1 py-3.5 rounded-full transition-all duration-300 active:scale-95 flex items-center justify-center space-x-2 group outline-none focus:ring-2 focus:ring-[var(--accent-tiranga-mid)]/20",
                         hasCopied
@@ -403,6 +407,7 @@ export default function Home() {
                     {/* Tap to Speak Button */}
                     <button
                       onClick={() => setTranscript('')}
+                      data-testid="speak-again-button"
                       className="flex-1 py-3.5 bg-[var(--surface)] hover:bg-[var(--surface-hover)] rounded-full transition-all active:scale-95 border border-[var(--border)] shadow-[0_2px_10px_rgba(0,0,0,0.03)] flex items-center justify-center space-x-2 outline-none focus:ring-2 focus:ring-[var(--accent-tiranga-mid)]/20"
                     >
                       <Mic className="w-4.5 h-4.5 text-[var(--text-secondary)]" />
@@ -462,7 +467,7 @@ export default function Home() {
           {/* Swipe Indicator - Only visible in desktop mockup */}
           <div className="hidden lg:block absolute bottom-2 left-1/2 -translate-x-1/2 w-32 h-1.5 bg-[var(--border)] rounded-full opacity-60" />
         </motion.div>
-      </div>
+      </div >
 
       <AnimatePresence>
         {isHistoryOpen && (
@@ -489,6 +494,7 @@ export default function Home() {
                       <button
                         onClick={handleClearHistory}
                         className="text-[10px] font-bold text-red-500/70 hover:text-red-600 uppercase tracking-[0.15em] transition-colors mt-1 text-left active:scale-95 w-fit"
+                        data-testid="clear-all-history"
                       >
                         Clear All
                       </button>
@@ -517,6 +523,6 @@ export default function Home() {
           </>
         )}
       </AnimatePresence>
-    </main>
+    </main >
   );
 }
