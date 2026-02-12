@@ -21,24 +21,16 @@ const taglines = [
 
 export function TaglineCycler() {
     const [index, setIndex] = useState(0);
-    const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
-        const timer = setTimeout(() => {
-            setMounted(true);
-        }, 1500);
-
         const interval = setInterval(() => {
             setIndex((prev) => (prev + 1) % taglines.length);
         }, 3000);
 
         return () => {
-            clearTimeout(timer);
             clearInterval(interval);
         }
     }, []);
-
-    if (!mounted) return <div className="h-20 flex flex-col items-center justify-center text-center overflow-hidden mb-8 w-full opacity-0" />;
 
     return (
         <div className="h-20 flex flex-col items-center justify-center text-center overflow-hidden mb-8 w-full">

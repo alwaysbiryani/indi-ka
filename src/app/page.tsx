@@ -15,14 +15,12 @@ import type { HistoryItem } from '@/components/HistorySidebar';
 
 import { TaglineSkeleton } from '@/components/ui/Skeleton';
 
-// Aggressively dynamic imports to keep the initial JS bundle tiny
-const TaglineCycler = dynamic(() => import('@/components/TaglineCycler').then(mod => mod.TaglineCycler), {
-  ssr: false,
-  loading: () => <TaglineSkeleton />
-});
+import { TaglineCycler } from '@/components/TaglineCycler';
+import { BackgroundBlobs } from '@/components/BackgroundBlobs';
+
+// Aggressively dynamic imports for non-critical/below-fold elements
 const CreditsMarquee = dynamic(() => import('@/components/CreditsMarquee').then(mod => mod.CreditsMarquee), { ssr: false });
 const Banners = dynamic(() => import('@/components/Banners').then(mod => mod.Banners), { ssr: false });
-const BackgroundBlobs = dynamic(() => import('@/components/BackgroundBlobs').then(mod => mod.BackgroundBlobs), { ssr: false });
 const HistorySidebar = dynamic(() => import('@/components/HistorySidebar'), {
   loading: () => <div className="p-8 text-center text-[var(--text-secondary)] opacity-50 text-xs font-bold uppercase tracking-widest">Loading history...</div>,
   ssr: false
@@ -230,9 +228,7 @@ export default function Home() {
                   exit={{ opacity: 0, scale: 0.98 }}
                   className="flex-1 flex flex-col items-center justify-start pt-6"
                 >
-                  <Suspense fallback={<TaglineSkeleton />}>
-                    <TaglineCycler />
-                  </Suspense>
+                  <TaglineCycler />
 
                   <div className="w-full mb-10 relative z-50">
                     <div className="bg-[var(--surface)]/80 backdrop-blur-xl rounded-[24px] p-1 border border-[var(--border)] shadow-sm transition-all duration-300">

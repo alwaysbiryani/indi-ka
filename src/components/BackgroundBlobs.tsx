@@ -10,22 +10,17 @@ export const BackgroundBlobs = memo(function BackgroundBlobs() {
     const isMobile = useIsMobile();
 
     useEffect(() => {
-        const timer = setTimeout(() => {
-            setMounted(true);
-        }, 800);
-
         const handleVisibilityChange = () => {
             setIsVisible(document.visibilityState === 'visible');
         };
 
         document.addEventListener('visibilitychange', handleVisibilityChange);
         return () => {
-            clearTimeout(timer);
             document.removeEventListener('visibilitychange', handleVisibilityChange);
         };
     }, []);
 
-    if (!mounted || !isVisible) return null;
+    if (!isVisible) return null;
 
     return (
         <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
