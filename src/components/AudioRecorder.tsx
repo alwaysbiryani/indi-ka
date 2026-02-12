@@ -43,6 +43,12 @@ export default function AudioRecorder({
     const isTranscribingPartRef = useRef(false);
     const accumulatedTranscriptRef = useRef("");
     const detectedLanguageRef = useRef("auto");
+    const [hasInteracted, setHasInteracted] = useState(true); // Default to true to avoid flash before effect
+
+    React.useEffect(() => {
+        const interacted = localStorage.getItem('audio_recorder_interacted');
+        if (!interacted) setHasInteracted(false);
+    }, []);
 
     // Auto-stop at 5 minutes
     React.useEffect(() => {
@@ -59,6 +65,10 @@ export default function AudioRecorder({
     }, []);
 
     const startRecording = async () => {
+        if (!hasInteracted) {
+            setHasInteracted(true);
+            localStorage.setItem('audio_recorder_interacted', 'true');
+        }
         if (onRecordingStart) onRecordingStart();
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -198,6 +208,7 @@ export default function AudioRecorder({
             setRecordingDuration(0);
             lastProcessedTimeRef.current = 0;
             accumulatedTranscriptRef.current = "";
+            detectedLanguageRef.current = "auto";
 
             timerRef.current = setInterval(() => {
                 setRecordingDuration(prev => {
@@ -248,6 +259,38 @@ export default function AudioRecorder({
                             onClick={startRecording}
                             className="relative group w-64 h-64"
                         >
+                            {/* Visual cue: Dual Pulse Halo for better aesthetics */}
+                            {!hasInteracted && (
+                                <>
+                                    <motion.div
+                                        className="absolute inset-0 rounded-full border-2 border-zinc-500/20"
+                                        initial={{ scale: 1, opacity: 0 }}
+                                        animate={{
+                                            scale: [1, 1.4],
+                                            opacity: [0, 0.4, 0]
+                                        }}
+                                        transition={{
+                                            duration: 2.4,
+                                            repeat: Infinity,
+                                            ease: "easeOut"
+                                        }}
+                                    />
+                                    <motion.div
+                                        className="absolute inset-0 rounded-full border-2 border-zinc-500/20"
+                                        initial={{ scale: 1, opacity: 0 }}
+                                        animate={{
+                                            scale: [1, 1.4],
+                                            opacity: [0, 0.4, 0]
+                                        }}
+                                        transition={{
+                                            duration: 2.4,
+                                            repeat: Infinity,
+                                            ease: "easeOut",
+                                            delay: 1.2
+                                        }}
+                                    />
+                                </>
+                            )}
                             <div className="absolute inset-0 bg-gradient-to-br from-zinc-200/20 to-zinc-100/5 rounded-full blur-xl group-hover:blur-2xl transition-all" />
                             <div className="relative w-full h-full bg-white rounded-full flex flex-col items-center justify-center shadow-2xl border-4 border-zinc-100">
                                 <Mic className="w-16 h-16 text-zinc-900 mb-2" />

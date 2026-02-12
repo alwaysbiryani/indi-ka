@@ -190,7 +190,7 @@ export default function Home() {
   }, [taglines.length]);
 
   return (
-    <main className="min-h-screen w-full bg-[var(--app-bg)] flex items-center justify-center p-0 md:p-8 font-sans overflow-hidden relative transition-colors duration-500">
+    <main className="min-h-screen w-full bg-[var(--app-bg)] flex items-center justify-center p-0 lg:p-8 font-sans overflow-hidden relative transition-colors duration-500">
       {/* Subtle Background decoration - Refined for "Aurora" feel */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-[-30%] left-[-20%] w-[80%] h-[80%] bg-[#FF9933]/[0.02] rounded-full blur-[150px] animate-pulse" style={{ animationDuration: '8s' }} />
@@ -237,13 +237,13 @@ export default function Home() {
         <motion.div
           initial={{ scale: 0.98, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          className="w-full h-[100dvh] md:w-[390px] md:h-[844px] bg-[var(--screen-bg)] md:rounded-[50px] md:shadow-[0_40px_100px_rgba(0,0,0,0.15)] overflow-hidden md:border-[8px] border-0 md:border-[var(--phone-frame)] relative flex flex-col scale-100 md:scale-100 transition-colors duration-500"
+          className="w-full h-[100dvh] lg:w-[390px] lg:h-[844px] bg-[var(--screen-bg)] lg:rounded-[50px] lg:shadow-[0_40px_100px_rgba(0,0,0,0.15)] overflow-hidden lg:border-[8px] border-0 lg:border-[var(--phone-frame)] relative flex flex-col scale-100 lg:scale-100 transition-colors duration-500"
         >
-          {/* Top Notch Area */}
-          <div className="hidden md:block absolute top-0 left-1/2 -translate-x-1/2 w-40 h-7 bg-[var(--phone-frame)] rounded-b-[20px] z-[50]" />
+          {/* Top Notch Area - Only visible in desktop mockup */}
+          <div className="hidden lg:block absolute top-0 left-1/2 -translate-x-1/2 w-40 h-7 bg-[var(--phone-frame)] rounded-b-[20px] z-[50]" />
 
           {/* Header (LOGO + THEME + HISTORY) */}
-          <header className="px-6 pt-8 md:px-8 md:pt-14 pb-4 flex items-center justify-between relative z-10">
+          <header className="px-6 pt-8 lg:px-8 lg:pt-14 pb-4 flex items-center justify-between relative z-10 pt-[env(safe-area-inset-top)]">
             <div className="flex items-center space-x-2">
               <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-br from-[#FF9933] to-[#138808] opacity-90 shadow-[0_2px_8px_rgba(0,0,0,0.1)]">
                 <MessageSquare className="w-4 h-4 text-white fill-current" />
@@ -278,7 +278,7 @@ export default function Home() {
           </header>
 
           {/* Main Content Area */}
-          <div className="flex-1 px-6 md:px-8 flex flex-col overflow-hidden">
+          <div className="flex-1 px-6 lg:px-8 flex flex-col overflow-hidden">
             <AnimatePresence mode="wait">
               {!transcript ? (
                 /* LANDING EXPERIENCE */
@@ -356,25 +356,25 @@ export default function Home() {
                   </div>
 
                   {/* Transcription Canvas */}
-                  <div className="flex-1 bg-[var(--surface)] rounded-[32px] p-6 md:p-8 border border-[var(--border)] relative overflow-hidden mb-6 flex flex-col shadow-[inset_0_2px_10px_rgba(0,0,0,0.02)] group hover:shadow-[inset_0_2px_15px_rgba(0,0,0,0.03)] transition-all duration-300">
+                  <div className="flex-1 bg-[var(--surface)] rounded-[32px] p-6 lg:p-8 border border-[var(--border)] relative overflow-hidden mb-6 flex flex-col shadow-[inset_0_2px_10px_rgba(0,0,0,0.02)] group hover:shadow-[inset_0_2px_15px_rgba(0,0,0,0.03)] transition-all duration-300">
                     <textarea
                       ref={transcriptRef}
                       value={transcript}
                       onChange={(e) => setTranscript(e.target.value)}
-                      className="w-full h-full bg-transparent border-none focus:ring-0 text-[var(--text-primary)] text-lg md:text-xl font-medium leading-relaxed resize-none outline-none custom-scrollbar placeholder:text-[var(--text-secondary)]/30"
+                      className="w-full h-full bg-transparent border-none focus:ring-0 text-[var(--text-primary)] text-lg lg:text-xl font-medium leading-relaxed resize-none outline-none custom-scrollbar placeholder:text-[var(--text-secondary)]/30"
                       placeholder="Your transcription will appear here..."
                     />
                     <button
                       onClick={() => {
                         setTranscript('');
                       }}
-                      className="absolute top-4 right-4 p-2.5 bg-[var(--app-bg)] hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded-xl transition-all active:scale-95 text-[var(--text-secondary)] hover:text-red-500 opacity-100 md:opacity-0 md:group-hover:opacity-100 duration-200"
+                      className="absolute top-4 right-4 p-2.5 bg-[var(--app-bg)] hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded-xl transition-all active:scale-95 text-[var(--text-secondary)] hover:text-red-500 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 duration-200"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
 
-                  <div className="flex items-center space-x-4 mb-8 w-full max-w-[400px] mx-auto px-1">
+                  <div className="flex items-center space-x-4 mb-8 w-full max-w-full lg:max-w-[400px] mx-auto px-1 pb-[env(safe-area-inset-bottom)]">
                     {/* Copy Button */}
                     <button
                       onClick={handleCopy}
@@ -450,8 +450,8 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Swipe Indicator */}
-          <div className="hidden md:block absolute bottom-2 left-1/2 -translate-x-1/2 w-32 h-1.5 bg-[var(--border)] rounded-full opacity-60" />
+          {/* Swipe Indicator - Only visible in desktop mockup */}
+          <div className="hidden lg:block absolute bottom-2 left-1/2 -translate-x-1/2 w-32 h-1.5 bg-[var(--border)] rounded-full opacity-60" />
         </motion.div>
       </div>
 
@@ -470,25 +470,39 @@ export default function Home() {
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed right-0 top-0 bottom-0 w-full max-w-[320px] bg-[var(--surface)] z-[201] flex flex-col shadow-[-20px_0_50px_rgba(0,0,0,0.1)] border-l border-[var(--border)]"
+              className="fixed right-0 top-0 bottom-0 w-full max-w-[340px] bg-[var(--surface)] z-[201] flex flex-col shadow-[-20px_0_50px_rgba(0,0,0,0.1)] border-l border-[var(--border)]"
             >
-              <div className="p-8 flex-1 overflow-y-auto custom-scrollbar">
+              <div className="p-6 md:p-8 flex flex-col h-full">
                 <div className="flex items-center justify-between mb-8">
-                  <h2 className="text-lg font-bold text-[var(--text-primary)] tracking-tight">Recent Transcripts</h2>
-                  <button onClick={() => setIsHistoryOpen(false)} className="p-2 rounded-full hover:bg-[var(--surface-hover)] transition-colors border border-[var(--border)]">
-                    <X className="w-4 h-4 text-[var(--text-secondary)]" />
+                  <div className="flex flex-col">
+                    <h2 className="text-xl font-bold text-[var(--text-primary)] tracking-tight">Recent History</h2>
+                    {history.length > 0 && (
+                      <button
+                        onClick={handleClearHistory}
+                        className="text-[10px] font-bold text-red-500/70 hover:text-red-600 uppercase tracking-[0.15em] transition-colors mt-1 text-left active:scale-95 w-fit"
+                      >
+                        Clear All
+                      </button>
+                    )}
+                  </div>
+                  <button onClick={() => setIsHistoryOpen(false)} className="p-2.5 rounded-xl hover:bg-[var(--surface-hover)] transition-all border border-[var(--border)] active:scale-90 shadow-sm">
+                    <X className="w-5 h-5 text-[var(--text-secondary)]" />
                   </button>
                 </div>
-                <HistorySidebar
-                  history={history}
-                  onDelete={handleDeleteHistory}
-                  onSelect={(text) => {
-                    setTranscript(prev => prev ? `${prev}\n\n${text}` : text);
-                    setIsHistoryOpen(false);
-                  }}
-                  onClearAll={handleClearHistory}
-                  className="!bg-transparent !border-none !p-0"
-                />
+
+                <div className="flex-1 overflow-hidden">
+                  <HistorySidebar
+                    history={history}
+                    onDelete={handleDeleteHistory}
+                    onSelect={(text) => {
+                      setTranscript(text);
+                      setErrorBanner(null);
+                      setIsHistoryOpen(false);
+                    }}
+                    onClearAll={handleClearHistory}
+                    className="!bg-transparent !border-none !p-0"
+                  />
+                </div>
               </div>
             </motion.div>
           </>

@@ -1,4 +1,3 @@
-
 'use client';
 
 import React from 'react';
@@ -22,11 +21,9 @@ interface HistorySidebarProps {
 }
 
 // Map Sarvam language codes to readable labels if needed
-// Or just format them nicely. Sarvam often returns like 'hi-IN' or 'en-IN'
 const formatLanguage = (lang: string, detected?: string) => {
     const code = (lang === 'auto' && detected && detected !== 'auto') ? detected : lang;
 
-    // Manual mapping for cleaner display
     const langMap: Record<string, string> = {
         'hi-IN': 'HINDI',
         'en-IN': 'ENGLISH',
@@ -44,7 +41,6 @@ const formatLanguage = (lang: string, detected?: string) => {
     };
 
     return langMap[code] || code.split('-')[0].toUpperCase();
-
 };
 
 export default function HistorySidebar({ history, onDelete, onSelect, onClearAll, className }: HistorySidebarProps) {
@@ -64,23 +60,10 @@ export default function HistorySidebar({ history, onDelete, onSelect, onClearAll
 
     return (
         <div className={`flex flex-col h-full ${className} transition-colors duration-300`}>
-            {/* Header */}
-            <div className="p-4 border-b border-[var(--border)] flex items-center justify-between">
-                <h2 className="font-bold text-[10px] text-[var(--text-secondary)] uppercase tracking-[0.2em]">Recent Transcriptions</h2>
-                {history.length > 0 && (
-                    <button
-                        onClick={onClearAll}
-                        className="text-[10px] font-bold text-red-500 hover:text-red-600 uppercase tracking-widest transition-colors"
-                    >
-                        Clear All
-                    </button>
-                )}
-            </div>
-
             {/* List */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+            <div className="flex-1 overflow-y-auto space-y-4 custom-scrollbar">
                 {history.length === 0 ? (
-                    <div className="h-full flex flex-col items-center justify-center text-[var(--text-secondary)] space-y-4 opacity-40">
+                    <div className="h-full flex flex-col items-center justify-center text-[var(--text-secondary)] space-y-4 opacity-40 py-20">
                         <Clock className="w-10 h-10 stroke-[1]" />
                         <p className="text-[10px] font-bold uppercase tracking-widest">No history yet</p>
                     </div>
@@ -94,33 +77,30 @@ export default function HistorySidebar({ history, onDelete, onSelect, onClearAll
                             transition={{ duration: 0.2 }}
                             key={item.id}
                             onClick={() => onSelect(item.text)}
-                            className="group relative bg-[var(--surface)] hover:bg-[var(--surface-hover)] border border-[var(--border)] rounded-2xl p-5 transition-all cursor-pointer shadow-sm active:scale-[0.98]"
+                            className="group relative bg-[var(--surface)] hover:bg-[var(--surface-hover)] border border-[var(--border)] rounded-[24px] p-5 transition-all cursor-pointer active:scale-[0.98] shadow-sm hover:shadow-md"
                         >
-                            <p className="text-[var(--text-primary)] text-sm line-clamp-4 mb-4 font-medium leading-relaxed">
+                            <p className="text-[var(--text-primary)] text-sm line-clamp-4 mb-5 font-medium leading-relaxed">
                                 {item.text}
                             </p>
 
-                            <div className="flex flex-col gap-3">
+                            <div className="flex flex-col gap-4">
                                 {/* Metadata Row */}
-                                <div className="flex justify-between items-center text-[10px] text-[var(--text-secondary)] font-bold tracking-wider uppercase">
-                                    <span className={`px-2 py-1 rounded-md border ${(item.language === 'auto' && (!item.detectedLanguage || item.detectedLanguage === 'auto'))
-                                        ? 'bg-[var(--surface)] border-[var(--border)] text-[var(--text-secondary)]'
-                                        : 'bg-purple-500/5 border-purple-500/20 text-purple-500'
-                                        }`}>
+                                <div className="flex justify-between items-center text-[10px] text-[var(--text-secondary)] font-medium tracking-wider uppercase">
+                                    <span className="px-2 py-0.5 rounded-md border border-[var(--border)] bg-[var(--app-bg)] text-[var(--text-secondary)] font-bold">
                                         {formatLanguage(item.language, item.detectedLanguage)}
                                     </span>
-                                    <span className="opacity-60">
+                                    <span className="opacity-40">
                                         {new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                     </span>
                                 </div>
 
-                                {/* Action Row - Always visible, distinct touch targets */}
-                                <div className="flex items-center gap-2 pt-2 border-t border-[var(--border)]/50">
+                                {/* Action Row - More prominent CTAs */}
+                                <div className="flex items-center gap-2 pt-2 border-t border-[var(--border)]">
                                     <button
                                         onClick={(e) => handleCopy(e, item.id, item.text)}
-                                        className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-bold transition-all ${copiedId === item.id
-                                            ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20'
-                                            : 'bg-[var(--app-bg)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)] border border-[var(--border)]'
+                                        className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-[11px] font-bold transition-all ${copiedId === item.id
+                                            ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 shadow-sm shadow-emerald-500/10'
+                                            : 'bg-[var(--app-bg)] text-[var(--text-primary)] hover:bg-[var(--surface-hover)] border border-[var(--border)] shadow-sm'
                                             }`}
                                     >
                                         {copiedId === item.id ? (
@@ -130,7 +110,7 @@ export default function HistorySidebar({ history, onDelete, onSelect, onClearAll
                                             </>
                                         ) : (
                                             <>
-                                                <Copy className="w-3.5 h-3.5" />
+                                                <Copy className="w-3.5 h-3.5 text-[var(--text-secondary)]" />
                                                 <span>Copy</span>
                                             </>
                                         )}
@@ -138,7 +118,7 @@ export default function HistorySidebar({ history, onDelete, onSelect, onClearAll
 
                                     <button
                                         onClick={(e) => handleDelete(e, item.id)}
-                                        className="flex-none flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-bold text-red-500/80 hover:text-red-600 bg-red-500/5 hover:bg-red-500/10 border border-red-500/10 transition-all"
+                                        className="flex-none flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-[11px] font-bold text-[var(--text-secondary)] hover:text-red-500 bg-[var(--app-bg)] hover:bg-red-500/5 border border-[var(--border)] hover:border-red-500/20 shadow-sm transition-all"
                                         aria-label="Delete"
                                     >
                                         <Trash2 className="w-3.5 h-3.5" />
