@@ -1,12 +1,22 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
-import { Clock, Copy, Check, MessageSquare, AlertCircle, X, Trash2, Cloud, Github, Code, Layout, Cpu, Globe, ArrowLeft, Sun, Moon, Mic } from 'lucide-react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import dynamic from 'next/dynamic';
+import {
+  Clock, Copy, Check, MessageSquare, AlertCircle, X, Trash2,
+  Cloud, Github, Code, Layout, Cpu, Globe, ArrowLeft, Sun, Moon, Mic
+} from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import AudioRecorder from '@/components/AudioRecorder';
 import LanguageSelector from '@/components/LanguageSelector';
-import HistorySidebar, { HistoryItem } from '@/components/HistorySidebar';
 import { cn } from '@/utils/cn';
+import type { HistoryItem } from '@/components/HistorySidebar';
+
+// Dynamically import HistorySidebar since it's only shown on click
+const HistorySidebar = dynamic(() => import('@/components/HistorySidebar'), {
+  loading: () => <div className="p-8 text-center text-zinc-500">Loading history...</div>,
+  ssr: false
+});
 
 export default function Home() {
   const [transcript, setTranscript] = useState('');
@@ -107,8 +117,6 @@ export default function Home() {
 
     setTranscript(text);
 
-
-
     const newItem: HistoryItem = {
       id: Date.now().toString(),
       text: text,
@@ -122,6 +130,10 @@ export default function Home() {
   };
 
   const handleError = (msg: string) => {
+    handleErrorAction(msg);
+  };
+
+  const handleErrorAction = (msg: string) => {
     setErrorBanner(msg);
   };
 
@@ -152,7 +164,7 @@ export default function Home() {
     requestAnimationFrame(frame);
   };
 
-  const hasNewHistory = history.length > 0 && history[0].timestamp > lastViewedTimestamp;
+  const hasNewHistory = useMemo(() => history.length > 0 && history[0].timestamp > lastViewedTimestamp, [history, lastViewedTimestamp]);
 
   const openHistory = () => {
     setIsHistoryOpen(true);
@@ -179,7 +191,7 @@ export default function Home() {
     { l1: "গল্প করো মন খুলে,", l2: "Indi-কাল আছে আপনার সাথে!" },
     { l1: "મોજથી બોલો,", l2: "લખવાની માથાકૂટ છોડો!" },
     { l1: "પટ પટ ಅಂತ ಹೇಳಿ,", l2: "Indi-ಕ ಇದೆ ನೋಡಿ!" },
-    { l1: "ನನ್ನಾಗಿ സംസാರಿಸೂ,", l2: "ಇನಿ Indi-ಕ എഴുದುಮ್!" },
+    { l1: "ನನ್ನಾಗಿ സംസാರಿಸೂ,", l2: "ಇನಿ Indi-ಕ എഴുదుಮ್!" },
     { l1: "मस्त गप्पा मारा,", l2: "Indi-क करेल सगळं काम!" },
     { l1: "ମନ ଭରି କୁହ,", l2: "Indi-କ ଅଛି ସାଥିରେ!" },
     { l1: "ਖੁੱਲ ਕੇ ਬੋਲੋ ਜੀ,", l2: "Indi-ਕ ਕਰੇਗਾ ਬਾਕੀ ਕੰਮ!" },
