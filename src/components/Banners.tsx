@@ -10,7 +10,7 @@ interface BannersProps {
     showAutoCopyBanner: boolean;
 }
 
-export function Banners({ errorBanner, showAutoCopyBanner }: BannersProps) {
+export const Banners = React.memo(({ errorBanner, showAutoCopyBanner }: BannersProps) => {
     return (
         <>
             <AnimatePresence>
@@ -47,4 +47,4 @@ export function Banners({ errorBanner, showAutoCopyBanner }: BannersProps) {
             </AnimatePresence>
         </>
     );
-}
+});

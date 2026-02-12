@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback, Suspense } from 'react';
 import dynamic from 'next/dynamic';
 import {
   Clock, Copy, MessageSquare, X, Trash2,
@@ -13,13 +13,18 @@ import LanguageSelector from '@/components/LanguageSelector';
 import { cn } from '@/utils/cn';
 import type { HistoryItem } from '@/components/HistorySidebar';
 
+import { TaglineSkeleton } from '@/components/ui/Skeleton';
+
 // Aggressively dynamic imports to keep the initial JS bundle tiny
-const TaglineCycler = dynamic(() => import('@/components/TaglineCycler').then(mod => mod.TaglineCycler), { ssr: false });
+const TaglineCycler = dynamic(() => import('@/components/TaglineCycler').then(mod => mod.TaglineCycler), {
+  ssr: false,
+  loading: () => <TaglineSkeleton />
+});
 const CreditsMarquee = dynamic(() => import('@/components/CreditsMarquee').then(mod => mod.CreditsMarquee), { ssr: false });
 const Banners = dynamic(() => import('@/components/Banners').then(mod => mod.Banners), { ssr: false });
 const BackgroundBlobs = dynamic(() => import('@/components/BackgroundBlobs').then(mod => mod.BackgroundBlobs), { ssr: false });
 const HistorySidebar = dynamic(() => import('@/components/HistorySidebar'), {
-  loading: () => <div className="p-8 text-center text-zinc-500">Loading history...</div>,
+  loading: () => <div className="p-8 text-center text-[var(--text-secondary)] opacity-50 text-xs font-bold uppercase tracking-widest">Loading history...</div>,
   ssr: false
 });
 
@@ -82,12 +87,12 @@ export default function Home() {
     }
   }, [transcript]);
 
-  const saveHistory = (newHistory: HistoryItem[]) => {
+  const saveHistory = useCallback((newHistory: HistoryItem[]) => {
     setHistory(newHistory);
     localStorage.setItem('transcription_history', JSON.stringify(newHistory));
-  };
+  }, []);
 
-  const handleCopy = () => {
+  const handleCopy = useCallback(() => {
     if (transcript) {
       navigator.clipboard.writeText(transcript);
       setHasCopied(true);
@@ -95,9 +100,9 @@ export default function Home() {
       setTimeout(() => setHasCopied(false), 1200);
       setTimeout(() => setShowAutoCopyBanner(false), 2000);
     }
-  };
+  }, [transcript]);
 
-  const handleTranscriptionComplete = (text: string, detectedLanguage?: string, isPartial?: boolean, processingTime?: number) => {
+  const handleTranscriptionComplete = useCallback((text: string, detectedLanguage?: string, isPartial?: boolean, processingTime?: number) => {
     if (isPartial) {
       setTranscript(text);
       return;
@@ -119,24 +124,31 @@ export default function Home() {
       language: language,
       detectedLanguage: detectedLanguage
     };
-    const newHistory = [newItem, ...history];
-    saveHistory(newHistory);
+
+    setHistory(prev => {
+      const newHistory = [newItem, ...prev];
+      localStorage.setItem('transcription_history', JSON.stringify(newHistory));
+      return newHistory;
+    });
     setErrorBanner(null);
-  };
+  }, [language]);
 
-  const handleErrorAction = (msg: string) => setErrorBanner(msg);
+  const handleErrorAction = useCallback((msg: string) => setErrorBanner(msg), []);
 
-  const handleDeleteHistory = (id: string) => {
-    const newHistory = history.filter(item => item.id !== id);
-    saveHistory(newHistory);
-  };
+  const handleDeleteHistory = useCallback((id: string) => {
+    setHistory(prev => {
+      const newHistory = prev.filter(item => item.id !== id);
+      localStorage.setItem('transcription_history', JSON.stringify(newHistory));
+      return newHistory;
+    });
+  }, []);
 
-  const handleClearHistory = () => {
+  const handleClearHistory = useCallback(() => {
     setHistory([]);
     localStorage.removeItem('transcription_history');
-  };
+  }, []);
 
-  const animateClear = () => {
+  const animateClear = useCallback(() => {
     if (!transcript) return;
     const initialText = transcript;
     const duration = 400;
@@ -150,16 +162,16 @@ export default function Home() {
       else setTranscript('');
     };
     requestAnimationFrame(frame);
-  };
+  }, [transcript]);
 
   const hasNewHistory = useMemo(() => history.length > 0 && history[0].timestamp > lastViewedTimestamp, [history, lastViewedTimestamp]);
 
-  const openHistory = () => {
+  const openHistory = useCallback(() => {
     setIsHistoryOpen(true);
     const now = Date.now();
     setLastViewedTimestamp(now);
     localStorage.setItem('last_viewed_history', now.toString());
-  };
+  }, []);
 
   return (
     <main className="min-h-screen w-full bg-[var(--app-bg)] flex items-center justify-center p-0 lg:p-8 font-sans overflow-hidden relative transition-colors duration-500">
@@ -218,7 +230,9 @@ export default function Home() {
                   exit={{ opacity: 0, scale: 0.98 }}
                   className="flex-1 flex flex-col items-center justify-start pt-6"
                 >
-                  <TaglineCycler />
+                  <Suspense fallback={<TaglineSkeleton />}>
+                    <TaglineCycler />
+                  </Suspense>
 
                   <div className="w-full mb-10 relative z-50">
                     <div className="bg-[var(--surface)]/80 backdrop-blur-xl rounded-[24px] p-1 border border-[var(--border)] shadow-sm transition-all duration-300">
@@ -258,7 +272,7 @@ export default function Home() {
                       <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
                       <span className="text-sm font-medium">Back</span>
                     </button>
-                    {transcriptionTime && (
+                    {transcriptionTime !== null && (
                       <span className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider bg-[var(--surface-hover)] px-3 py-1.5 rounded-full border border-[var(--border)]">
                         Ready in {transcriptionTime.toFixed(1)}s
                       </span>
@@ -308,7 +322,9 @@ export default function Home() {
             </AnimatePresence>
           </div>
 
-          <CreditsMarquee />
+          <Suspense fallback={<div className="h-10" />}>
+            <CreditsMarquee />
+          </Suspense>
 
           <div className="hidden lg:block absolute bottom-2 left-1/2 -translate-x-1/2 w-32 h-1.5 bg-[var(--border)] rounded-full opacity-60" />
         </m.div>

@@ -43,7 +43,7 @@ const formatLanguage = (lang: string, detected?: string) => {
     return langMap[code] || code.split('-')[0].toUpperCase();
 };
 
-export default function HistorySidebar({ history, onDelete, onSelect, onClearAll, className }: HistorySidebarProps) {
+const HistorySidebar = React.memo(({ history, onDelete, onSelect, onClearAll, className }: HistorySidebarProps) => {
     const [copiedId, setCopiedId] = React.useState<string | null>(null);
 
     const handleCopy = (e: React.MouseEvent, id: string, text: string) => {
@@ -132,4 +132,6 @@ export default function HistorySidebar({ history, onDelete, onSelect, onClearAll
             </div>
         </div>
     );
-}
+});
+
+export default HistorySidebar;

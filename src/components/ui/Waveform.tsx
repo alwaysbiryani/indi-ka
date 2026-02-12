@@ -9,6 +9,9 @@ import {
     type HTMLAttributes,
 } from "react"
 import { cn } from "@/utils/cn"
+import { useIsMobile } from "@/hooks/useIsMobile"
+import { useIntersectionObserver } from "@/hooks/useIntersectionObserver"
+import React from "react";
 
 export type WaveformProps = HTMLAttributes<HTMLDivElement> & {
     data?: number[]
@@ -24,7 +27,7 @@ export type WaveformProps = HTMLAttributes<HTMLDivElement> & {
     onBarClick?: (index: number, value: number) => void
 }
 
-export const Waveform = ({
+export const Waveform = React.memo(({
     data = [],
     barWidth = 4,
     barHeight: baseBarHeight = 4,
@@ -152,7 +155,7 @@ export const Waveform = ({
             />
         </div>
     )
-}
+});
 
 export type ScrollingWaveformProps = Omit<
     WaveformProps,
@@ -183,8 +186,14 @@ export const ScrollingWaveform = ({
     const barsRef = useRef<Array<{ x: number; height: number }>>([])
     const animationRef = useRef<number>(0)
     const lastTimeRef = useRef<number>(0)
-    const seedRef = useRef(Math.random())
+    const seedRef = useRef(0)
+    useEffect(() => {
+        seedRef.current = Math.random()
+    }, [])
     const dataIndexRef = useRef(0)
+    const isVisible = useIntersectionObserver(canvasRef)
+    const isMobile = useIsMobile()
+    const lastFrameTimeRef = useRef<number>(0)
 
     const heightStyle = typeof height === "number" ? `${height}px` : height
 
@@ -233,7 +242,23 @@ export const ScrollingWaveform = ({
         const ctx = canvas.getContext("2d")
         if (!ctx) return
 
+        const targetFps = isMobile ? 30 : 60
+        const frameInterval = 1000 / targetFps
+
         const animate = (currentTime: number) => {
+            if (!isVisible) {
+                animationRef.current = requestAnimationFrame(animate)
+                return
+            }
+
+            const elapsedSinceLastFrame = currentTime - lastFrameTimeRef.current
+            if (elapsedSinceLastFrame < frameInterval) {
+                animationRef.current = requestAnimationFrame(animate)
+                return
+            }
+
+            lastFrameTimeRef.current = currentTime - (elapsedSinceLastFrame % frameInterval)
+
             const deltaTime = lastTimeRef.current
                 ? (currentTime - lastTimeRef.current) / 1000
                 : 0
@@ -346,6 +371,8 @@ export const ScrollingWaveform = ({
         fadeEdges,
         fadeWidth,
         data,
+        isMobile,
+        isVisible
     ])
 
     return (
@@ -386,10 +413,12 @@ export const AudioScrubber = ({
     const [localProgress, setLocalProgress] = useState(0)
     const containerRef = useRef<HTMLDivElement>(null)
 
-    const waveformData =
+    const waveformData = useMemo(() =>
         data.length > 0
             ? data
-            : Array.from({ length: 100 }, () => 0.2 + Math.random() * 0.6)
+            : Array.from({ length: 100 }, () => 0.2 + Math.random() * 0.6),
+        [data]
+    )
 
     useEffect(() => {
         if (!isDragging && duration > 0) {
@@ -495,6 +524,11 @@ export const MicrophoneWaveform = ({
     ...props
 }: MicrophoneWaveformProps) => {
     const [data, setData] = useState<number[]>([])
+    const containerRef = useRef<HTMLDivElement>(null)
+    const isVisibleInViewport = useIntersectionObserver(containerRef)
+    const isMobile = useIsMobile()
+    const lastFrameTimeRef = useRef<number>(0)
+
     const analyserRef = useRef<AnalyserNode | null>(null)
     const audioContextRef = useRef<AudioContext | null>(null)
     const streamRef = useRef<MediaStream | null>(null)
@@ -507,7 +541,22 @@ export const MicrophoneWaveform = ({
         if (processing && !active) {
             let time = 0
             transitionProgressRef.current = 0
-            const animateProcessing = () => {
+            const targetFps = isMobile ? 30 : 60
+            const frameInterval = 1000 / targetFps
+
+            const animateProcessing = (now: number) => {
+                if (!isVisibleInViewport) {
+                    processingAnimationRef.current = requestAnimationFrame(animateProcessing)
+                    return
+                }
+
+                const elapsed = now - lastFrameTimeRef.current
+                if (elapsed < frameInterval) {
+                    processingAnimationRef.current = requestAnimationFrame(animateProcessing)
+                    return
+                }
+                lastFrameTimeRef.current = now - (elapsed % frameInterval)
+
                 time += 0.03
                 transitionProgressRef.current = Math.min(
                     1,
@@ -543,7 +592,7 @@ export const MicrophoneWaveform = ({
                 processingAnimationRef.current =
                     requestAnimationFrame(animateProcessing)
             }
-            animateProcessing()
+            processingAnimationRef.current = requestAnimationFrame(animateProcessing)
             return () => {
                 if (processingAnimationRef.current) {
                     cancelAnimationFrame(processingAnimationRef.current)
@@ -566,7 +615,7 @@ export const MicrophoneWaveform = ({
             }
             return
         }
-    }, [processing, active])
+    }, [processing, active, isMobile, isVisibleInViewport, data])
 
     useEffect(() => {
         if (!active) {
@@ -603,8 +652,24 @@ export const MicrophoneWaveform = ({
                 analyserRef.current = analyser
 
                 const dataArray = new Uint8Array(analyser.frequencyBinCount)
-                const updateData = () => {
+                const targetFps = isMobile ? 30 : 60
+                const frameInterval = 1000 / targetFps
+
+                const updateData = (now: number) => {
                     if (!analyserRef.current || !active) return
+
+                    if (!isVisibleInViewport) {
+                        animationIdRef.current = requestAnimationFrame(updateData)
+                        return
+                    }
+
+                    const elapsed = now - lastFrameTimeRef.current
+                    if (elapsed < frameInterval) {
+                        animationIdRef.current = requestAnimationFrame(updateData)
+                        return
+                    }
+                    lastFrameTimeRef.current = now - (elapsed % frameInterval)
+
                     analyserRef.current.getByteFrequencyData(dataArray)
 
                     const startFreq = Math.floor(dataArray.length * 0.05)
@@ -627,7 +692,7 @@ export const MicrophoneWaveform = ({
                     lastActiveDataRef.current = normalizedData
                     animationIdRef.current = requestAnimationFrame(updateData)
                 }
-                updateData()
+                animationIdRef.current = requestAnimationFrame(updateData)
             } catch (error) {
                 onError?.(error as Error)
             }
@@ -648,9 +713,13 @@ export const MicrophoneWaveform = ({
                 cancelAnimationFrame(animationIdRef.current)
             }
         }
-    }, [active, fftSize, smoothingTimeConstant, sensitivity, onError])
+    }, [active, fftSize, smoothingTimeConstant, sensitivity, onError, isMobile, isVisibleInViewport])
 
-    return <Waveform data={data} {...props} />
+    return (
+        <div ref={containerRef} className="w-full h-full flex items-center justify-center">
+            <Waveform data={data} {...props} />
+        </div>
+    )
 }
 
 export const CircularMicrophoneWaveform = ({
@@ -670,14 +739,17 @@ export const CircularMicrophoneWaveform = ({
     const audioContextRef = useRef<AudioContext | null>(null)
     const streamRef = useRef<MediaStream | null>(null)
     const animationIdRef = useRef<number | null>(null)
-    const [amplitude, setAmplitude] = useState(0)
+    const amplitudeRef = useRef(0)
+    const isVisible = useIntersectionObserver(canvasRef)
+    const isMobile = useIsMobile()
+    const lastFrameTimeRef = useRef<number>(0)
 
     useEffect(() => {
         if (!active) {
             if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop())
             if (audioContextRef.current) audioContextRef.current.close()
             if (animationIdRef.current) cancelAnimationFrame(animationIdRef.current)
-            setAmplitude(0)
+            amplitudeRef.current = 0
             return
         }
 
@@ -685,7 +757,12 @@ export const CircularMicrophoneWaveform = ({
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
                 streamRef.current = stream
-                const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+                const AudioContextClass = (window.AudioContext ||
+                    (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext)
+                if (!AudioContextClass) {
+                    throw new Error("AudioContext not supported");
+                }
+                const audioContext = new AudioContextClass()
                 const analyser = audioContext.createAnalyser()
                 analyser.fftSize = fftSize
                 analyser.smoothingTimeConstant = smoothingTimeConstant
@@ -695,15 +772,86 @@ export const CircularMicrophoneWaveform = ({
                 analyserRef.current = analyser
 
                 const dataArray = new Uint8Array(analyser.frequencyBinCount)
-                const update = () => {
+                const canvas = canvasRef.current
+                if (!canvas) return
+                const ctx = canvas.getContext("2d")
+                if (!ctx) return
+
+                const dpr = window.devicePixelRatio || 1
+                canvas.width = size * dpr
+                canvas.height = size * dpr
+                ctx.scale(dpr, dpr)
+
+                const targetFps = isMobile ? 30 : 60
+                const frameInterval = 1000 / targetFps
+                let time = 0
+
+                const redraw = (now: number) => {
+                    if (!isVisible) {
+                        animationIdRef.current = requestAnimationFrame(redraw)
+                        return
+                    }
+
+                    const elapsedSinceLastFrame = now - lastFrameTimeRef.current
+                    if (elapsedSinceLastFrame < frameInterval) {
+                        animationIdRef.current = requestAnimationFrame(redraw)
+                        return
+                    }
+
+                    lastFrameTimeRef.current = now - (elapsedSinceLastFrame % frameInterval)
+
+                    // Get audio data
                     analyser.getByteFrequencyData(dataArray)
                     let sum = 0
                     for (let i = 0; i < dataArray.length; i++) sum += dataArray[i]
-                    const avg = sum / dataArray.length
-                    setAmplitude(avg / 255 * sensitivity)
-                    animationIdRef.current = requestAnimationFrame(update)
+                    amplitudeRef.current = (sum / dataArray.length) / 255 * sensitivity
+
+                    // Render
+                    time += 0.05
+                    ctx.clearRect(0, 0, size, size)
+                    const cx = size / 2
+                    const cy = size / 2
+                    const baseRadius = size * 0.35
+                    const amplitude = amplitudeRef.current
+
+                    for (let i = 0; i < 3; i++) {
+                        const layerAmplitude = amplitude * (1 - i * 0.2)
+                        const layerTime = time + i * 2
+
+                        ctx.beginPath()
+                        ctx.strokeStyle = color
+                        ctx.lineWidth = 2
+                        ctx.globalAlpha = 0.2 / (i + 1)
+
+                        if (active || processing) {
+                            for (let angle = 0; angle < Math.PI * 2; angle += 0.1) {
+                                const noise = Math.sin(angle * 4 + layerTime) * 10 * layerAmplitude
+                                const r = baseRadius + noise + (Math.sin(angle * 8 - layerTime * 0.5) * 5 * layerAmplitude)
+                                const x = cx + Math.cos(angle) * r
+                                const y = cy + Math.sin(angle) * r
+                                if (angle === 0) ctx.moveTo(x, y)
+                                else ctx.lineTo(x, y)
+                            }
+                            ctx.closePath()
+                            ctx.stroke()
+                            ctx.globalAlpha = 0.05 * layerAmplitude
+                            ctx.fill()
+                        } else {
+                            ctx.arc(cx, cy, baseRadius, 0, Math.PI * 2)
+                            ctx.stroke()
+                        }
+                    }
+
+                    ctx.globalAlpha = 0.8
+                    ctx.beginPath()
+                    ctx.fillStyle = color
+                    const corePulse = (active || processing) ? (1 + amplitude * 0.2) : 1
+                    ctx.arc(cx, cy, baseRadius * 0.8 * corePulse, 0, Math.PI * 2)
+                    ctx.fill()
+
+                    animationIdRef.current = requestAnimationFrame(redraw)
                 }
-                update()
+                animationIdRef.current = requestAnimationFrame(redraw)
             } catch (err) {
                 onError?.(err as Error)
             }
@@ -714,77 +862,7 @@ export const CircularMicrophoneWaveform = ({
             if (audioContextRef.current) audioContextRef.current.close()
             if (animationIdRef.current) cancelAnimationFrame(animationIdRef.current)
         }
-    }, [active, fftSize, smoothingTimeConstant, sensitivity])
-
-    useEffect(() => {
-        const canvas = canvasRef.current
-        if (!canvas) return
-        const ctx = canvas.getContext("2d")
-        if (!ctx) return
-
-        const dpr = window.devicePixelRatio || 1
-        canvas.width = size * dpr
-        canvas.height = size * dpr
-        ctx.scale(dpr, dpr)
-
-        let time = 0
-        const render = () => {
-            time += 0.05
-            ctx.clearRect(0, 0, size, size)
-            const cx = size / 2
-            const cy = size / 2
-            const baseRadius = size * 0.35
-
-            // Draw multiple layers of circles
-            for (let i = 0; i < 3; i++) {
-                const layerOffset = i * 0.5
-                const layerAmplitude = amplitude * (1 - i * 0.2)
-                const layerTime = time + i * 2
-
-                ctx.beginPath()
-                ctx.strokeStyle = color
-                ctx.lineWidth = 2
-                ctx.globalAlpha = 0.2 / (i + 1)
-
-                if (active || processing) {
-                    for (let angle = 0; angle < Math.PI * 2; angle += 0.05) {
-                        const noise = Math.sin(angle * 4 + layerTime) * 10 * layerAmplitude
-                        const r = baseRadius + noise + (Math.sin(angle * 8 - layerTime * 0.5) * 5 * layerAmplitude)
-                        const x = cx + Math.cos(angle) * r
-                        const y = cy + Math.sin(angle) * r
-                        if (angle === 0) ctx.moveTo(x, y)
-                        else ctx.lineTo(x, y)
-                    }
-                    ctx.closePath()
-                    ctx.stroke()
-
-                    // Pulse fill
-                    ctx.globalAlpha = 0.05 * layerAmplitude
-                    ctx.fill()
-                } else {
-                    ctx.arc(cx, cy, baseRadius, 0, Math.PI * 2)
-                    ctx.stroke()
-                }
-            }
-
-            // Core circle
-            ctx.globalAlpha = 0.8
-            ctx.beginPath()
-            ctx.fillStyle = color
-            const corePulse = (active || processing) ? (1 + amplitude * 0.2) : 1
-            ctx.arc(cx, cy, baseRadius * 0.8 * corePulse, 0, Math.PI * 2)
-            ctx.fill()
-
-            if (active || processing) {
-                animationIdRef.current = requestAnimationFrame(render)
-            }
-        }
-
-        render()
-        return () => {
-            if (animationIdRef.current) cancelAnimationFrame(animationIdRef.current)
-        }
-    }, [amplitude, size, color, active, processing])
+    }, [active, processing, size, fftSize, smoothingTimeConstant, sensitivity, color, onError, isVisible, isMobile])
 
     return (
         <canvas
@@ -820,6 +898,9 @@ export const SimpleScrollingWaveform = ({
     const localStreamRef = useRef<MediaStream | null>(null)
     const animationIdRef = useRef<number | null>(null)
     const historyRef = useRef<number[]>([])
+    const isVisible = useIntersectionObserver(canvasRef)
+    const isMobile = useIsMobile()
+    const lastFrameTimeRef = useRef<number>(0)
 
     useEffect(() => {
         if (!active) {
@@ -856,8 +937,23 @@ export const SimpleScrollingWaveform = ({
                 analyserRef.current = analyser
 
                 const dataArray = new Uint8Array(analyser.frequencyBinCount)
+                const targetFps = isMobile ? 30 : 60
+                const frameInterval = 1000 / targetFps
 
-                const update = () => {
+                const update = (now: number) => {
+                    if (!isVisible) {
+                        animationIdRef.current = requestAnimationFrame(update)
+                        return
+                    }
+
+                    const elapsed = now - lastFrameTimeRef.current
+                    if (elapsed < frameInterval) {
+                        animationIdRef.current = requestAnimationFrame(update)
+                        return
+                    }
+
+                    lastFrameTimeRef.current = now - (elapsed % frameInterval)
+
                     analyser.getByteFrequencyData(dataArray)
                     let sum = 0
                     for (let i = 0; i < dataArray.length; i++) sum += dataArray[i]
@@ -929,7 +1025,7 @@ export const SimpleScrollingWaveform = ({
             }
             if (animationIdRef.current) cancelAnimationFrame(animationIdRef.current)
         }
-    }, [active, barWidth, barGap, color, sensitivity, mediaStream])
+    }, [active, barWidth, barGap, color, sensitivity, mediaStream, isMobile, isVisible])
 
     useEffect(() => {
         const canvas = canvasRef.current

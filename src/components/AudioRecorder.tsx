@@ -20,7 +20,7 @@ interface AudioRecorderProps {
     theme?: 'light' | 'dark';
 }
 
-export default function AudioRecorder({
+const AudioRecorder = React.memo(({
     onTranscriptionComplete,
     onError,
     language,
@@ -30,7 +30,7 @@ export default function AudioRecorder({
     variant = 'default',
     onRecordingStart,
     theme = 'dark'
-}: AudioRecorderProps) {
+}: AudioRecorderProps) => {
     const [isRecording, setIsRecording] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
     const [processingStatus, setProcessingStatus] = useState("");
@@ -388,5 +388,7 @@ export default function AudioRecorder({
             </AnimatePresence>
         </div>
     );
-}
+});
+
+export default AudioRecorder;
 

@@ -17,7 +17,7 @@ interface LanguageSelectorProps {
     'data-testid'?: string;
 }
 
-export default function LanguageSelector({ selectedLanguage, onSelectLanguage, className, 'data-testid': testId }: LanguageSelectorProps) {
+const LanguageSelector = React.memo(({ selectedLanguage, onSelectLanguage, className, 'data-testid': testId }: LanguageSelectorProps) => {
     const [isOpen, setIsOpen] = useState(false);
 
     const languages = [
@@ -111,4 +111,6 @@ export default function LanguageSelector({ selectedLanguage, onSelectLanguage, c
             </AnimatePresence>
         </div>
     );
-}
+});
+
+export default LanguageSelector;

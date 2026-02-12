@@ -58,8 +58,17 @@ body {
 .aurora-animate {
   animation: aurora-pulse 12s ease-in-out infinite;
   will-change: opacity, transform;
-  filter: blur(64px);
-  /* Optimized for mobile GPU */
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aurora-animate {
+    animation: none;
+    opacity: 0.02;
+  }
+}
+
+.will-change-transform {
+  will-change: transform;
 }
 
 /* Custom scrollbar */
