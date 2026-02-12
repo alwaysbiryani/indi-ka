@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Cloud, Github, Layout, Cpu, Globe } from 'lucide-react';
 
@@ -15,16 +15,6 @@ const credits = [
 
 export function CreditsMarquee() {
     const [isPaused, setIsPaused] = useState(false);
-    const [mounted, setMounted] = useState(false);
-
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            setMounted(true);
-        }, 2000);
-        return () => clearTimeout(timer);
-    }, []);
-
-    if (!mounted) return <div className="mt-auto h-12 bg-transparent border-y border-transparent" />;
 
     return (
         <div className="mt-auto pb-[max(env(safe-area-inset-bottom),1.5rem)] relative z-10 w-full">
