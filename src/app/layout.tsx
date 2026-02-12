@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { FramerProvider } from "@/components/FramerProvider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -38,10 +39,16 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <link rel="preconnect" href="https://api.sarvam.ai" />
+        <link rel="dns-prefetch" href="https://api.sarvam.ai" />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <FramerProvider>
+          {children}
+        </FramerProvider>
         <SpeedInsights />
       </body>
     </html>
