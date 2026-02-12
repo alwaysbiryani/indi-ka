@@ -2,7 +2,7 @@ import { LinearClient } from '@linear/sdk';
 import * as fs from 'fs';
 import * as path from 'path';
 
-const resultsPath = path.join(__dirname, '../results/results.json');
+const resultsPath = path.join(process.cwd(), 'qa-agent/results/results.json');
 const apiKey = process.env.LINEAR_API_KEY;
 
 if (!apiKey) {

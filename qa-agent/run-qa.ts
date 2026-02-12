@@ -64,7 +64,8 @@ async function runQA() {
 
     // 5. Output Summary Report
     console.log('\n--- QA Report Summary ---');
-    const resultsPath = path.join(__dirname, 'results/results.json');
+    // Using process.cwd() is safer in ES modules context when running via ts-node from root
+    const resultsPath = path.join(process.cwd(), 'qa-agent/results/results.json');
     if (fs.existsSync(resultsPath)) {
         const results = JSON.parse(fs.readFileSync(resultsPath, 'utf8'));
         const passed = results.stats.expected;
