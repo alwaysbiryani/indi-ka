@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Clock, Trash2, Copy, Check } from 'lucide-react';
+import { Clock, Trash2, Copy, Check, Search, X } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export interface HistoryItem {
@@ -45,6 +45,17 @@ const formatLanguage = (lang: string, detected?: string) => {
 
 const HistorySidebar = React.memo(({ history, onDelete, onSelect, onClearAll, className }: HistorySidebarProps) => {
     const [copiedId, setCopiedId] = React.useState<string | null>(null);
+    const [query, setQuery] = React.useState('');
+
+    const normalizedQuery = query.trim().toLowerCase();
+    const filteredHistory = React.useMemo(() => {
+        if (!normalizedQuery) return history;
+
+        return history.filter((item) => {
+            const language = formatLanguage(item.language, item.detectedLanguage).toLowerCase();
+            return item.text.toLowerCase().includes(normalizedQuery) || language.includes(normalizedQuery);
+        });
+    }, [history, normalizedQuery]);
 
     const handleCopy = (e: React.MouseEvent, id: string, text: string) => {
         e.stopPropagation();
@@ -60,6 +71,37 @@ const HistorySidebar = React.memo(({ history, onDelete, onSelect, onClearAll, cl
 
     return (
         <div className={`flex flex-col h-full ${className} transition-colors duration-300`}>
+            <div className="mb-4 space-y-2">
+                <div className="flex items-center gap-2 px-3 py-2 rounded-xl border border-[var(--border)] bg-[var(--surface)]">
+                    <Search className="w-3.5 h-3.5 text-[var(--text-secondary)] opacity-80" />
+                    <input
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
+                        placeholder="Search history"
+                        className="w-full bg-transparent outline-none text-xs font-medium text-[var(--text-primary)] placeholder:text-[var(--text-secondary)]"
+                        aria-label="Search history"
+                    />
+                    {query && (
+                        <button
+                            onClick={() => setQuery('')}
+                            className="p-1 rounded-md hover:bg-[var(--surface-hover)] text-[var(--text-secondary)]"
+                            aria-label="Clear search"
+                        >
+                            <X className="w-3 h-3" />
+                        </button>
+                    )}
+                </div>
+
+                {history.length > 0 && (
+                    <button
+                        onClick={onClearAll}
+                        className="text-[10px] font-bold text-red-500/70 hover:text-red-600 uppercase tracking-widest text-left active:scale-95 w-fit"
+                    >
+                        Clear all
+                    </button>
+                )}
+            </div>
+
             {/* List */}
             <div className="flex-1 overflow-y-auto space-y-4 custom-scrollbar">
                 {history.length === 0 ? (
@@ -67,8 +109,13 @@ const HistorySidebar = React.memo(({ history, onDelete, onSelect, onClearAll, cl
                         <Clock className="w-10 h-10 stroke-[1]" />
                         <p className="text-[10px] font-bold uppercase tracking-widest">No history yet</p>
                     </div>
+                ) : filteredHistory.length === 0 ? (
+                    <div className="h-full flex flex-col items-center justify-center text-[var(--text-secondary)] space-y-3 opacity-50 py-20">
+                        <Search className="w-8 h-8 stroke-[1.5]" />
+                        <p className="text-[10px] font-bold uppercase tracking-widest">No matches found</p>
+                    </div>
                 ) : (
-                    history.map((item) => (
+                    filteredHistory.map((item) => (
                         <motion.div
                             layout
                             initial={{ opacity: 0, y: 10 }}
@@ -133,5 +180,7 @@ const HistorySidebar = React.memo(({ history, onDelete, onSelect, onClearAll, cl
         </div>
     );
 });
+
+HistorySidebar.displayName = 'HistorySidebar';
 
 export default HistorySidebar;
