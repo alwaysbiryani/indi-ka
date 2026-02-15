@@ -40,6 +40,7 @@ const AudioRecorder = React.memo(({
     const chunksRef = useRef<Blob[]>([]);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
     const lastProcessedTimeRef = useRef(0);
+    const recordingDurationRef = useRef(0); // For accurate duration checking in callbacks
     const isTranscribingPartRef = useRef(false);
     const accumulatedTranscriptRef = useRef("");
     const detectedLanguageRef = useRef("auto");
@@ -103,43 +104,58 @@ const AudioRecorder = React.memo(({
                 if (isTranscribingPartRef.current && !isFinal) return;
                 if (chunksRef.current.length === 0) return;
 
-                // Optimization: For short utterances (or the final segment), 
-                // send the raw chunks directly without decoding/re-encoding to WAV.
-                if (isFinal && lastProcessedTimeRef.current === 0) {
-                    const audioBlob = new Blob(chunksRef.current, { type: mediaRecorder.mimeType || 'audio/webm' });
-                    await transcribeSegment(audioBlob, 0);
-                    return;
-                }
-
+                // Create blob from accumulated chunks
                 const audioBlob = new Blob(chunksRef.current, { type: mediaRecorder.mimeType || 'audio/webm' });
                 if (audioBlob.size === 0) return;
 
                 try {
                     const audioContext = getAudioContext();
                     const arrayBuffer = await audioBlob.arrayBuffer();
+
                     let audioBuffer;
                     try {
                         audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
                     } catch (decodeErr) {
-                        console.error("decodeAudioData failed, falling back to raw upload", decodeErr);
-                        if (isFinal) {
+                        console.error("decodeAudioData failed, falling back to raw upload if possible", decodeErr);
+                        // Only fall back to raw if it's the final piece and we really think it's short
+                        if (isFinal && lastProcessedTimeRef.current === 0 && recordingDurationRef.current < 28) {
                             await transcribeSegment(audioBlob, 0);
                         }
                         return;
                     }
 
                     const duration = audioBuffer.duration;
+
+                    // CRITICAL: Sarvam AI has a 30-second limit for synchronous ASR.
+                    // If the recording is longer, we must split it into chunks.
+
+                    // Optimization: For short utterances that haven't been processed yet, 
+                    // send the raw chunks directly (usually smaller/compressed webm).
+                    if (isFinal && lastProcessedTimeRef.current === 0 && duration < 29) {
+                        lastProcessedTimeRef.current = duration; // Mark as processed
+                        await transcribeSegment(audioBlob, 0);
+                        return;
+                    }
+
+                    // Otherwise, chunk into <= 30s segments as WAV
                     while (lastProcessedTimeRef.current + 30 <= duration || (isFinal && lastProcessedTimeRef.current < duration)) {
                         const start = lastProcessedTimeRef.current;
                         const end = isFinal ? Math.min(start + 30, duration) : start + 30;
-                        if (end - start < 0.5 && isFinal && lastProcessedTimeRef.current > 0) break;
+
+                        // Avoid very small final segments (< 200ms)
+                        if (end - start < 0.2 && isFinal && lastProcessedTimeRef.current > 0) break;
+
+                        // Increment Ref immediately to prevent concurrent calls from picking up same segment
+                        lastProcessedTimeRef.current = end;
 
                         const slicedBuffer = sliceAudioBuffer(audioBuffer, start, end, audioContext);
                         const slicedBlob = bufferToWav(slicedBuffer);
 
                         await transcribeSegment(slicedBlob, start);
-                        lastProcessedTimeRef.current = end;
+
                         if (isFinal && lastProcessedTimeRef.current >= duration) break;
+                        // Avoid infinite loop if duration calculation is unstable
+                        if (!isFinal && lastProcessedTimeRef.current + 30 > duration) break;
                     }
                 } catch (err) {
                     console.error("Transcription processing error:", err);
@@ -213,6 +229,7 @@ const AudioRecorder = React.memo(({
             timerRef.current = setInterval(() => {
                 setRecordingDuration(prev => {
                     const next = prev + 1;
+                    recordingDurationRef.current = next;
                     if (next % 30 === 0) {
                         mediaRecorder.requestData();
                         processAvailableSegments(false);
