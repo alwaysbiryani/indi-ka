@@ -2,15 +2,20 @@
 'use client';
 
 import React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { AlertCircle, Check } from 'lucide-react';
+import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion';
+import { AlertCircle, Check, X, RefreshCw } from 'lucide-react';
 
 interface BannersProps {
     errorBanner: string | null;
     showAutoCopyBanner: boolean;
+    onDismissError?: () => void;
+    onRetry?: () => void;
 }
 
-export const Banners = React.memo(({ errorBanner, showAutoCopyBanner }: BannersProps) => {
+export const Banners = React.memo(function Banners({ errorBanner, showAutoCopyBanner, onDismissError, onRetry }: BannersProps) {
+    const dragX = useMotionValue(0);
+    const errorOpacity = useTransform(dragX, [-150, 0, 150], [0.3, 1, 0.3]);
+
     return (
         <>
             <AnimatePresence>
@@ -19,11 +24,40 @@ export const Banners = React.memo(({ errorBanner, showAutoCopyBanner }: BannersP
                         initial={{ y: -50, opacity: 0 }}
                         animate={{ y: 20, opacity: 1 }}
                         exit={{ y: -50, opacity: 0 }}
-                        className="absolute top-0 left-4 right-4 bg-[var(--surface)]/95 border border-[var(--error)]/30 text-[var(--text-primary)] px-5 py-4 rounded-2xl shadow-xl z-[100] flex items-center justify-between backdrop-blur-xl"
+                        drag="x"
+                        dragConstraints={{ left: 0, right: 0 }}
+                        dragElastic={0.5}
+                        style={{ x: dragX, opacity: errorOpacity }}
+                        onDragEnd={(_, info) => {
+                            if (Math.abs(info.offset.x) > 100) {
+                                onDismissError?.();
+                            }
+                        }}
+                        className="absolute top-0 left-4 right-4 bg-[var(--surface)]/95 border border-[var(--error)]/30 text-[var(--text-primary)] px-4 py-3 rounded-2xl shadow-xl z-[100] flex items-center justify-between backdrop-blur-xl cursor-grab active:cursor-grabbing"
                     >
-                        <div className="flex items-center space-x-3">
+                        <div className="flex items-center space-x-3 flex-1 min-w-0">
                             <AlertCircle className="w-5 h-5 flex-shrink-0 text-[var(--error)]" />
-                            <span className="text-sm font-medium truncate max-w-[200px]">{errorBanner}</span>
+                            <span className="text-sm font-medium truncate">{errorBanner}</span>
+                        </div>
+                        <div className="flex items-center space-x-1 flex-shrink-0 ml-2">
+                            {onRetry && (
+                                <button
+                                    onClick={onRetry}
+                                    className="p-1.5 rounded-lg hover:bg-[var(--surface-hover)] text-[var(--text-secondary)] hover:text-[var(--accent)] transition-colors active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring-focus)]"
+                                    aria-label="Retry"
+                                >
+                                    <RefreshCw className="w-3.5 h-3.5" />
+                                </button>
+                            )}
+                            {onDismissError && (
+                                <button
+                                    onClick={onDismissError}
+                                    className="p-1.5 rounded-lg hover:bg-[var(--surface-hover)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring-focus)]"
+                                    aria-label="Dismiss error"
+                                >
+                                    <X className="w-3.5 h-3.5" />
+                                </button>
+                            )}
                         </div>
                     </motion.div>
                 )}

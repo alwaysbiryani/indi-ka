@@ -46,6 +46,25 @@ const formatLanguage = (lang: string, detected?: string) => {
 const HistorySidebar = React.memo(({ history, onDelete, onSelect, onClearAll, className }: HistorySidebarProps) => {
     const [copiedId, setCopiedId] = React.useState<string | null>(null);
     const [query, setQuery] = React.useState('');
+    const [confirmingClear, setConfirmingClear] = React.useState(false);
+    const confirmTimerRef = React.useRef<NodeJS.Timeout | null>(null);
+
+    // Auto-revert confirm state after 3 seconds
+    React.useEffect(() => {
+        if (confirmingClear) {
+            confirmTimerRef.current = setTimeout(() => setConfirmingClear(false), 3000);
+            return () => { if (confirmTimerRef.current) clearTimeout(confirmTimerRef.current); };
+        }
+    }, [confirmingClear]);
+
+    const handleClearAll = () => {
+        if (confirmingClear) {
+            setConfirmingClear(false);
+            onClearAll();
+        } else {
+            setConfirmingClear(true);
+        }
+    };
 
     const normalizedQuery = query.trim().toLowerCase();
     const filteredHistory = React.useMemo(() => {
@@ -94,10 +113,14 @@ const HistorySidebar = React.memo(({ history, onDelete, onSelect, onClearAll, cl
 
                 {history.length > 0 && (
                     <button
-                        onClick={onClearAll}
-                        className="text-[length:var(--font-size-caption)] font-bold text-[var(--error)]/70 hover:text-[var(--error)] uppercase tracking-widest text-left active:scale-95 w-fit"
+                        onClick={handleClearAll}
+                        className={`text-[length:var(--font-size-caption)] font-bold uppercase tracking-widest text-left active:scale-95 w-fit transition-all ${
+                            confirmingClear
+                                ? 'text-white bg-[var(--error)] px-2 py-0.5 rounded-md'
+                                : 'text-[var(--error)]/70 hover:text-[var(--error)]'
+                        }`}
                     >
-                        Clear all
+                        {confirmingClear ? 'Tap to confirm' : 'Clear all'}
                     </button>
                 )}
             </div>

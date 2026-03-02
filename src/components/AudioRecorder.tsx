@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
-import { Mic, Square, Loader2, Sparkles, StopCircle } from 'lucide-react';
+import { Mic, Loader2, WifiOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { sliceAudioBuffer, bufferToWav } from '@/utils/audioProcessing';
 import { SimpleScrollingWaveform } from '@/components/ui/Waveform';
@@ -18,9 +18,10 @@ interface AudioRecorderProps {
     variant?: 'default' | 'circular';
     onRecordingStart?: () => void;
     theme?: 'light' | 'dark';
+    isOnline?: boolean;
 }
 
-const AudioRecorder = React.memo(({
+const AudioRecorder = React.memo(function AudioRecorder({
     onTranscriptionComplete,
     onError,
     language,
@@ -29,11 +30,14 @@ const AudioRecorder = React.memo(({
     isCompact,
     variant = 'default',
     onRecordingStart,
-    theme = 'dark'
-}: AudioRecorderProps) => {
+    theme = 'dark',
+    isOnline = true
+}: AudioRecorderProps) {
     const [isRecording, setIsRecording] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
     const [processingStatus, setProcessingStatus] = useState("");
+    const [processingProgress, setProcessingProgress] = useState(0); // 0-100
+    const [isMultiSegment, setIsMultiSegment] = useState(false);
     const [recordingDuration, setRecordingDuration] = useState(0);
     const [activeStream, setActiveStream] = useState<MediaStream | null>(null);
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -45,9 +49,11 @@ const AudioRecorder = React.memo(({
     const accumulatedTranscriptRef = useRef("");
     const detectedLanguageRef = useRef("auto");
     const [hasInteracted, setHasInteracted] = useState(true);
-    const [processingTime, setProcessingTime] = useState<number | null>(null);
+    const [_processingTime, setProcessingTime] = useState<number | null>(null);
     const processingStartTimeRef = useRef<number | null>(null);
     const audioContextRef = useRef<AudioContext | null>(null);
+    const segmentsCompletedRef = useRef(0);
+    const totalSegmentsRef = useRef(1);
 
     React.useEffect(() => {
         const interacted = localStorage.getItem('audio_recorder_interacted');
@@ -79,6 +85,10 @@ const AudioRecorder = React.memo(({
     };
 
     const startRecording = async () => {
+        if (!isOnline) {
+            onError("You're offline. Connect to the internet to transcribe.");
+            return;
+        }
         setProcessingTime(null);
         processingStartTimeRef.current = null;
         if (!hasInteracted) {
@@ -131,12 +141,26 @@ const AudioRecorder = React.memo(({
                     // CRITICAL: Sarvam AI has a 30-second limit for synchronous ASR.
                     // If the recording is longer, we must split it into chunks.
 
-                    // Optimization: For short utterances that haven't been processed yet, 
+                    // Optimization: For short utterances that haven't been processed yet,
                     // send the raw chunks directly (usually smaller/compressed webm).
                     if (isFinal && lastProcessedTimeRef.current === 0 && duration < 29) {
                         lastProcessedTimeRef.current = duration; // Mark as processed
+                        setIsMultiSegment(false);
+                        totalSegmentsRef.current = 1;
                         await transcribeSegment(audioBlob, 0);
+                        segmentsCompletedRef.current = 1;
+                        setProcessingProgress(100);
                         return;
+                    }
+
+                    // Calculate total segments for progress tracking
+                    if (isFinal) {
+                        const remaining = duration - lastProcessedTimeRef.current;
+                        const numSegments = Math.ceil(remaining / 30);
+                        totalSegmentsRef.current = numSegments;
+                        segmentsCompletedRef.current = 0;
+                        setIsMultiSegment(numSegments > 1);
+                        setProcessingProgress(0);
                     }
 
                     // Otherwise, chunk into <= 30s segments as WAV
@@ -154,6 +178,8 @@ const AudioRecorder = React.memo(({
                         const slicedBlob = bufferToWav(slicedBuffer);
 
                         await transcribeSegment(slicedBlob, start);
+                        segmentsCompletedRef.current += 1;
+                        setProcessingProgress(Math.round((segmentsCompletedRef.current / totalSegmentsRef.current) * 100));
 
                         if (isFinal && lastProcessedTimeRef.current >= duration) break;
                         // Avoid infinite loop if duration calculation is unstable
@@ -199,6 +225,8 @@ const AudioRecorder = React.memo(({
 
             mediaRecorder.onstop = async () => {
                 setIsProcessing(true);
+                setProcessingProgress(0);
+                setIsMultiSegment(false);
                 setProcessingStatus("Finalizing...");
                 if (timerRef.current) {
                     clearInterval(timerRef.current);
@@ -295,9 +323,15 @@ const AudioRecorder = React.memo(({
                                 </>
                             )}
                             <div className="absolute inset-0 bg-gradient-to-br from-[var(--surface-hover)]/20 to-[var(--surface)]/5 rounded-full blur-xl group-hover:blur-2xl transition-all" />
-                            <div className="relative w-full h-full bg-[var(--surface)] rounded-full flex flex-col items-center justify-center shadow-2xl border-4 border-[var(--border)]">
-                                <Mic className="w-16 h-16 text-[var(--text-primary)] mb-2" />
-                                <span className="text-xl font-bold text-[var(--text-primary)] tracking-tight uppercase">Tap to Speak</span>
+                            <div className={cn("relative w-full h-full bg-[var(--surface)] rounded-full flex flex-col items-center justify-center shadow-2xl border-4 border-[var(--border)]", !isOnline && "opacity-50")}>
+                                {isOnline ? (
+                                    <Mic className="w-16 h-16 text-[var(--text-primary)] mb-2" />
+                                ) : (
+                                    <WifiOff className="w-12 h-12 text-[var(--text-tertiary)] mb-2" />
+                                )}
+                                <span className="text-xl font-bold text-[var(--text-primary)] tracking-tight uppercase">
+                                    {isOnline ? 'Tap to Speak' : 'Offline'}
+                                </span>
                             </div>
                         </motion.button>
                     )}
@@ -346,11 +380,43 @@ const AudioRecorder = React.memo(({
                     {isProcessing && (
                         <div className="relative w-64 h-64">
                             <div className="absolute inset-0 bg-[var(--accent)]/5 rounded-full blur-xl" />
-                            <div className="w-full h-full bg-[var(--surface)]/90 rounded-full flex flex-col items-center justify-center border-4 border-[var(--border)] backdrop-blur-sm">
-                                <Loader2 className="w-12 h-12 text-[var(--accent)] animate-spin mb-4" />
-                                <span className="text-sm font-bold text-[var(--text-secondary)] uppercase tracking-widest px-8 text-center leading-tight">
-                                    {processingStatus || "Processing..."}
-                                </span>
+                            {/* SVG progress ring (visible for multi-segment) */}
+                            {isMultiSegment && (
+                                <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 256 256">
+                                    <circle
+                                        cx="128" cy="128" r="120"
+                                        fill="none"
+                                        stroke="var(--border)"
+                                        strokeWidth="6"
+                                    />
+                                    <circle
+                                        cx="128" cy="128" r="120"
+                                        fill="none"
+                                        stroke="var(--accent)"
+                                        strokeWidth="6"
+                                        strokeLinecap="round"
+                                        strokeDasharray={2 * Math.PI * 120}
+                                        strokeDashoffset={2 * Math.PI * 120 * (1 - processingProgress / 100)}
+                                        className="transition-all duration-500 ease-out"
+                                    />
+                                </svg>
+                            )}
+                            <div className="w-full h-full bg-[var(--surface)]/90 rounded-full flex flex-col items-center justify-center border-4 border-transparent backdrop-blur-sm">
+                                {isMultiSegment ? (
+                                    <>
+                                        <span className="text-4xl font-bold text-[var(--accent)] tabular-nums mb-2">{processingProgress}%</span>
+                                        <span className="text-[length:var(--font-size-caption)] font-bold text-[var(--text-secondary)] uppercase tracking-widest">
+                                            Transcribing...
+                                        </span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Loader2 className="w-12 h-12 text-[var(--accent)] animate-spin mb-4" />
+                                        <span className="text-sm font-bold text-[var(--text-secondary)] uppercase tracking-widest px-8 text-center leading-tight">
+                                            {processingStatus || "Processing..."}
+                                        </span>
+                                    </>
+                                )}
                             </div>
                         </div>
                     )}

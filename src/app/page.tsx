@@ -1,11 +1,11 @@
 
 'use client';
 
-import React, { useState, useEffect, useCallback, Suspense } from 'react';
+import React, { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import dynamic from 'next/dynamic';
 import {
   Clock, Copy, MessageSquare, X, Trash2,
-  ArrowLeft, Sun, Moon, Mic
+  ArrowLeft, Sun, Moon, Mic, WifiOff, Wifi
 } from 'lucide-react';
 import { m, AnimatePresence } from 'framer-motion';
 import AudioRecorder from '@/components/AudioRecorder';
@@ -17,6 +17,8 @@ import { BackgroundBlobs } from '@/components/BackgroundBlobs';
 import { useTranscriptionState } from '@/hooks/useTranscriptionState';
 import { useHistoryState } from '@/hooks/useHistoryState';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
+import { useFocusTrap } from '@/hooks/useFocusTrap';
 
 // Aggressively dynamic imports for non-critical/below-fold elements
 const CreditsMarquee = dynamic(() => import('@/components/CreditsMarquee').then(mod => mod.CreditsMarquee), { ssr: false });
@@ -28,6 +30,7 @@ const HistorySidebar = dynamic(() => import('@/components/HistorySidebar'), {
 
 export default function Home() {
   const prefersReducedMotion = useReducedMotion();
+  const { isOnline, justReconnected } = useOnlineStatus();
 
   // Standalone state
   const [language, setLanguage] = useState('auto');
@@ -35,6 +38,8 @@ export default function Home() {
   const [errorBanner, setErrorBanner] = useState<string | null>(null);
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
   const [isMounted, setIsMounted] = useState(false);
+  const [confirmingClearAll, setConfirmingClearAll] = useState(false);
+  const confirmTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // History state (consolidated hook)
   const {
@@ -70,6 +75,48 @@ export default function Home() {
 
   const handleErrorAction = useCallback((msg: string) => setErrorBanner(msg), []);
 
+  // Focus trap for history sidebar
+  const historySidebarRef = useFocusTrap<HTMLDivElement>({
+    active: isHistoryOpen,
+    onEscape: closeHistory,
+  });
+
+  // Auto-dismiss error banner after 8 seconds
+  useEffect(() => {
+    if (!errorBanner) return;
+    const timer = setTimeout(() => setErrorBanner(null), 8000);
+    return () => clearTimeout(timer);
+  }, [errorBanner]);
+
+  // Global Escape key: go back from transcription view (when not in a modal)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && transcript && !isHistoryOpen) {
+        e.preventDefault();
+        setTranscript('');
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [transcript, isHistoryOpen, setTranscript]);
+
+  // Confirm Clear All (inline pattern for the page.tsx header version)
+  useEffect(() => {
+    if (confirmingClearAll) {
+      confirmTimerRef.current = setTimeout(() => setConfirmingClearAll(false), 3000);
+      return () => { if (confirmTimerRef.current) clearTimeout(confirmTimerRef.current); };
+    }
+  }, [confirmingClearAll]);
+
+  const handleHeaderClearAll = useCallback(() => {
+    if (confirmingClearAll) {
+      setConfirmingClearAll(false);
+      handleClearHistory();
+    } else {
+      setConfirmingClearAll(true);
+    }
+  }, [confirmingClearAll, handleClearHistory]);
+
   // Initialize all settings in a single effect to avoid re-render loops
   useEffect(() => {
     setIsMounted(true);
@@ -89,7 +136,7 @@ export default function Home() {
     // History
     hydrateHistory();
 
-    console.log('%c🇮🇳 Indi-क Performance-Optimized v5', 'font-size: 16px; font-weight: bold; color: #FF9933;');
+    console.log('%c🇮🇳 Indi-क Performance-Optimized v6', 'font-size: 16px; font-weight: bold; color: #FF9933;');
   }, [hydrateHistory]);
 
   useEffect(() => {
@@ -104,7 +151,42 @@ export default function Home() {
       <BackgroundBlobs />
 
       <div className="relative z-10 w-full flex flex-col items-center">
-        <Banners errorBanner={errorBanner} showAutoCopyBanner={showAutoCopyBanner} />
+        <Banners
+          errorBanner={errorBanner}
+          showAutoCopyBanner={showAutoCopyBanner}
+          onDismissError={clearError}
+          onRetry={clearError}
+        />
+
+        {/* Offline banner */}
+        <AnimatePresence>
+          {!isOnline && (
+            <m.div
+              initial={{ y: -50, opacity: 0 }}
+              animate={{ y: 20, opacity: 1 }}
+              exit={{ y: -50, opacity: 0 }}
+              className="absolute top-0 left-4 right-4 bg-[var(--surface)]/95 border border-[var(--warning)]/30 text-[var(--text-primary)] px-5 py-3 rounded-2xl shadow-xl z-[99] flex items-center space-x-3 backdrop-blur-xl"
+            >
+              <WifiOff className="w-4 h-4 text-[var(--warning)] flex-shrink-0" />
+              <span className="text-sm font-medium">You&apos;re offline. Recording is disabled.</span>
+            </m.div>
+          )}
+        </AnimatePresence>
+
+        {/* Back online toast */}
+        <AnimatePresence>
+          {justReconnected && isOnline && (
+            <m.div
+              initial={{ y: -50, opacity: 0 }}
+              animate={{ y: 20, opacity: 1 }}
+              exit={{ y: -50, opacity: 0 }}
+              className="absolute top-0 left-4 right-4 bg-[var(--surface)]/95 border border-[var(--success)]/30 text-[var(--text-primary)] px-5 py-3 rounded-2xl shadow-xl z-[99] flex items-center space-x-3 backdrop-blur-xl"
+            >
+              <Wifi className="w-4 h-4 text-[var(--success)] flex-shrink-0" />
+              <span className="text-sm font-medium">Back online</span>
+            </m.div>
+          )}
+        </AnimatePresence>
 
         {/* Phone Mockup */}
         <m.div
@@ -127,6 +209,7 @@ export default function Home() {
                 onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
                 className="p-2.5 rounded-full hover:bg-[var(--surface-hover)] text-[var(--text-secondary)] transition-all active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring-focus)]"
                 data-testid={theme === 'dark' ? 'sun-icon' : 'moon-icon'}
+                aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
               >
                 {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
               </button>
@@ -135,6 +218,7 @@ export default function Home() {
                 onClick={openHistory}
                 className="relative bg-[var(--surface)] hover:bg-[var(--surface-hover)] px-4 py-2 rounded-full border border-[var(--border)] flex items-center space-x-2 transition-all active:scale-95 group shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring-focus)]"
                 data-testid="history-button"
+                aria-label="Open recent history"
               >
                 <Clock className="w-4 h-4 text-[var(--text-secondary)] group-hover:text-[var(--text-primary)]" />
                 <span className="text-xs font-bold text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] uppercase tracking-wider">Recent</span>
@@ -180,6 +264,7 @@ export default function Home() {
                       variant="circular"
                       onRecordingStart={animateClear}
                       theme={theme}
+                      isOnline={isOnline}
                     />
                   </div>
                 </m.div>
@@ -196,6 +281,7 @@ export default function Home() {
                     <button
                       onClick={() => setTranscript('')}
                       className="group flex items-center space-x-1 pl-2 pr-3 py-2 hover:bg-[var(--surface-hover)] rounded-full transition-all text-[var(--text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring-focus)]"
+                      aria-label="Go back to recording view"
                     >
                       <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
                       <span className="text-sm font-medium">Back</span>
@@ -219,6 +305,7 @@ export default function Home() {
                     <button
                       onClick={() => setTranscript('')}
                       className="absolute top-4 right-4 p-2.5 bg-[var(--app-bg)] rounded-xl transition-all active:scale-95 text-[var(--text-secondary)] hover:text-[var(--error)] lg:opacity-0 lg:group-hover:opacity-100 duration-200"
+                      aria-label="Clear transcript"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -272,10 +359,14 @@ export default function Home() {
               className="fixed inset-0 bg-black/20 backdrop-blur-[2px] z-[200]"
             />
             <m.div
+              ref={historySidebarRef}
               initial={prefersReducedMotion ? { opacity: 0 } : { x: '100%' }}
               animate={prefersReducedMotion ? { opacity: 1 } : { x: 0 }}
               exit={prefersReducedMotion ? { opacity: 0 } : { x: '100%' }}
               transition={prefersReducedMotion ? { duration: 0.15 } : { type: 'spring', damping: 25, stiffness: 200 }}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Recent history"
               className="fixed right-0 top-0 bottom-0 w-full max-w-[340px] bg-[var(--surface)] z-[201] flex flex-col shadow-xl border-l border-[var(--border)]"
             >
               <div className="p-6 md:p-8 flex flex-col h-full">
@@ -284,10 +375,14 @@ export default function Home() {
                     <h2 className="text-xl font-bold text-[var(--text-primary)] tracking-tight">Recent History</h2>
                     {history.length > 0 && (
                       <button
-                        onClick={handleClearHistory}
-                        className="text-[length:var(--font-size-caption)] font-bold text-[var(--error)]/70 hover:text-[var(--error)] uppercase tracking-widest mt-1 text-left active:scale-95 w-fit"
+                        onClick={handleHeaderClearAll}
+                        className={`text-[length:var(--font-size-caption)] font-bold uppercase tracking-widest mt-1 text-left active:scale-95 w-fit transition-all ${
+                          confirmingClearAll
+                            ? 'text-white bg-[var(--error)] px-2 py-0.5 rounded-md'
+                            : 'text-[var(--error)]/70 hover:text-[var(--error)]'
+                        }`}
                       >
-                        Clear All
+                        {confirmingClearAll ? 'Tap to confirm' : 'Clear All'}
                       </button>
                     )}
                   </div>
