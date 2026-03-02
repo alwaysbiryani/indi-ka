@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Clock, Trash2, Copy, Check, Search, X } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export interface HistoryItem {
     id: string;
@@ -78,7 +78,7 @@ const HistorySidebar = React.memo(({ history, onDelete, onSelect, onClearAll, cl
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
                         placeholder="Search history"
-                        className="w-full bg-transparent outline-none text-xs font-medium text-[var(--text-primary)] placeholder:text-[var(--text-secondary)]"
+                        className="w-full bg-transparent outline-none text-xs font-medium text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus-visible:outline-none"
                         aria-label="Search history"
                     />
                     {query && (
@@ -106,22 +106,34 @@ const HistorySidebar = React.memo(({ history, onDelete, onSelect, onClearAll, cl
             <div className="flex-1 overflow-y-auto space-y-4 custom-scrollbar">
                 {history.length === 0 ? (
                     <div className="h-full flex flex-col items-center justify-center text-[var(--text-secondary)] space-y-4 opacity-40 py-20">
-                        <Clock className="w-10 h-10 stroke-[1]" />
+                        <motion.div
+                            animate={{ y: [0, -6, 0] }}
+                            transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+                        >
+                            <Clock className="w-10 h-10 stroke-[1]" />
+                        </motion.div>
                         <p className="text-[length:var(--font-size-caption)] font-bold uppercase tracking-widest">No history yet</p>
                     </div>
                 ) : filteredHistory.length === 0 ? (
                     <div className="h-full flex flex-col items-center justify-center text-[var(--text-secondary)] space-y-3 opacity-50 py-20">
-                        <Search className="w-8 h-8 stroke-[1.5]" />
+                        <motion.div
+                            initial={{ scale: 0.8, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                        >
+                            <Search className="w-8 h-8 stroke-[1.5]" />
+                        </motion.div>
                         <p className="text-[length:var(--font-size-caption)] font-bold uppercase tracking-widest">No matches found</p>
                     </div>
                 ) : (
-                    filteredHistory.map((item) => (
+                    <AnimatePresence>
+                    {filteredHistory.map((item, index) => (
                         <motion.div
                             layout
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.95 }}
-                            transition={{ duration: 0.2 }}
+                            transition={{ duration: 0.2, delay: index * 0.04 }}
                             key={item.id}
                             onClick={() => onSelect(item.text)}
                             className="group relative bg-[var(--surface)] hover:bg-[var(--surface-hover)] border border-[var(--border)] rounded-[20px] p-4 transition-all cursor-pointer active:scale-[0.99] shadow-sm"
@@ -174,7 +186,8 @@ const HistorySidebar = React.memo(({ history, onDelete, onSelect, onClearAll, cl
                                 </div>
                             </div>
                         </motion.div>
-                    ))
+                    ))}
+                    </AnimatePresence>
                 )}
             </div>
         </div>

@@ -85,6 +85,8 @@ const AudioRecorder = React.memo(({
             setHasInteracted(true);
             localStorage.setItem('audio_recorder_interacted', 'true');
         }
+        // Haptic feedback on mobile
+        if ('vibrate' in navigator) navigator.vibrate(40);
         if (onRecordingStart) onRecordingStart();
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -244,6 +246,8 @@ const AudioRecorder = React.memo(({
 
     const stopRecording = () => {
         if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+            // Haptic feedback on mobile
+            if ('vibrate' in navigator) navigator.vibrate([20, 30, 20]);
             processingStartTimeRef.current = Date.now();
             mediaRecorderRef.current.stop();
             setIsRecording(false);

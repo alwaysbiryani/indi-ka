@@ -16,6 +16,7 @@ import { TaglineCycler } from '@/components/TaglineCycler';
 import { BackgroundBlobs } from '@/components/BackgroundBlobs';
 import { useTranscriptionState } from '@/hooks/useTranscriptionState';
 import { useHistoryState } from '@/hooks/useHistoryState';
+import { useReducedMotion } from '@/hooks/useReducedMotion';
 
 // Aggressively dynamic imports for non-critical/below-fold elements
 const CreditsMarquee = dynamic(() => import('@/components/CreditsMarquee').then(mod => mod.CreditsMarquee), { ssr: false });
@@ -26,6 +27,8 @@ const HistorySidebar = dynamic(() => import('@/components/HistorySidebar'), {
 });
 
 export default function Home() {
+  const prefersReducedMotion = useReducedMotion();
+
   // Standalone state
   const [language, setLanguage] = useState('auto');
   const [apiKey, setApiKey] = useState('');
@@ -122,7 +125,7 @@ export default function Home() {
             <div className="flex items-center space-x-2">
               <button
                 onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                className="p-2.5 rounded-full hover:bg-[var(--surface-hover)] text-[var(--text-secondary)] transition-all active:scale-95"
+                className="p-2.5 rounded-full hover:bg-[var(--surface-hover)] text-[var(--text-secondary)] transition-all active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring-focus)]"
                 data-testid={theme === 'dark' ? 'sun-icon' : 'moon-icon'}
               >
                 {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
@@ -130,7 +133,7 @@ export default function Home() {
 
               <button
                 onClick={openHistory}
-                className="relative bg-[var(--surface)] hover:bg-[var(--surface-hover)] px-4 py-2 rounded-full border border-[var(--border)] flex items-center space-x-2 transition-all active:scale-95 group shadow-sm"
+                className="relative bg-[var(--surface)] hover:bg-[var(--surface-hover)] px-4 py-2 rounded-full border border-[var(--border)] flex items-center space-x-2 transition-all active:scale-95 group shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring-focus)]"
                 data-testid="history-button"
               >
                 <Clock className="w-4 h-4 text-[var(--text-secondary)] group-hover:text-[var(--text-primary)]" />
@@ -150,9 +153,9 @@ export default function Home() {
               {!transcript ? (
                 <m.div
                   key="landing"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.98 }}
+                  initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: 10 }}
+                  animate={prefersReducedMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
+                  exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.98 }}
                   className="flex-1 flex flex-col items-center justify-between pb-6 h-full min-h-0"
                 >
                   <TaglineCycler />
@@ -183,15 +186,16 @@ export default function Home() {
               ) : (
                 <m.div
                   key="transcribing"
-                  initial={{ opacity: 0, scale: 0.98 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, y: 20 }}
+                  initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.98, filter: 'blur(4px)' }}
+                  animate={prefersReducedMotion ? { opacity: 1 } : { opacity: 1, scale: 1, filter: 'blur(0px)' }}
+                  exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: 20 }}
+                  transition={{ duration: 0.35 }}
                   className="flex-1 flex flex-col h-full"
                 >
                   <div className="flex items-center justify-between mb-4">
                     <button
                       onClick={() => setTranscript('')}
-                      className="group flex items-center space-x-1 pl-2 pr-3 py-2 hover:bg-[var(--surface-hover)] rounded-full transition-all text-[var(--text-secondary)]"
+                      className="group flex items-center space-x-1 pl-2 pr-3 py-2 hover:bg-[var(--surface-hover)] rounded-full transition-all text-[var(--text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring-focus)]"
                     >
                       <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
                       <span className="text-sm font-medium">Back</span>
@@ -224,7 +228,7 @@ export default function Home() {
                     <button
                       onClick={handleCopy}
                       className={cn(
-                        "flex-1 py-3.5 rounded-full transition-all duration-300 active:scale-95 flex items-center justify-center space-x-2 group outline-none",
+                        "flex-1 py-3.5 rounded-full transition-all duration-300 active:scale-95 flex items-center justify-center space-x-2 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring-focus)]",
                         hasCopied
                           ? "bg-[var(--success-bg)] border border-[var(--success)]/40 text-[var(--success)]"
                           : "bg-[var(--surface)] hover:bg-[var(--surface-hover)] border border-[var(--border)] text-[var(--text-primary)]"
@@ -237,7 +241,7 @@ export default function Home() {
 
                     <button
                       onClick={() => setTranscript('')}
-                      className="flex-1 py-3.5 bg-[var(--surface)] hover:bg-[var(--surface-hover)] rounded-full transition-all active:scale-95 border border-[var(--border)] flex items-center justify-center space-x-2 outline-none"
+                      className="flex-1 py-3.5 bg-[var(--surface)] hover:bg-[var(--surface-hover)] rounded-full transition-all active:scale-95 border border-[var(--border)] flex items-center justify-center space-x-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring-focus)]"
                       data-testid="speak-again-button"
                     >
                       <Mic className="w-4.5 h-4.5 text-[var(--text-secondary)]" />
@@ -268,10 +272,10 @@ export default function Home() {
               className="fixed inset-0 bg-black/20 backdrop-blur-[2px] z-[200]"
             />
             <m.div
-              initial={{ x: '100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              initial={prefersReducedMotion ? { opacity: 0 } : { x: '100%' }}
+              animate={prefersReducedMotion ? { opacity: 1 } : { x: 0 }}
+              exit={prefersReducedMotion ? { opacity: 0 } : { x: '100%' }}
+              transition={prefersReducedMotion ? { duration: 0.15 } : { type: 'spring', damping: 25, stiffness: 200 }}
               className="fixed right-0 top-0 bottom-0 w-full max-w-[340px] bg-[var(--surface)] z-[201] flex flex-col shadow-xl border-l border-[var(--border)]"
             >
               <div className="p-6 md:p-8 flex flex-col h-full">
@@ -287,7 +291,7 @@ export default function Home() {
                       </button>
                     )}
                   </div>
-                  <button onClick={closeHistory} className="p-2.5 rounded-xl hover:bg-[var(--surface-hover)] transition-all border border-[var(--border)] active:scale-95">
+                  <button onClick={closeHistory} className="p-2.5 rounded-xl hover:bg-[var(--surface-hover)] transition-all border border-[var(--border)] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring-focus)]">
                     <X className="w-5 h-5 text-[var(--text-secondary)]" />
                   </button>
                 </div>
