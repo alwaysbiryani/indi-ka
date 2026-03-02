@@ -1,8 +1,7 @@
 
 'use client';
 
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import React from 'react';
 import { Cloud, Github, Layout, Cpu, Globe } from 'lucide-react';
 
 const credits = [
@@ -13,50 +12,47 @@ const credits = [
     { name: 'Developer', role: 'Repo', icon: <Github className="w-3.5 h-3.5" />, link: 'https://github.com/alwaysbiryani/indi-ka' },
 ];
 
+/**
+ * Pure CSS marquee — no Framer Motion, no JS animation loop.
+ * Uses CSS `@keyframes` with `translate3d` for GPU-composited scrolling.
+ * Two copies of the list create a seamless infinite loop.
+ * Pauses on hover via `[&:hover]` targeting the container.
+ */
 export function CreditsMarquee() {
-    const [isPaused, setIsPaused] = useState(false);
+    const creditItems = credits.map((credit, idx) => (
+        <a
+            key={idx}
+            href={credit.link}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center space-x-2.5 px-4 mx-2 shrink-0 opacity-60 hover:opacity-100 transition-opacity"
+        >
+            <div className="text-[var(--text-primary)]">
+                {credit.icon}
+            </div>
+            <div className="flex items-baseline space-x-1.5">
+                <span className="text-[length:var(--font-size-caption)] font-bold text-[var(--text-primary)] tracking-wide">
+                    {credit.name}
+                </span>
+                <span className="text-[length:var(--font-size-caption)] font-medium text-[var(--text-secondary)] uppercase tracking-wider">
+                    {credit.role}
+                </span>
+            </div>
+        </a>
+    ));
 
     return (
         <div className="mt-auto pb-[max(env(safe-area-inset-bottom),1.5rem)] relative z-10 w-full">
-            <div className="w-full overflow-hidden flex items-center h-10 bg-[var(--surface)]/50 backdrop-blur-sm border-y border-[var(--border)]">
-                <motion.div
-                    className="flex items-center shrink-0"
-                    animate={{
-                        x: isPaused ? 0 : [0, -1000],
-                        transition: {
-                            x: {
-                                repeat: Infinity,
-                                repeatType: "loop",
-                                duration: 40,
-                                ease: "linear",
-                            }
-                        }
-                    }}
-                    onHoverStart={() => setIsPaused(true)}
-                    onHoverEnd={() => setIsPaused(false)}
+            <div className="w-full overflow-hidden flex items-center h-10 bg-[var(--surface)]/50 backdrop-blur-sm border-y border-[var(--border)] [&:hover_.marquee-track]:pause-marquee">
+                <div
+                    className="marquee-track flex items-center shrink-0 animate-marquee"
+                    style={{ willChange: 'transform' }}
                 >
-                    {[...credits, ...credits, ...credits].map((credit, idx) => (
-                        <a
-                            key={idx}
-                            href={credit.link}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center space-x-2.5 px-4 mx-2 group/item shrink-0 opacity-60 hover:opacity-100 transition-opacity"
-                        >
-                            <div className="text-[var(--text-primary)]">
-                                {credit.icon}
-                            </div>
-                            <div className="flex items-baseline space-x-1.5">
-                                <span className="text-[length:var(--font-size-caption)] font-bold text-[var(--text-primary)] tracking-wide">
-                                    {credit.name}
-                                </span>
-                                <span className="text-[length:var(--font-size-caption)] font-medium text-[var(--text-secondary)] uppercase tracking-wider">
-                                    {credit.role}
-                                </span>
-                            </div>
-                        </a>
-                    ))}
-                </motion.div>
+                    {/* First copy */}
+                    {creditItems}
+                    {/* Second copy for seamless loop */}
+                    {creditItems}
+                </div>
             </div>
         </div>
     );

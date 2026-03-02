@@ -84,8 +84,8 @@ body::before {
   transition-duration: 200ms;
 }
 
+/* ─── Aurora background pulse ─── */
 @keyframes aurora-pulse {
-
   0%,
   100% {
     opacity: 0.04;
@@ -108,13 +108,36 @@ body::before {
     animation: none;
     opacity: 0.04;
   }
+
+  .animate-marquee {
+    animation: none !important;
+  }
 }
 
 .will-change-transform {
   will-change: transform;
 }
 
-/* Custom scrollbar */
+/* ─── Credits marquee (pure CSS, GPU-composited) ─── */
+@keyframes marquee-scroll {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+.animate-marquee {
+  animation: marquee-scroll 35s linear infinite;
+}
+
+/* Pause on container hover */
+*:hover > .animate-marquee {
+  animation-play-state: paused;
+}
+
+/* ─── Custom scrollbar (Webkit) ─── */
 .custom-scrollbar::-webkit-scrollbar {
   width: 5px;
 }
@@ -130,4 +153,21 @@ body::before {
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: var(--text-secondary);
+}
+
+/* ─── Firefox scrollbar support ─── */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+/* ─── CSS containment for performance ─── */
+/* Paint containment on the phone frame prevents the browser
+   from re-painting siblings when internal content changes */
+.contain-paint {
+  contain: paint;
+}
+
+.contain-layout {
+  contain: layout;
 }

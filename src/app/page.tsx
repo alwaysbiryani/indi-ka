@@ -34,10 +34,18 @@ export default function Home() {
 
   // Standalone state
   const [language, setLanguage] = useState('auto');
-  const [apiKey, setApiKey] = useState('');
+  const [apiKey, setApiKey] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    return localStorage.getItem('sarvam_api_key') || '';
+  });
   const [errorBanner, setErrorBanner] = useState<string | null>(null);
-  const [theme, setTheme] = useState<'light' | 'dark'>('dark');
-  const [isMounted, setIsMounted] = useState(false);
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    if (typeof window === 'undefined') return 'dark';
+    const saved = localStorage.getItem('app_theme') as 'light' | 'dark' | null;
+    if (saved) return saved;
+    return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+  });
+  const isMountedRef = useRef(false);
   const [confirmingClearAll, setConfirmingClearAll] = useState(false);
   const confirmTimerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -117,34 +125,22 @@ export default function Home() {
     }
   }, [confirmingClearAll, handleClearHistory]);
 
-  // Initialize all settings in a single effect to avoid re-render loops
+  // Initialize on mount: hydrate history + apply theme to DOM
   useEffect(() => {
-    setIsMounted(true);
-
-    // Theme
-    const savedTheme = localStorage.getItem('app_theme') as 'light' | 'dark';
-    if (savedTheme) {
-      setTheme(savedTheme);
-    } else if (window.matchMedia('(prefers-color-scheme: light)').matches) {
-      setTheme('light');
-    }
-
-    // Config
-    const storedKey = localStorage.getItem('sarvam_api_key');
-    if (storedKey) setApiKey(storedKey);
-
-    // History
+    isMountedRef.current = true;
     hydrateHistory();
-
-    console.log('%c🇮🇳 Indi-क Performance-Optimized v6', 'font-size: 16px; font-weight: bold; color: #FF9933;');
+    // Apply the already-initialized theme to the DOM
+    document.documentElement.setAttribute('data-theme', theme);
+    console.log('%c🇮🇳 Indi-क Performance-Optimized v7', 'font-size: 16px; font-weight: bold; color: #FF9933;');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hydrateHistory]);
 
+  // Sync theme to DOM + localStorage on changes after mount
   useEffect(() => {
-    if (isMounted) {
-      document.documentElement.setAttribute('data-theme', theme);
-      localStorage.setItem('app_theme', theme);
-    }
-  }, [theme, isMounted]);
+    if (!isMountedRef.current) return;
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('app_theme', theme);
+  }, [theme]);
 
   return (
     <main className="min-h-dvh w-full bg-[var(--app-bg)] flex items-center justify-center p-0 lg:p-8 font-sans overflow-hidden relative transition-colors duration-200">
@@ -192,7 +188,7 @@ export default function Home() {
         <m.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="w-full h-dvh lg:w-[390px] lg:h-[844px] bg-[var(--screen-bg)] lg:rounded-[50px] lg:shadow-[0_40px_100px_rgba(0,0,0,0.15)] overflow-hidden lg:border-[8px] border-0 lg:border-[var(--phone-frame)] relative flex flex-col transition-colors duration-200"
+          className="w-full h-dvh lg:w-[390px] lg:h-[844px] bg-[var(--screen-bg)] lg:rounded-[50px] lg:shadow-[0_40px_100px_rgba(0,0,0,0.15)] overflow-hidden lg:border-[8px] border-0 lg:border-[var(--phone-frame)] relative flex flex-col transition-colors duration-200 contain-paint"
         >
           <div className="hidden lg:block absolute top-0 left-1/2 -translate-x-1/2 w-40 h-7 bg-[var(--phone-frame)] rounded-b-[20px] z-[50]" />
 

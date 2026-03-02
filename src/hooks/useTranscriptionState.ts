@@ -60,20 +60,24 @@ export function useTranscriptionState({ language, onAddHistoryItem, onClearError
     onClearError();
   }, [language, onAddHistoryItem, onClearError]);
 
+  /**
+   * Animate-clear: instead of per-frame setTranscript (24+ re-renders),
+   * apply a CSS fade-out on the textarea, then clear state once.
+   */
   const animateClear = useCallback(() => {
     if (!transcript) return;
-    const initialText = transcript;
-    const duration = 400;
-    const start = performance.now();
-    const frame = (now: number) => {
-      const elapsed = now - start;
-      const progress = Math.min(elapsed / duration, 1);
-      const currentLength = Math.floor(initialText.length * (1 - Math.pow(progress, 3)));
-      setTranscript(initialText.substring(0, currentLength));
-      if (progress < 1) requestAnimationFrame(frame);
-      else setTranscript('');
-    };
-    requestAnimationFrame(frame);
+    const el = transcriptRef.current;
+    if (el) {
+      el.style.transition = 'opacity 0.3s ease-out';
+      el.style.opacity = '0';
+      setTimeout(() => {
+        setTranscript('');
+        el.style.transition = 'none';
+        el.style.opacity = '1';
+      }, 300);
+    } else {
+      setTranscript('');
+    }
   }, [transcript]);
 
   return {
