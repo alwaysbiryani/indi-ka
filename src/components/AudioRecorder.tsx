@@ -255,12 +255,12 @@ const AudioRecorder = React.memo(({
     };
 
     const buttonBaseClasses = isCompact
-        ? "w-full h-full bg-zinc-100 border border-zinc-200 hover:bg-zinc-200 text-zinc-900 rounded-3xl font-bold text-sm uppercase tracking-widest flex items-center justify-center space-x-3 transition-all active:scale-95 shadow-sm"
-        : "w-full py-4 bg-zinc-100 hover:bg-zinc-200 text-zinc-900 rounded-xl font-medium text-lg transition-all active:scale-[0.99] flex items-center justify-center space-x-2 shadow-sm";
+        ? "w-full h-full bg-[var(--surface)] border border-[var(--border)] hover:bg-[var(--surface-hover)] text-[var(--text-primary)] rounded-3xl font-bold text-sm uppercase tracking-widest flex items-center justify-center space-x-3 transition-all active:scale-95 shadow-sm"
+        : "w-full py-4 bg-[var(--surface)] hover:bg-[var(--surface-hover)] text-[var(--text-primary)] rounded-xl font-medium text-lg transition-all active:scale-95 flex items-center justify-center space-x-2 shadow-sm";
 
     const processingClasses = isCompact
-        ? "w-full h-full bg-zinc-50 border border-zinc-100 text-zinc-400 rounded-3xl font-bold text-xs uppercase tracking-widest flex items-center justify-center space-x-2 cursor-wait"
-        : "w-full py-4 bg-zinc-50 border border-zinc-100 text-zinc-400 rounded-xl font-medium text-lg flex items-center justify-center space-x-3 cursor-wait";
+        ? "w-full h-full bg-[var(--surface)] border border-[var(--border)] text-[var(--text-tertiary)] rounded-3xl font-bold text-xs uppercase tracking-widest flex items-center justify-center space-x-2 cursor-wait"
+        : "w-full py-4 bg-[var(--surface)] border border-[var(--border)] text-[var(--text-tertiary)] rounded-xl font-medium text-lg flex items-center justify-center space-x-3 cursor-wait";
 
     if (variant === 'circular') {
         return (
@@ -279,21 +279,21 @@ const AudioRecorder = React.memo(({
                             {!hasInteracted && (
                                 <>
                                     <motion.div
-                                        className="absolute inset-0 rounded-full border-2 border-zinc-500/20"
+                                        className="absolute inset-0 rounded-full border-2 border-[var(--text-secondary)]/20"
                                         animate={{ scale: [1, 1.4], opacity: [0, 0.4, 0] }}
                                         transition={{ duration: 2.4, repeat: Infinity, ease: "easeOut" }}
                                     />
                                     <motion.div
-                                        className="absolute inset-0 rounded-full border-2 border-zinc-500/20"
+                                        className="absolute inset-0 rounded-full border-2 border-[var(--text-secondary)]/20"
                                         animate={{ scale: [1, 1.4], opacity: [0, 0.4, 0] }}
                                         transition={{ duration: 2.4, repeat: Infinity, ease: "easeOut", delay: 1.2 }}
                                     />
                                 </>
                             )}
-                            <div className="absolute inset-0 bg-gradient-to-br from-zinc-200/20 to-zinc-100/5 rounded-full blur-xl group-hover:blur-2xl transition-all" />
-                            <div className="relative w-full h-full bg-white rounded-full flex flex-col items-center justify-center shadow-2xl border-4 border-zinc-100">
-                                <Mic className="w-16 h-16 text-zinc-900 mb-2" />
-                                <span className="text-xl font-bold text-zinc-900 tracking-tight uppercase">Tap to Speak</span>
+                            <div className="absolute inset-0 bg-gradient-to-br from-[var(--surface-hover)]/20 to-[var(--surface)]/5 rounded-full blur-xl group-hover:blur-2xl transition-all" />
+                            <div className="relative w-full h-full bg-[var(--surface)] rounded-full flex flex-col items-center justify-center shadow-2xl border-4 border-[var(--border)]">
+                                <Mic className="w-16 h-16 text-[var(--text-primary)] mb-2" />
+                                <span className="text-xl font-bold text-[var(--text-primary)] tracking-tight uppercase">Tap to Speak</span>
                             </div>
                         </motion.button>
                     )}
@@ -315,7 +315,7 @@ const AudioRecorder = React.memo(({
                                 <div className="flex flex-col items-center space-y-2">
                                     <div className="bg-[var(--surface-hover)] px-6 py-3 rounded-[24px] border border-[var(--border)] shadow-sm flex flex-col items-center space-y-1 backdrop-blur-sm">
                                         <div className="flex items-center space-x-2">
-                                            <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.5)]" />
+                                            <div className="w-1.5 h-1.5 bg-[var(--error)] rounded-full animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.5)]" />
                                             <span className="text-[length:var(--font-size-caption)] font-bold text-[var(--text-secondary)] uppercase tracking-[0.2em]">Recording</span>
                                         </div>
                                         <span className="text-2xl font-mono font-bold text-[var(--text-primary)] tabular-nums tracking-tight">
@@ -329,10 +329,10 @@ const AudioRecorder = React.memo(({
                                 data-testid="stop-button"
                                 className="group flex flex-col items-center space-y-2 sm:space-y-4 active:scale-95 transition-all outline-none pb-4"
                             >
-                                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-[1.5px] border-zinc-100 flex items-center justify-center group-hover:border-red-500/50 transition-colors">
-                                    <div className="w-6 h-6 sm:w-7 sm:h-7 bg-red-500 rounded-[4px] shadow-sm" />
+                                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-[1.5px] border-[var(--border)] flex items-center justify-center group-hover:border-[var(--error)]/50 transition-colors">
+                                    <div className="w-6 h-6 sm:w-7 sm:h-7 bg-[var(--error)] rounded-[4px] shadow-sm" />
                                 </div>
-                                <span className="text-[length:var(--font-size-caption)] font-bold text-zinc-400 uppercase tracking-[0.2em] group-hover:text-red-500 transition-colors">
+                                <span className="text-[length:var(--font-size-caption)] font-bold text-[var(--text-tertiary)] uppercase tracking-[0.2em] group-hover:text-[var(--error)] transition-colors">
                                     Stop Recording
                                 </span>
                             </button>
@@ -341,10 +341,10 @@ const AudioRecorder = React.memo(({
 
                     {isProcessing && (
                         <div className="relative w-64 h-64">
-                            <div className="absolute inset-0 bg-blue-500/5 rounded-full blur-xl" />
-                            <div className="w-full h-full bg-white/90 rounded-full flex flex-col items-center justify-center border-4 border-zinc-50 backdrop-blur-sm">
-                                <Loader2 className="w-12 h-12 text-blue-500 animate-spin mb-4" />
-                                <span className="text-sm font-bold text-zinc-500 uppercase tracking-widest px-8 text-center leading-tight">
+                            <div className="absolute inset-0 bg-[var(--accent)]/5 rounded-full blur-xl" />
+                            <div className="w-full h-full bg-[var(--surface)]/90 rounded-full flex flex-col items-center justify-center border-4 border-[var(--border)] backdrop-blur-sm">
+                                <Loader2 className="w-12 h-12 text-[var(--accent)] animate-spin mb-4" />
+                                <span className="text-sm font-bold text-[var(--text-secondary)] uppercase tracking-widest px-8 text-center leading-tight">
                                     {processingStatus || "Processing..."}
                                 </span>
                             </div>
@@ -383,8 +383,8 @@ const AudioRecorder = React.memo(({
                     >
                         <div
                             className={cn(
-                                "w-full flex items-center justify-center bg-red-600 rounded-3xl transition-all shadow-xl active:scale-95 cursor-pointer",
-                                isCompact ? "h-full" : "h-32 bg-zinc-50 dark:bg-zinc-900/50 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6"
+                                "w-full flex items-center justify-center bg-[var(--error)] rounded-3xl transition-all shadow-xl active:scale-95 cursor-pointer",
+                                isCompact ? "h-full" : "h-32 bg-[var(--surface)] rounded-2xl border border-[var(--border)] p-6"
                             )}
                             onClick={stopRecording}
                         >

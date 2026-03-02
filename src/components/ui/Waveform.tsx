@@ -27,7 +27,7 @@ export type WaveformProps = HTMLAttributes<HTMLDivElement> & {
     onBarClick?: (index: number, value: number) => void
 }
 
-export const Waveform = React.memo(({
+export const Waveform = React.memo(function Waveform({
     data = [],
     barWidth = 4,
     barHeight: baseBarHeight = 4,
@@ -40,7 +40,7 @@ export const Waveform = React.memo(({
     onBarClick,
     className,
     ...props
-}: WaveformProps) => {
+}: WaveformProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null)
     const containerRef = useRef<HTMLDivElement>(null)
     const heightStyle = typeof height === "number" ? `${height}px` : height
@@ -97,19 +97,6 @@ export const Waveform = React.memo(({
                 }
             }
 
-            if (fadeEdges && fadeWidth > 0 && rect.width > 0) {
-                const gradient = ctx.createLinearGradient(0, 0, rect.width, 0)
-                const fadePercent = Math.min(0.2, fadeWidth / rect.width)
-                gradient.addColorStop(0, "rgba(255,255,255,1)")
-                gradient.addColorStop(fadePercent, "rgba(255,255,255,0)")
-                gradient.addColorStop(1 - fadePercent, "rgba(255,255,255,0)")
-                gradient.addColorStop(1, "rgba(255,255,255,1)")
-
-                ctx.globalCompositeOperation = "destination-out"
-                ctx.fillStyle = gradient
-                ctx.fillRect(0, 0, rect.width, rect.height)
-                ctx.globalCompositeOperation = "source-over"
-            }
             ctx.globalAlpha = 1
         }
 
@@ -141,11 +128,15 @@ export const Waveform = React.memo(({
         }
     }
 
+    const maskStyle = fadeEdges && fadeWidth > 0
+        ? { maskImage: `linear-gradient(to right, transparent, black ${fadeWidth}px, black calc(100% - ${fadeWidth}px), transparent)`, WebkitMaskImage: `linear-gradient(to right, transparent, black ${fadeWidth}px, black calc(100% - ${fadeWidth}px), transparent)` }
+        : undefined
+
     return (
         <div
             className={cn("relative", className)}
             ref={containerRef}
-            style={{ height: heightStyle }}
+            style={{ height: heightStyle, ...maskStyle }}
             {...props}
         >
             <canvas
@@ -337,19 +328,6 @@ export const ScrollingWaveform = ({
                 }
             }
 
-            if (fadeEdges && fadeWidth > 0) {
-                const gradient = ctx.createLinearGradient(0, 0, rect.width, 0)
-                const fadePercent = Math.min(0.2, fadeWidth / rect.width)
-                gradient.addColorStop(0, "rgba(255,255,255,1)")
-                gradient.addColorStop(fadePercent, "rgba(255,255,255,0)")
-                gradient.addColorStop(1 - fadePercent, "rgba(255,255,255,0)")
-                gradient.addColorStop(1, "rgba(255,255,255,1)")
-
-                ctx.globalCompositeOperation = "destination-out"
-                ctx.fillStyle = gradient
-                ctx.fillRect(0, 0, rect.width, rect.height)
-                ctx.globalCompositeOperation = "source-over"
-            }
             ctx.globalAlpha = 1
             animationRef.current = requestAnimationFrame(animate)
         }
@@ -375,11 +353,15 @@ export const ScrollingWaveform = ({
         isVisible
     ])
 
+    const scrollMaskStyle = fadeEdges && fadeWidth > 0
+        ? { maskImage: `linear-gradient(to right, transparent, black ${fadeWidth}px, black calc(100% - ${fadeWidth}px), transparent)`, WebkitMaskImage: `linear-gradient(to right, transparent, black ${fadeWidth}px, black calc(100% - ${fadeWidth}px), transparent)` }
+        : undefined
+
     return (
         <div
             className={cn("relative flex items-center", className)}
             ref={containerRef}
-            style={{ height: heightStyle }}
+            style={{ height: heightStyle, ...scrollMaskStyle }}
             {...props}
         >
             <canvas className="block h-full w-full" ref={canvasRef} />

@@ -62,8 +62,8 @@ body {
   background: var(--app-bg);
   color: var(--text-primary);
   font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
-  transition: background-color 0.5s cubic-bezier(0.4, 0, 0.2, 1),
-    color 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
 }
 
@@ -81,32 +81,32 @@ body::before {
 .transition-colors {
   transition-property: background-color, border-color, color, fill, stroke;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  transition-duration: 500ms;
+  transition-duration: 200ms;
 }
 
 @keyframes aurora-pulse {
 
   0%,
   100% {
-    opacity: 0.02;
+    opacity: 0.04;
     transform: scale(1) translateZ(0);
   }
 
   50% {
-    opacity: 0.04;
+    opacity: 0.08;
     transform: scale(1.05) translateZ(0);
   }
 }
 
 .aurora-animate {
-  animation: aurora-pulse 12s ease-in-out infinite;
+  animation: aurora-pulse 8s ease-in-out infinite;
   will-change: opacity, transform;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .aurora-animate {
     animation: none;
-    opacity: 0.02;
+    opacity: 0.04;
   }
 }
 

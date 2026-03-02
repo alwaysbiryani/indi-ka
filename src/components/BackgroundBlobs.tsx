@@ -25,13 +25,13 @@ export const BackgroundBlobs = memo(function BackgroundBlobs() {
     return (
         <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
             <div
-                className="absolute top-[-30%] left-[-20%] w-[80%] h-[80%] bg-[#FF9933]/[0.02] rounded-full aurora-animate will-change-transform"
+                className="absolute top-[-30%] left-[-20%] w-[80%] h-[80%] bg-[#FF9933]/[0.04] rounded-full aurora-animate will-change-transform"
                 style={{
                     filter: isMobile ? 'blur(32px)' : 'blur(64px)',
                 }}
             />
             <div
-                className="absolute bottom-[-30%] right-[-20%] w-[80%] h-[80%] bg-[#138808]/[0.02] rounded-full aurora-animate will-change-transform"
+                className="absolute bottom-[-30%] right-[-20%] w-[80%] h-[80%] bg-[#138808]/[0.04] rounded-full aurora-animate will-change-transform"
                 style={{
                     animationDelay: '1s',
                     filter: isMobile ? 'blur(32px)' : 'blur(64px)',

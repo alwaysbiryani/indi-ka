@@ -97,7 +97,7 @@ export default function Home() {
   }, [theme, isMounted]);
 
   return (
-    <main className="min-h-dvh w-full bg-[var(--app-bg)] flex items-center justify-center p-0 lg:p-8 font-sans overflow-hidden relative transition-colors duration-500">
+    <main className="min-h-dvh w-full bg-[var(--app-bg)] flex items-center justify-center p-0 lg:p-8 font-sans overflow-hidden relative transition-colors duration-200">
       <BackgroundBlobs />
 
       <div className="relative z-10 w-full flex flex-col items-center">
@@ -107,7 +107,7 @@ export default function Home() {
         <m.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="w-full h-dvh lg:w-[390px] lg:h-[844px] bg-[var(--screen-bg)] lg:rounded-[50px] lg:shadow-[0_40px_100px_rgba(0,0,0,0.15)] overflow-hidden lg:border-[8px] border-0 lg:border-[var(--phone-frame)] relative flex flex-col transition-colors duration-500"
+          className="w-full h-dvh lg:w-[390px] lg:h-[844px] bg-[var(--screen-bg)] lg:rounded-[50px] lg:shadow-[0_40px_100px_rgba(0,0,0,0.15)] overflow-hidden lg:border-[8px] border-0 lg:border-[var(--phone-frame)] relative flex flex-col transition-colors duration-200"
         >
           <div className="hidden lg:block absolute top-0 left-1/2 -translate-x-1/2 w-40 h-7 bg-[var(--phone-frame)] rounded-b-[20px] z-[50]" />
 
@@ -287,7 +287,7 @@ export default function Home() {
                       </button>
                     )}
                   </div>
-                  <button onClick={closeHistory} className="p-2.5 rounded-xl hover:bg-[var(--surface-hover)] transition-all border border-[var(--border)] active:scale-90">
+                  <button onClick={closeHistory} className="p-2.5 rounded-xl hover:bg-[var(--surface-hover)] transition-all border border-[var(--border)] active:scale-95">
                     <X className="w-5 h-5 text-[var(--text-secondary)]" />
                   </button>
                 </div>
