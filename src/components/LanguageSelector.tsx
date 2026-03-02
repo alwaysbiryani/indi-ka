@@ -3,12 +3,7 @@
 import React, { useState } from 'react';
 import { ChevronDown, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { clsx, type ClassValue } from 'clsx';
-import { twMerge } from 'tailwind-merge';
-
-function cn(...inputs: ClassValue[]) {
-    return twMerge(clsx(inputs));
-}
+import { cn } from '@/utils/cn';
 
 interface LanguageSelectorProps {
     selectedLanguage: string;
@@ -49,7 +44,7 @@ const LanguageSelector = React.memo(({ selectedLanguage, onSelectLanguage, class
                         {selected?.id}
                     </div>
                     <div className="text-left">
-                        <p className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-widest mb-0.5">Target Language</p>
+                        <p className="text-[length:var(--font-size-caption)] font-bold text-[var(--text-secondary)] uppercase tracking-widest mb-0.5">Target Language</p>
                         <span className="text-sm font-bold text-[var(--text-primary)] transition-colors">
                             {selected?.label}
                         </span>
@@ -112,5 +107,7 @@ const LanguageSelector = React.memo(({ selectedLanguage, onSelectLanguage, class
         </div>
     );
 });
+
+LanguageSelector.displayName = 'LanguageSelector';
 
 export default LanguageSelector;

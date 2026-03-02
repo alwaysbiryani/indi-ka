@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useEffect, useRef, useMemo, useCallback, Suspense } from 'react';
+import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import dynamic from 'next/dynamic';
 import {
   Clock, Copy, MessageSquare, X, Trash2,
@@ -11,10 +11,11 @@ import { m, AnimatePresence } from 'framer-motion';
 import AudioRecorder from '@/components/AudioRecorder';
 import LanguageSelector from '@/components/LanguageSelector';
 import { cn } from '@/utils/cn';
-import type { HistoryItem } from '@/components/HistorySidebar';
 
 import { TaglineCycler } from '@/components/TaglineCycler';
 import { BackgroundBlobs } from '@/components/BackgroundBlobs';
+import { useTranscriptionState } from '@/hooks/useTranscriptionState';
+import { useHistoryState } from '@/hooks/useHistoryState';
 
 // Aggressively dynamic imports for non-critical/below-fold elements
 const CreditsMarquee = dynamic(() => import('@/components/CreditsMarquee').then(mod => mod.CreditsMarquee), { ssr: false });
@@ -25,19 +26,46 @@ const HistorySidebar = dynamic(() => import('@/components/HistorySidebar'), {
 });
 
 export default function Home() {
-  const [transcript, setTranscript] = useState('');
-  const transcriptRef = useRef<HTMLTextAreaElement>(null);
+  // Standalone state
   const [language, setLanguage] = useState('auto');
-  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [apiKey, setApiKey] = useState('');
-  const [hasCopied, setHasCopied] = useState(false);
-  const [history, setHistory] = useState<HistoryItem[]>([]);
-  const [lastViewedTimestamp, setLastViewedTimestamp] = useState<number>(0);
   const [errorBanner, setErrorBanner] = useState<string | null>(null);
-  const [showAutoCopyBanner, setShowAutoCopyBanner] = useState(false);
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
-  const [transcriptionTime, setTranscriptionTime] = useState<number | null>(null);
   const [isMounted, setIsMounted] = useState(false);
+
+  // History state (consolidated hook)
+  const {
+    history,
+    isHistoryOpen,
+    hasNewHistory,
+    hydrate: hydrateHistory,
+    addHistoryItem,
+    handleDeleteHistory,
+    handleClearHistory,
+    openHistory,
+    closeHistory,
+  } = useHistoryState();
+
+  const clearError = useCallback(() => setErrorBanner(null), []);
+
+  // Transcription state (consolidated hook)
+  const {
+    transcript,
+    setTranscript,
+    transcriptRef,
+    transcriptionTime,
+    hasCopied,
+    showAutoCopyBanner,
+    handleCopy,
+    handleTranscriptionComplete,
+    animateClear,
+  } = useTranscriptionState({
+    language,
+    onAddHistoryItem: addHistoryItem,
+    onClearError: clearError,
+  });
+
+  const handleErrorAction = useCallback((msg: string) => setErrorBanner(msg), []);
 
   // Initialize all settings in a single effect to avoid re-render loops
   useEffect(() => {
@@ -51,24 +79,15 @@ export default function Home() {
       setTheme('light');
     }
 
-    // Config & History
+    // Config
     const storedKey = localStorage.getItem('sarvam_api_key');
     if (storedKey) setApiKey(storedKey);
 
-    const storedHistory = localStorage.getItem('transcription_history');
-    if (storedHistory) {
-      try {
-        setHistory(JSON.parse(storedHistory));
-      } catch (e) {
-        console.error("Failed to parse history", e);
-      }
-    }
-
-    const storedLastViewed = localStorage.getItem('last_viewed_history');
-    if (storedLastViewed) setLastViewedTimestamp(parseInt(storedLastViewed));
+    // History
+    hydrateHistory();
 
     console.log('%c🇮🇳 Indi-क Performance-Optimized v5', 'font-size: 16px; font-weight: bold; color: #FF9933;');
-  }, []);
+  }, [hydrateHistory]);
 
   useEffect(() => {
     if (isMounted) {
@@ -76,98 +95,6 @@ export default function Home() {
       localStorage.setItem('app_theme', theme);
     }
   }, [theme, isMounted]);
-
-  useEffect(() => {
-    if (transcriptRef.current) {
-      transcriptRef.current.scrollTop = transcriptRef.current.scrollHeight;
-    }
-  }, [transcript]);
-
-  const saveHistory = useCallback((newHistory: HistoryItem[]) => {
-    setHistory(newHistory);
-    localStorage.setItem('transcription_history', JSON.stringify(newHistory));
-  }, []);
-
-  const handleCopy = useCallback(() => {
-    if (transcript) {
-      navigator.clipboard.writeText(transcript);
-      setHasCopied(true);
-      setShowAutoCopyBanner(true);
-      setTimeout(() => setHasCopied(false), 1200);
-      setTimeout(() => setShowAutoCopyBanner(false), 2000);
-    }
-  }, [transcript]);
-
-  const handleTranscriptionComplete = useCallback((text: string, detectedLanguage?: string, isPartial?: boolean, processingTime?: number) => {
-    if (isPartial) {
-      setTranscript(text);
-      return;
-    }
-
-    if (processingTime) setTranscriptionTime(processingTime);
-
-    if (!text || text.trim() === '') {
-      setTranscript('');
-      return;
-    }
-
-    setTranscript(text);
-
-    const newItem: HistoryItem = {
-      id: Date.now().toString(),
-      text: text,
-      timestamp: Date.now(),
-      language: language,
-      detectedLanguage: detectedLanguage
-    };
-
-    setHistory(prev => {
-      const newHistory = [newItem, ...prev];
-      localStorage.setItem('transcription_history', JSON.stringify(newHistory));
-      return newHistory;
-    });
-    setErrorBanner(null);
-  }, [language]);
-
-  const handleErrorAction = useCallback((msg: string) => setErrorBanner(msg), []);
-
-  const handleDeleteHistory = useCallback((id: string) => {
-    setHistory(prev => {
-      const newHistory = prev.filter(item => item.id !== id);
-      localStorage.setItem('transcription_history', JSON.stringify(newHistory));
-      return newHistory;
-    });
-  }, []);
-
-  const handleClearHistory = useCallback(() => {
-    setHistory([]);
-    localStorage.removeItem('transcription_history');
-  }, []);
-
-  const animateClear = useCallback(() => {
-    if (!transcript) return;
-    const initialText = transcript;
-    const duration = 400;
-    const start = performance.now();
-    const frame = (now: number) => {
-      const elapsed = now - start;
-      const progress = Math.min(elapsed / duration, 1);
-      const currentLength = Math.floor(initialText.length * (1 - Math.pow(progress, 3)));
-      setTranscript(initialText.substring(0, currentLength));
-      if (progress < 1) requestAnimationFrame(frame);
-      else setTranscript('');
-    };
-    requestAnimationFrame(frame);
-  }, [transcript]);
-
-  const hasNewHistory = useMemo(() => history.length > 0 && history[0].timestamp > lastViewedTimestamp, [history, lastViewedTimestamp]);
-
-  const openHistory = useCallback(() => {
-    setIsHistoryOpen(true);
-    const now = Date.now();
-    setLastViewedTimestamp(now);
-    localStorage.setItem('last_viewed_history', now.toString());
-  }, []);
 
   return (
     <main className="min-h-dvh w-full bg-[var(--app-bg)] flex items-center justify-center p-0 lg:p-8 font-sans overflow-hidden relative transition-colors duration-500">
@@ -210,8 +137,8 @@ export default function Home() {
                 <span className="text-xs font-bold text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] uppercase tracking-wider">Recent</span>
                 {hasNewHistory && (
                   <span className="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5 z-20">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500 border-2 border-[var(--screen-bg)]"></span>
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--error)] opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[var(--error)] border-2 border-[var(--screen-bg)]"></span>
                   </span>
                 )}
               </button>
@@ -270,7 +197,7 @@ export default function Home() {
                       <span className="text-sm font-medium">Back</span>
                     </button>
                     {transcriptionTime !== null && (
-                      <span className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider bg-[var(--surface-hover)] px-3 py-1.5 rounded-full border border-[var(--border)]">
+                      <span className="text-[length:var(--font-size-caption)] font-bold text-[var(--text-secondary)] uppercase tracking-wider bg-[var(--surface-hover)] px-3 py-1.5 rounded-full border border-[var(--border)]">
                         Ready in {transcriptionTime.toFixed(1)}s
                       </span>
                     )}
@@ -287,7 +214,7 @@ export default function Home() {
                     />
                     <button
                       onClick={() => setTranscript('')}
-                      className="absolute top-4 right-4 p-2.5 bg-[var(--app-bg)] rounded-xl transition-all active:scale-95 text-[var(--text-secondary)] hover:text-red-500 lg:opacity-0 lg:group-hover:opacity-100 duration-200"
+                      className="absolute top-4 right-4 p-2.5 bg-[var(--app-bg)] rounded-xl transition-all active:scale-95 text-[var(--text-secondary)] hover:text-[var(--error)] lg:opacity-0 lg:group-hover:opacity-100 duration-200"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -299,12 +226,12 @@ export default function Home() {
                       className={cn(
                         "flex-1 py-3.5 rounded-full transition-all duration-300 active:scale-95 flex items-center justify-center space-x-2 group outline-none",
                         hasCopied
-                          ? "bg-green-500/10 border border-green-500/40 text-green-600 dark:text-green-500"
+                          ? "bg-[var(--success-bg)] border border-[var(--success)]/40 text-[var(--success)]"
                           : "bg-[var(--surface)] hover:bg-[var(--surface-hover)] border border-[var(--border)] text-[var(--text-primary)]"
                       )}
                       data-testid="copy-button"
                     >
-                      <Copy className={cn("w-4.5 h-4.5 transition-colors", hasCopied ? "text-green-500" : "text-[var(--text-secondary)] group-hover:text-[var(--text-primary)]")} />
+                      <Copy className={cn("w-4.5 h-4.5 transition-colors", hasCopied ? "text-[var(--success)]" : "text-[var(--text-secondary)] group-hover:text-[var(--text-primary)]")} />
                       <span className="font-bold text-sm tracking-wide">{hasCopied ? "Copied" : "Copy Text"}</span>
                     </button>
 
@@ -337,7 +264,7 @@ export default function Home() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => setIsHistoryOpen(false)}
+              onClick={closeHistory}
               className="fixed inset-0 bg-black/20 backdrop-blur-[2px] z-[200]"
             />
             <m.div
@@ -354,13 +281,13 @@ export default function Home() {
                     {history.length > 0 && (
                       <button
                         onClick={handleClearHistory}
-                        className="text-[10px] font-bold text-red-500/70 hover:text-red-600 uppercase tracking-widest mt-1 text-left active:scale-95 w-fit"
+                        className="text-[length:var(--font-size-caption)] font-bold text-[var(--error)]/70 hover:text-[var(--error)] uppercase tracking-widest mt-1 text-left active:scale-95 w-fit"
                       >
                         Clear All
                       </button>
                     )}
                   </div>
-                  <button onClick={() => setIsHistoryOpen(false)} className="p-2.5 rounded-xl hover:bg-[var(--surface-hover)] transition-all border border-[var(--border)] active:scale-90">
+                  <button onClick={closeHistory} className="p-2.5 rounded-xl hover:bg-[var(--surface-hover)] transition-all border border-[var(--border)] active:scale-90">
                     <X className="w-5 h-5 text-[var(--text-secondary)]" />
                   </button>
                 </div>
@@ -370,7 +297,7 @@ export default function Home() {
                     onDelete={handleDeleteHistory}
                     onSelect={(text) => {
                       setTranscript(text);
-                      setIsHistoryOpen(false);
+                      closeHistory();
                     }}
                     onClearAll={handleClearHistory}
                     className="!bg-transparent !border-none !p-0"

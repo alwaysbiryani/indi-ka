@@ -95,7 +95,7 @@ const HistorySidebar = React.memo(({ history, onDelete, onSelect, onClearAll, cl
                 {history.length > 0 && (
                     <button
                         onClick={onClearAll}
-                        className="text-[10px] font-bold text-red-500/70 hover:text-red-600 uppercase tracking-widest text-left active:scale-95 w-fit"
+                        className="text-[length:var(--font-size-caption)] font-bold text-[var(--error)]/70 hover:text-[var(--error)] uppercase tracking-widest text-left active:scale-95 w-fit"
                     >
                         Clear all
                     </button>
@@ -107,12 +107,12 @@ const HistorySidebar = React.memo(({ history, onDelete, onSelect, onClearAll, cl
                 {history.length === 0 ? (
                     <div className="h-full flex flex-col items-center justify-center text-[var(--text-secondary)] space-y-4 opacity-40 py-20">
                         <Clock className="w-10 h-10 stroke-[1]" />
-                        <p className="text-[10px] font-bold uppercase tracking-widest">No history yet</p>
+                        <p className="text-[length:var(--font-size-caption)] font-bold uppercase tracking-widest">No history yet</p>
                     </div>
                 ) : filteredHistory.length === 0 ? (
                     <div className="h-full flex flex-col items-center justify-center text-[var(--text-secondary)] space-y-3 opacity-50 py-20">
                         <Search className="w-8 h-8 stroke-[1.5]" />
-                        <p className="text-[10px] font-bold uppercase tracking-widest">No matches found</p>
+                        <p className="text-[length:var(--font-size-caption)] font-bold uppercase tracking-widest">No matches found</p>
                     </div>
                 ) : (
                     filteredHistory.map((item) => (
@@ -132,7 +132,7 @@ const HistorySidebar = React.memo(({ history, onDelete, onSelect, onClearAll, cl
 
                             <div className="flex flex-col gap-3">
                                 {/* Metadata Row */}
-                                <div className="flex justify-between items-center text-[9px] text-[var(--text-secondary)] font-bold tracking-widest uppercase opacity-60">
+                                <div className="flex justify-between items-center text-[length:var(--font-size-caption)] text-[var(--text-secondary)] font-bold tracking-widest uppercase opacity-60">
                                     <span className="px-1.5 py-0.5 rounded-md border border-[var(--border)] bg-[var(--surface-hover)]">
                                         {formatLanguage(item.language, item.detectedLanguage)}
                                     </span>
@@ -145,8 +145,8 @@ const HistorySidebar = React.memo(({ history, onDelete, onSelect, onClearAll, cl
                                 <div className="flex items-center gap-2 pt-3 border-t border-[var(--border)]">
                                     <button
                                         onClick={(e) => handleCopy(e, item.id, item.text)}
-                                        className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg text-[10px] font-bold transition-all ${copiedId === item.id
-                                            ? 'text-emerald-500 bg-emerald-500/5'
+                                        className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg text-[length:var(--font-size-caption)] font-bold transition-all ${copiedId === item.id
+                                            ? 'text-[var(--success)] bg-[var(--success-bg)]'
                                             : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)]'
                                             }`}
                                     >
@@ -165,7 +165,7 @@ const HistorySidebar = React.memo(({ history, onDelete, onSelect, onClearAll, cl
 
                                     <button
                                         onClick={(e) => handleDelete(e, item.id)}
-                                        className="flex-none flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg text-[10px] font-bold text-[var(--text-secondary)] hover:text-red-500/80 hover:bg-red-500/5 transition-all"
+                                        className="flex-none flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg text-[length:var(--font-size-caption)] font-bold text-[var(--text-secondary)] hover:text-[var(--error)]/80 hover:bg-[var(--error-bg)] transition-all"
                                         aria-label="Delete"
                                     >
                                         <Trash2 className="w-3 h-3" />

@@ -316,7 +316,7 @@ const AudioRecorder = React.memo(({
                                     <div className="bg-[var(--surface-hover)] px-6 py-3 rounded-[24px] border border-[var(--border)] shadow-sm flex flex-col items-center space-y-1 backdrop-blur-sm">
                                         <div className="flex items-center space-x-2">
                                             <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.5)]" />
-                                            <span className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-[0.2em]">Recording</span>
+                                            <span className="text-[length:var(--font-size-caption)] font-bold text-[var(--text-secondary)] uppercase tracking-[0.2em]">Recording</span>
                                         </div>
                                         <span className="text-2xl font-mono font-bold text-[var(--text-primary)] tabular-nums tracking-tight">
                                             {Math.floor(recordingDuration / 60)}:{(recordingDuration % 60).toString().padStart(2, '0')}
@@ -332,7 +332,7 @@ const AudioRecorder = React.memo(({
                                 <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-[1.5px] border-zinc-100 flex items-center justify-center group-hover:border-red-500/50 transition-colors">
                                     <div className="w-6 h-6 sm:w-7 sm:h-7 bg-red-500 rounded-[4px] shadow-sm" />
                                 </div>
-                                <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-[0.2em] group-hover:text-red-500 transition-colors">
+                                <span className="text-[length:var(--font-size-caption)] font-bold text-zinc-400 uppercase tracking-[0.2em] group-hover:text-red-500 transition-colors">
                                     Stop Recording
                                 </span>
                             </button>

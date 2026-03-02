@@ -47,10 +47,10 @@ export function CreditsMarquee() {
                                 {credit.icon}
                             </div>
                             <div className="flex items-baseline space-x-1.5">
-                                <span className="text-[11px] font-bold text-[var(--text-primary)] tracking-wide">
+                                <span className="text-[length:var(--font-size-caption)] font-bold text-[var(--text-primary)] tracking-wide">
                                     {credit.name}
                                 </span>
-                                <span className="text-[9px] font-medium text-[var(--text-secondary)] uppercase tracking-wider">
+                                <span className="text-[length:var(--font-size-caption)] font-medium text-[var(--text-secondary)] uppercase tracking-wider">
                                     {credit.role}
                                 </span>
                             </div>
