@@ -4,7 +4,6 @@
 import React, { useState, useRef } from 'react';
 import { Mic, Loader2, WifiOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { sliceAudioBuffer, bufferToWav } from '@/utils/audioProcessing';
 import { SimpleScrollingWaveform } from '@/components/ui/Waveform';
 import { cn } from '@/utils/cn';
 
@@ -41,19 +40,29 @@ const AudioRecorder = React.memo(function AudioRecorder({
     const [recordingDuration, setRecordingDuration] = useState(0);
     const [activeStream, setActiveStream] = useState<MediaStream | null>(null);
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-    const chunksRef = useRef<Blob[]>([]);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
-    const lastProcessedTimeRef = useRef(0);
-    const recordingDurationRef = useRef(0); // For accurate duration checking in callbacks
-    const isTranscribingPartRef = useRef(false);
+    const flushTimerRef = useRef<NodeJS.Timeout | null>(null);
     const accumulatedTranscriptRef = useRef("");
     const detectedLanguageRef = useRef("auto");
     const [hasInteracted, setHasInteracted] = useState(true);
-    const [_processingTime, setProcessingTime] = useState<number | null>(null);
     const processingStartTimeRef = useRef<number | null>(null);
-    const audioContextRef = useRef<AudioContext | null>(null);
+    const isProcessingRef = useRef(false);
     const segmentsCompletedRef = useRef(0);
     const totalSegmentsRef = useRef(1);
+    const pendingSegmentsRef = useRef<Array<{ index: number; blob: Blob }>>([]);
+    const inFlightSegmentsRef = useRef(0);
+    const nextSegmentIndexRef = useRef(0);
+    const nextEmitIndexRef = useRef(0);
+    const pendingResultsRef = useRef<Map<number, { text: string; detectedLanguageCode: string }>>(new Map());
+    const noMoreSegmentsRef = useRef(false);
+    const resolveDrainRef = useRef<(() => void) | null>(null);
+    const drainPromiseRef = useRef<Promise<void>>(Promise.resolve());
+    const segmentTimingsRef = useRef<Array<{ index: number; requestMs: number; providerMs?: number; ok: boolean }>>([]);
+
+    // Keep chunks under the provider's 30s hard cap with some safety margin.
+    const TRANSCRIPTION_CHUNK_MS = 25000;
+    const FORCED_FLUSH_EVERY_MS = 8000;
+    const MAX_CONCURRENT_SEGMENTS = 2;
 
     React.useEffect(() => {
         const interacted = localStorage.getItem('audio_recorder_interacted');
@@ -71,25 +80,15 @@ const AudioRecorder = React.memo(function AudioRecorder({
     React.useEffect(() => {
         return () => {
             if (timerRef.current) clearInterval(timerRef.current);
-            if (audioContextRef.current) {
-                audioContextRef.current.close().catch(console.error);
-            }
+            if (flushTimerRef.current) clearInterval(flushTimerRef.current);
         };
     }, []);
-
-    const getAudioContext = () => {
-        if (!audioContextRef.current || audioContextRef.current.state === 'closed') {
-            audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
-        }
-        return audioContextRef.current;
-    };
 
     const startRecording = async () => {
         if (!isOnline) {
             onError("You're offline. Connect to the internet to transcribe.");
             return;
         }
-        setProcessingTime(null);
         processingStartTimeRef.current = null;
         if (!hasInteracted) {
             setHasInteracted(true);
@@ -104,99 +103,39 @@ const AudioRecorder = React.memo(function AudioRecorder({
             // Low bitrate optimization for faster upload
             const mediaRecorder = new MediaRecorder(stream, { audioBitsPerSecond: 16000 });
             mediaRecorderRef.current = mediaRecorder;
-            chunksRef.current = [];
 
-            mediaRecorder.ondataavailable = (e) => {
-                if (e.data.size > 0) {
-                    chunksRef.current.push(e.data);
+            const flushOrderedResults = () => {
+                while (pendingResultsRef.current.has(nextEmitIndexRef.current)) {
+                    const result = pendingResultsRef.current.get(nextEmitIndexRef.current);
+                    pendingResultsRef.current.delete(nextEmitIndexRef.current);
+                    nextEmitIndexRef.current += 1;
+                    if (!result || !result.text) continue;
+                    accumulatedTranscriptRef.current += (accumulatedTranscriptRef.current ? " " : "") + result.text;
+                    if (result.detectedLanguageCode) detectedLanguageRef.current = result.detectedLanguageCode;
+                    onTranscriptionComplete(accumulatedTranscriptRef.current, detectedLanguageRef.current, true);
                 }
             };
 
-            const processAvailableSegments = async (isFinal = false) => {
-                if (isTranscribingPartRef.current && !isFinal) return;
-                if (chunksRef.current.length === 0) return;
-
-                // Create blob from accumulated chunks
-                const audioBlob = new Blob(chunksRef.current, { type: mediaRecorder.mimeType || 'audio/webm' });
-                if (audioBlob.size === 0) return;
-
-                try {
-                    const audioContext = getAudioContext();
-                    const arrayBuffer = await audioBlob.arrayBuffer();
-
-                    let audioBuffer;
-                    try {
-                        audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-                    } catch (decodeErr) {
-                        console.error("decodeAudioData failed, falling back to raw upload if possible", decodeErr);
-                        // Only fall back to raw if it's the final piece and we really think it's short
-                        if (isFinal && lastProcessedTimeRef.current === 0 && recordingDurationRef.current < 28) {
-                            await transcribeSegment(audioBlob, 0);
-                        }
-                        return;
-                    }
-
-                    const duration = audioBuffer.duration;
-
-                    // CRITICAL: Sarvam AI has a 30-second limit for synchronous ASR.
-                    // If the recording is longer, we must split it into chunks.
-
-                    // Optimization: For short utterances that haven't been processed yet,
-                    // send the raw chunks directly (usually smaller/compressed webm).
-                    if (isFinal && lastProcessedTimeRef.current === 0 && duration < 29) {
-                        lastProcessedTimeRef.current = duration; // Mark as processed
-                        setIsMultiSegment(false);
-                        totalSegmentsRef.current = 1;
-                        await transcribeSegment(audioBlob, 0);
-                        segmentsCompletedRef.current = 1;
-                        setProcessingProgress(100);
-                        return;
-                    }
-
-                    // Calculate total segments for progress tracking
-                    if (isFinal) {
-                        const remaining = duration - lastProcessedTimeRef.current;
-                        const numSegments = Math.ceil(remaining / 30);
-                        totalSegmentsRef.current = numSegments;
-                        segmentsCompletedRef.current = 0;
-                        setIsMultiSegment(numSegments > 1);
-                        setProcessingProgress(0);
-                    }
-
-                    // Otherwise, chunk into <= 30s segments as WAV
-                    while (lastProcessedTimeRef.current + 30 <= duration || (isFinal && lastProcessedTimeRef.current < duration)) {
-                        const start = lastProcessedTimeRef.current;
-                        const end = isFinal ? Math.min(start + 30, duration) : start + 30;
-
-                        // Avoid very small final segments (< 200ms)
-                        if (end - start < 0.2 && isFinal && lastProcessedTimeRef.current > 0) break;
-
-                        // Increment Ref immediately to prevent concurrent calls from picking up same segment
-                        lastProcessedTimeRef.current = end;
-
-                        const slicedBuffer = sliceAudioBuffer(audioBuffer, start, end, audioContext);
-                        const slicedBlob = bufferToWav(slicedBuffer);
-
-                        await transcribeSegment(slicedBlob, start);
-                        segmentsCompletedRef.current += 1;
-                        setProcessingProgress(Math.round((segmentsCompletedRef.current / totalSegmentsRef.current) * 100));
-
-                        if (isFinal && lastProcessedTimeRef.current >= duration) break;
-                        // Avoid infinite loop if duration calculation is unstable
-                        if (!isFinal && lastProcessedTimeRef.current + 30 > duration) break;
-                    }
-                } catch (err) {
-                    console.error("Transcription processing error:", err);
-                } finally {
-                    isTranscribingPartRef.current = false;
+            const maybeResolveDrain = () => {
+                if (!noMoreSegmentsRef.current) return;
+                if (pendingSegmentsRef.current.length !== 0) return;
+                if (inFlightSegmentsRef.current !== 0) return;
+                if (resolveDrainRef.current) {
+                    resolveDrainRef.current();
+                    resolveDrainRef.current = null;
                 }
             };
 
-            const transcribeSegment = async (blob: Blob, startTime: number) => {
-                isTranscribingPartRef.current = true;
+            const transcribeSegment = async (blob: Blob): Promise<{ text: string; detectedLanguageCode: string; providerMs?: number; ok: boolean; requestMs: number }> => {
+                const requestStart = performance.now();
                 try {
                     const formData = new FormData();
-                    formData.append('audio', blob, 'segment.bin');
+                    const extension = blob.type.includes('webm')
+                        ? 'webm'
+                        : blob.type.includes('wav')
+                            ? 'wav'
+                            : 'bin';
+                    formData.append('audio', blob, `segment.${extension}`);
 
                     const response = await fetch(`/api/transcribe?language=${encodeURIComponent(language)}`, {
                         method: 'POST',
@@ -204,26 +143,77 @@ const AudioRecorder = React.memo(function AudioRecorder({
                         body: formData,
                     });
 
+                    const requestMs = Math.round(performance.now() - requestStart);
                     if (response.ok) {
                         const data = await response.json();
-                        const newText = data.transcript;
-                        if (newText) {
-                            accumulatedTranscriptRef.current += (accumulatedTranscriptRef.current ? " " : "") + newText;
-                            if (data.detected_language_code) detectedLanguageRef.current = data.detected_language_code;
-                            onTranscriptionComplete(accumulatedTranscriptRef.current, detectedLanguageRef.current, true);
-                        }
+                        return {
+                            text: data.transcript || "",
+                            detectedLanguageCode: data.detected_language_code || 'auto',
+                            providerMs: data.metrics?.provider_ms,
+                            ok: true,
+                            requestMs,
+                        };
                     } else {
                         const errData = await response.json();
                         onError(errData.details || errData.error || "Transcription failed");
+                        return { text: "", detectedLanguageCode: 'auto', ok: false, requestMs };
                     }
                 } catch (err) {
                     console.error("Segment transcription request failed", err);
-                } finally {
-                    isTranscribingPartRef.current = false;
+                    return { text: "", detectedLanguageCode: 'auto', ok: false, requestMs: Math.round(performance.now() - requestStart) };
                 }
             };
 
+            const processSegmentTask = async (index: number, blob: Blob) => {
+                inFlightSegmentsRef.current += 1;
+                try {
+                    const result = await transcribeSegment(blob);
+                    pendingResultsRef.current.set(index, {
+                        text: result.text,
+                        detectedLanguageCode: result.detectedLanguageCode,
+                    });
+                    segmentTimingsRef.current.push({
+                        index,
+                        requestMs: result.requestMs,
+                        providerMs: result.providerMs,
+                        ok: result.ok,
+                    });
+                    flushOrderedResults();
+                } finally {
+                    inFlightSegmentsRef.current -= 1;
+                    segmentsCompletedRef.current += 1;
+                    if (isProcessingRef.current && totalSegmentsRef.current > 1) {
+                        setProcessingProgress(
+                            Math.round((segmentsCompletedRef.current / totalSegmentsRef.current) * 100)
+                        );
+                    }
+                    pumpQueue();
+                    maybeResolveDrain();
+                }
+            };
+
+            const pumpQueue = () => {
+                while (
+                    inFlightSegmentsRef.current < MAX_CONCURRENT_SEGMENTS &&
+                    pendingSegmentsRef.current.length > 0
+                ) {
+                    const task = pendingSegmentsRef.current.shift();
+                    if (!task) break;
+                    void processSegmentTask(task.index, task.blob);
+                }
+            };
+
+            mediaRecorder.ondataavailable = (e) => {
+                if (e.data.size <= 0) return;
+                const index = nextSegmentIndexRef.current;
+                nextSegmentIndexRef.current += 1;
+                totalSegmentsRef.current += 1;
+                pendingSegmentsRef.current.push({ index, blob: e.data });
+                pumpQueue();
+            };
+
             mediaRecorder.onstop = async () => {
+                isProcessingRef.current = true;
                 setIsProcessing(true);
                 setProcessingProgress(0);
                 setIsMultiSegment(false);
@@ -233,7 +223,34 @@ const AudioRecorder = React.memo(function AudioRecorder({
                     timerRef.current = null;
                 }
                 try {
-                    await processAvailableSegments(true);
+                    noMoreSegmentsRef.current = true;
+                    setIsMultiSegment(totalSegmentsRef.current > 1);
+                    if (totalSegmentsRef.current > 1) {
+                        setProcessingProgress(Math.round((segmentsCompletedRef.current / totalSegmentsRef.current) * 100));
+                    }
+                    maybeResolveDrain();
+                    await drainPromiseRef.current;
+                    setProcessingProgress(100);
+
+                    if (segmentTimingsRef.current.length > 0) {
+                        const count = segmentTimingsRef.current.length;
+                        const requestAvg = Math.round(
+                            segmentTimingsRef.current.reduce((acc, item) => acc + item.requestMs, 0) / count
+                        );
+                        const providerTimings = segmentTimingsRef.current
+                            .map((item) => item.providerMs)
+                            .filter((n): n is number => typeof n === 'number');
+                        const providerAvg = providerTimings.length > 0
+                            ? Math.round(providerTimings.reduce((acc, n) => acc + n, 0) / providerTimings.length)
+                            : undefined;
+                        console.info("[transcription-metrics]", {
+                            segments: count,
+                            concurrency: MAX_CONCURRENT_SEGMENTS,
+                            avg_request_ms: requestAvg,
+                            avg_provider_ms: providerAvg,
+                            failed_segments: segmentTimingsRef.current.filter((item) => !item.ok).length,
+                        });
+                    }
 
                     if (processingStartTimeRef.current) {
                         const duration = (Date.now() - processingStartTimeRef.current) / 1000;
@@ -242,6 +259,7 @@ const AudioRecorder = React.memo(function AudioRecorder({
                         onTranscriptionComplete(accumulatedTranscriptRef.current, detectedLanguageRef.current, false);
                     }
                 } finally {
+                    isProcessingRef.current = false;
                     setIsProcessing(false);
                     setProcessingStatus("");
                     stream.getTracks().forEach(track => track.stop());
@@ -249,25 +267,37 @@ const AudioRecorder = React.memo(function AudioRecorder({
                 }
             };
 
-            mediaRecorder.start(30000);
+            mediaRecorder.start(TRANSCRIPTION_CHUNK_MS);
             setIsRecording(true);
             setRecordingDuration(0);
-            lastProcessedTimeRef.current = 0;
             accumulatedTranscriptRef.current = "";
             detectedLanguageRef.current = "auto";
+            segmentsCompletedRef.current = 0;
+            totalSegmentsRef.current = 0;
+            pendingSegmentsRef.current = [];
+            inFlightSegmentsRef.current = 0;
+            nextSegmentIndexRef.current = 0;
+            nextEmitIndexRef.current = 0;
+            pendingResultsRef.current = new Map();
+            noMoreSegmentsRef.current = false;
+            segmentTimingsRef.current = [];
+            drainPromiseRef.current = new Promise<void>((resolve) => {
+                resolveDrainRef.current = resolve;
+            });
+
+            flushTimerRef.current = setInterval(() => {
+                if (!mediaRecorderRef.current || mediaRecorderRef.current.state !== 'recording') return;
+                try {
+                    mediaRecorderRef.current.requestData();
+                } catch (err) {
+                    console.warn("Periodic requestData failed", err);
+                }
+            }, FORCED_FLUSH_EVERY_MS);
 
             timerRef.current = setInterval(() => {
-                setRecordingDuration(prev => {
-                    const next = prev + 1;
-                    recordingDurationRef.current = next;
-                    if (next % 30 === 0) {
-                        mediaRecorder.requestData();
-                        processAvailableSegments(false);
-                    }
-                    return next;
-                });
+                setRecordingDuration(prev => prev + 1);
             }, 1000);
-        } catch (err) {
+        } catch {
             onError("Could not access microphone. Please check permissions.");
         }
     };
@@ -277,11 +307,20 @@ const AudioRecorder = React.memo(function AudioRecorder({
             // Haptic feedback on mobile
             if ('vibrate' in navigator) navigator.vibrate([20, 30, 20]);
             processingStartTimeRef.current = Date.now();
+            try {
+                mediaRecorderRef.current.requestData();
+            } catch (err) {
+                console.warn("Final requestData failed before stop", err);
+            }
             mediaRecorderRef.current.stop();
             setIsRecording(false);
             if (timerRef.current) {
                 clearInterval(timerRef.current);
                 timerRef.current = null;
+            }
+            if (flushTimerRef.current) {
+                clearInterval(flushTimerRef.current);
+                flushTimerRef.current = null;
             }
         }
     };
