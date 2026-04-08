@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(req: NextRequest) {
+    const routeStart = performance.now();
     try {
         const { searchParams } = new URL(req.url);
         const language = searchParams.get('language') || 'hinglish';
@@ -21,11 +22,18 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Audio file missing' }, { status: 400 });
         }
 
-        const sarvamFormData = new FormData();
-        const arrayBuffer = await audioFile.arrayBuffer();
-        const blob = new Blob([arrayBuffer], { type: 'application/octet-stream' });
+        // Some browsers send codec-qualified MIME types (e.g. "audio/webm;codecs=opus")
+        // while the ASR provider expects a base MIME value ("audio/webm").
+        const normalizedMime = (audioFile.type || '')
+            .split(';')[0]
+            .trim()
+            .toLowerCase() || 'application/octet-stream';
 
-        sarvamFormData.append('file', blob, 'recording.webm');
+        const providerBlob = new Blob([audioFile], { type: normalizedMime });
+        const providerFilename = audioFile.name || (normalizedMime === 'audio/webm' ? 'recording.webm' : 'recording.bin');
+
+        const sarvamFormData = new FormData();
+        sarvamFormData.append('file', providerBlob, providerFilename);
         sarvamFormData.append('model', 'saaras:v3');
 
         if (language === 'hinglish' || language === 'auto') {
@@ -39,13 +47,15 @@ export async function POST(req: NextRequest) {
             sarvamFormData.append('mode', 'transcribe');
         }
 
+        const providerStart = performance.now();
         const asrResponse = await fetch('https://api.sarvam.ai/speech-to-text', {
             method: 'POST',
             headers: {
                 'api-subscription-key': apiKey,
             },
-            body: sarvamFormData as any,
+            body: sarvamFormData,
         });
+        const providerMs = Math.round(performance.now() - providerStart);
 
         if (!asrResponse.ok) {
             const errorText = await asrResponse.text();
@@ -67,11 +77,16 @@ export async function POST(req: NextRequest) {
 
         return NextResponse.json({
             transcript: asrData.transcript || "",
-            detected_language_code: asrData.language_code || 'auto'
+            detected_language_code: asrData.language_code || 'auto',
+            metrics: {
+                provider_ms: providerMs,
+                route_ms: Math.round(performance.now() - routeStart),
+            },
         });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Error processing request:", error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        const message = error instanceof Error ? error.message : 'Unknown transcription error';
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }
