@@ -171,3 +171,67 @@ body::before {
 .contain-layout {
   contain: layout;
 }
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scale-fade-in {
+  from { opacity: 0; transform: scale(0.98); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes content-enter {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes toast-enter {
+  from { opacity: 0; transform: translateY(-50px); }
+  to { opacity: 1; transform: translateY(20px); }
+}
+
+@keyframes tagline-enter {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes history-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes history-pop {
+  from { opacity: 0; transform: scale(0.8); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes recorder-ring {
+  0% { transform: scale(1); opacity: 0; }
+  50% { opacity: 0.4; }
+  100% { transform: scale(1.4); opacity: 0; }
+}
+
+.animate-fade-in { animation: fade-in 0.3s ease-out; }
+.animate-scale-fade-in { animation: scale-fade-in 0.2s ease-out; }
+.animate-content-enter { animation: content-enter 0.35s ease-out; }
+.animate-toast-enter { animation: toast-enter 0.2s ease-out; }
+.animate-tagline-enter { animation: tagline-enter 0.5s ease-out; }
+.animate-history-float { animation: history-float 3s ease-in-out infinite; }
+.animate-history-pop { animation: history-pop 0.3s ease-out; }
+.animate-recorder-ring { animation: recorder-ring 2.4s ease-out infinite; }
+.animation-delay-1200 { animation-delay: 1.2s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in,
+  .animate-scale-fade-in,
+  .animate-content-enter,
+  .animate-toast-enter,
+  .animate-tagline-enter,
+  .animate-history-float,
+  .animate-history-pop,
+  .animate-recorder-ring {
+    animation: none !important;
+  }
+}

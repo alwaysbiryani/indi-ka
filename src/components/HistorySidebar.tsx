@@ -129,23 +129,16 @@ const HistorySidebar = React.memo(({ history, onDelete, onSelect, onClearAll, cl
             <div className="flex-1 overflow-y-auto space-y-4 custom-scrollbar">
                 {history.length === 0 ? (
                     <div className="h-full flex flex-col items-center justify-center text-[var(--text-secondary)] space-y-4 opacity-40 py-20">
-                        <motion.div
-                            animate={{ y: [0, -6, 0] }}
-                            transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-                        >
+                        <div className="animate-history-float">
                             <Clock className="w-10 h-10 stroke-[1]" />
-                        </motion.div>
+                        </div>
                         <p className="text-[length:var(--font-size-caption)] font-bold uppercase tracking-widest">No history yet</p>
                     </div>
                 ) : filteredHistory.length === 0 ? (
                     <div className="h-full flex flex-col items-center justify-center text-[var(--text-secondary)] space-y-3 opacity-50 py-20">
-                        <motion.div
-                            initial={{ scale: 0.8, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-                        >
+                        <div className="animate-history-pop">
                             <Search className="w-8 h-8 stroke-[1.5]" />
-                        </motion.div>
+                        </div>
                         <p className="text-[length:var(--font-size-caption)] font-bold uppercase tracking-widest">No matches found</p>
                     </div>
                 ) : (

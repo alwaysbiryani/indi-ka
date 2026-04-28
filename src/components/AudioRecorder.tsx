@@ -3,7 +3,6 @@
 
 import React, { useState, useRef } from 'react';
 import { Mic, Loader2, WifiOff } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { SimpleScrollingWaveform } from '@/components/ui/Waveform';
 import { cn } from '@/utils/cn';
 
@@ -336,32 +335,24 @@ const AudioRecorder = React.memo(function AudioRecorder({
     if (variant === 'circular') {
         return (
             <div className={cn("flex flex-col items-center justify-center w-full", className)}>
-                <AnimatePresence mode="wait">
+                <>
                     {!isRecording && !isProcessing && (
-                        <motion.button
-                            initial={{ scale: 0.95, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
+                        <button
                             onClick={startRecording}
                             data-testid="record-button"
-                            className="relative group w-64 h-64"
+                            className="relative group w-64 h-64 animate-scale-fade-in"
                         >
                             {!hasInteracted && (
                                 <>
-                                    <motion.div
-                                        className="absolute inset-0 rounded-full border-2 border-[var(--text-secondary)]/20"
-                                        animate={{ scale: [1, 1.4], opacity: [0, 0.4, 0] }}
-                                        transition={{ duration: 2.4, repeat: Infinity, ease: "easeOut" }}
+                                    <div
+                                        className="absolute inset-0 rounded-full border-2 border-[var(--text-secondary)]/20 animate-recorder-ring"
                                     />
-                                    <motion.div
-                                        className="absolute inset-0 rounded-full border-2 border-[var(--text-secondary)]/20"
-                                        animate={{ scale: [1, 1.4], opacity: [0, 0.4, 0] }}
-                                        transition={{ duration: 2.4, repeat: Infinity, ease: "easeOut", delay: 1.2 }}
+                                    <div
+                                        className="absolute inset-0 rounded-full border-2 border-[var(--text-secondary)]/20 animate-recorder-ring animation-delay-1200"
                                     />
                                 </>
                             )}
-                            <div className="absolute inset-0 bg-gradient-to-br from-[var(--surface-hover)]/20 to-[var(--surface)]/5 rounded-full blur-xl group-hover:blur-2xl transition-all" />
+                            <div className="absolute inset-0 bg-gradient-to-br from-[var(--surface-hover)]/20 to-[var(--surface)]/5 rounded-full blur-xl group-hover:blur-2xl transition-all duration-200" />
                             <div className={cn("relative w-full h-full bg-[var(--surface)] rounded-full flex flex-col items-center justify-center shadow-2xl border-4 border-[var(--border)]", !isOnline && "opacity-50")}>
                                 {isOnline ? (
                                     <Mic className="w-16 h-16 text-[var(--text-primary)] mb-2" />
@@ -372,7 +363,7 @@ const AudioRecorder = React.memo(function AudioRecorder({
                                     {isOnline ? 'Tap to Speak' : 'Offline'}
                                 </span>
                             </div>
-                        </motion.button>
+                        </button>
                     )}
 
                     {isRecording && (
@@ -459,36 +450,30 @@ const AudioRecorder = React.memo(function AudioRecorder({
                             </div>
                         </div>
                     )}
-                </AnimatePresence>
+                </>
             </div>
         );
     }
 
     return (
         <div className={cn("flex flex-col items-center justify-center w-full", isCompact ? "h-full" : "", className)}>
-            <AnimatePresence mode="wait">
+            <>
                 {!isRecording && !isProcessing && (
-                    <motion.div
+                    <div
                         key="idle"
-                        initial={{ scale: 0.98, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        exit={{ scale: 0.98, opacity: 0 }}
-                        className={cn("w-full", isCompact ? "h-full" : "")}
+                        className={cn("w-full animate-scale-fade-in", isCompact ? "h-full" : "")}
                     >
                         <button onClick={startRecording} className={buttonBaseClasses}>
                             <Mic className="w-5 h-5" />
                             <span>{isCompact ? "Tap" : "Tap to Speak"}</span>
                         </button>
-                    </motion.div>
+                    </div>
                 )}
 
                 {isRecording && (
-                    <motion.div
+                    <div
                         key="recording"
-                        initial={{ scale: 0.98, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        exit={{ scale: 0.98, opacity: 0 }}
-                        className={cn("w-full", isCompact ? "h-full" : "flex flex-col items-center justify-center")}
+                        className={cn("w-full animate-scale-fade-in", isCompact ? "h-full" : "flex flex-col items-center justify-center")}
                     >
                         <div
                             className={cn(
@@ -502,24 +487,21 @@ const AudioRecorder = React.memo(function AudioRecorder({
                                 <span className="text-sm font-bold text-white uppercase tracking-widest">STOP</span>
                             </div>
                         </div>
-                    </motion.div>
+                    </div>
                 )}
 
                 {isProcessing && (
-                    <motion.div
+                    <div
                         key="processing"
-                        initial={{ scale: 0.98, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        exit={{ scale: 0.98, opacity: 0 }}
-                        className={cn("w-full", isCompact ? "h-full" : "")}
+                        className={cn("w-full animate-scale-fade-in", isCompact ? "h-full" : "")}
                     >
                         <div className={processingClasses}>
                             <Loader2 className="w-5 h-5 animate-spin" />
                             <span>{isCompact ? "Processing" : (processingStatus || "Processing...")}</span>
                         </div>
-                    </motion.div>
+                    </div>
                 )}
-            </AnimatePresence>
+            </>
         </div>
     );
 });

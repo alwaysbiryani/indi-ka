@@ -1,4 +1,3 @@
-
 'use client';
 
 import React from 'react';
@@ -15,6 +14,21 @@ interface BannersProps {
 export const Banners = React.memo(function Banners({ errorBanner, showAutoCopyBanner, onDismissError, onRetry }: BannersProps) {
     const dragX = useMotionValue(0);
     const errorOpacity = useTransform(dragX, [-150, 0, 150], [0.3, 1, 0.3]);
+    const [isAutoCopyVisible, setIsAutoCopyVisible] = React.useState(false);
+    const [isAutoCopyMounted, setIsAutoCopyMounted] = React.useState(false);
+
+    React.useEffect(() => {
+        if (showAutoCopyBanner) {
+            setIsAutoCopyMounted(true);
+            setIsAutoCopyVisible(true);
+            return;
+        }
+
+        setIsAutoCopyVisible(false);
+        if (!isAutoCopyMounted) return;
+        const timeout = setTimeout(() => setIsAutoCopyMounted(false), 200);
+        return () => clearTimeout(timeout);
+    }, [showAutoCopyBanner, isAutoCopyMounted]);
 
     return (
         <>
@@ -63,22 +77,16 @@ export const Banners = React.memo(function Banners({ errorBanner, showAutoCopyBa
                 )}
             </AnimatePresence>
 
-            <AnimatePresence>
-                {showAutoCopyBanner && (
-                    <motion.div
-                        initial={{ opacity: 0, y: -20, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 16, scale: 1 }}
-                        exit={{ opacity: 0, y: -20, scale: 0.95 }}
-                        transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                        className="absolute top-4 left-1/2 -translate-x-1/2 bg-[var(--surface)]/95 border border-[var(--success)]/20 text-[var(--text-primary)] px-6 py-3 rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.08),0_0_0_1px_rgba(34,197,94,0.1)] z-[100] flex items-center space-x-3 backdrop-blur-2xl whitespace-nowrap"
-                    >
-                        <div className="bg-[var(--success)] p-1 rounded-full shadow-sm">
-                            <Check className="w-3 h-3 text-white stroke-[3]" />
-                        </div>
-                        <span className="text-sm font-bold tracking-tight">Copied to clipboard</span>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+            {isAutoCopyMounted && (
+                <div
+                    className={`absolute top-4 left-1/2 -translate-x-1/2 bg-[var(--surface)]/95 border border-[var(--success)]/20 text-[var(--text-primary)] px-6 py-3 rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.08),0_0_0_1px_rgba(34,197,94,0.1)] z-[100] flex items-center space-x-3 backdrop-blur-2xl whitespace-nowrap transition-all duration-200 ease-out ${isAutoCopyVisible ? 'opacity-100 translate-y-4 scale-100' : 'opacity-0 -translate-y-5 scale-95 pointer-events-none'}`}
+                >
+                    <div className="bg-[var(--success)] p-1 rounded-full shadow-sm">
+                        <Check className="w-3 h-3 text-white stroke-[3]" />
+                    </div>
+                    <span className="text-sm font-bold tracking-tight">Copied to clipboard</span>
+                </div>
+            )}
         </>
     );
 });

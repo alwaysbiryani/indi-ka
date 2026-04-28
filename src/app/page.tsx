@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef, Suspense } from 'react';
@@ -20,7 +19,6 @@ import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { useFocusTrap } from '@/hooks/useFocusTrap';
 
-// Aggressively dynamic imports for non-critical/below-fold elements
 const CreditsMarquee = dynamic(() => import('@/components/CreditsMarquee').then(mod => mod.CreditsMarquee), { ssr: false });
 const Banners = dynamic(() => import('@/components/Banners').then(mod => mod.Banners), { ssr: false });
 const HistorySidebar = dynamic(() => import('@/components/HistorySidebar'), {
@@ -32,7 +30,6 @@ export default function Home() {
   const prefersReducedMotion = useReducedMotion();
   const { isOnline, justReconnected } = useOnlineStatus();
 
-  // Standalone state
   const [language, setLanguage] = useState('auto');
   const [apiKey] = useState(() => {
     if (typeof window === 'undefined') return '';
@@ -49,7 +46,6 @@ export default function Home() {
   const [confirmingClearAll, setConfirmingClearAll] = useState(false);
   const confirmTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // History state (consolidated hook)
   const {
     history,
     isHistoryOpen,
@@ -64,7 +60,6 @@ export default function Home() {
 
   const clearError = useCallback(() => setErrorBanner(null), []);
 
-  // Transcription state (consolidated hook)
   const {
     transcript,
     setTranscript,
@@ -83,20 +78,17 @@ export default function Home() {
 
   const handleErrorAction = useCallback((msg: string) => setErrorBanner(msg), []);
 
-  // Focus trap for history sidebar
   const historySidebarRef = useFocusTrap<HTMLDivElement>({
     active: isHistoryOpen,
     onEscape: closeHistory,
   });
 
-  // Auto-dismiss error banner after 8 seconds
   useEffect(() => {
     if (!errorBanner) return;
     const timer = setTimeout(() => setErrorBanner(null), 8000);
     return () => clearTimeout(timer);
   }, [errorBanner]);
 
-  // Global Escape key: go back from transcription view (when not in a modal)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && transcript && !isHistoryOpen) {
@@ -108,7 +100,6 @@ export default function Home() {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [transcript, isHistoryOpen, setTranscript]);
 
-  // Confirm Clear All (inline pattern for the page.tsx header version)
   useEffect(() => {
     if (confirmingClearAll) {
       confirmTimerRef.current = setTimeout(() => setConfirmingClearAll(false), 3000);
@@ -125,16 +116,12 @@ export default function Home() {
     }
   }, [confirmingClearAll, handleClearHistory]);
 
-  // Initialize on mount: hydrate history + apply theme to DOM
   useEffect(() => {
     isMountedRef.current = true;
     hydrateHistory();
-    // Apply the already-initialized theme to the DOM
     document.documentElement.setAttribute('data-theme', theme);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hydrateHistory]);
+  }, [hydrateHistory, theme]);
 
-  // Sync theme to DOM + localStorage on changes after mount
   useEffect(() => {
     if (!isMountedRef.current) return;
     document.documentElement.setAttribute('data-theme', theme);
@@ -153,42 +140,21 @@ export default function Home() {
           onRetry={clearError}
         />
 
-        {/* Offline banner */}
-        <AnimatePresence>
-          {!isOnline && (
-            <m.div
-              initial={{ y: -50, opacity: 0 }}
-              animate={{ y: 20, opacity: 1 }}
-              exit={{ y: -50, opacity: 0 }}
-              className="absolute top-0 left-4 right-4 bg-[var(--surface)]/95 border border-[var(--warning)]/30 text-[var(--text-primary)] px-5 py-3 rounded-2xl shadow-xl z-[99] flex items-center space-x-3 backdrop-blur-xl"
-            >
-              <WifiOff className="w-4 h-4 text-[var(--warning)] flex-shrink-0" />
-              <span className="text-sm font-medium">You&apos;re offline. Recording is disabled.</span>
-            </m.div>
-          )}
-        </AnimatePresence>
+        {!isOnline && (
+          <div className="absolute top-0 left-4 right-4 bg-[var(--surface)]/95 border border-[var(--warning)]/30 text-[var(--text-primary)] px-5 py-3 rounded-2xl shadow-xl z-[99] flex items-center space-x-3 backdrop-blur-xl animate-toast-enter">
+            <WifiOff className="w-4 h-4 text-[var(--warning)] flex-shrink-0" />
+            <span className="text-sm font-medium">You&apos;re offline. Recording is disabled.</span>
+          </div>
+        )}
 
-        {/* Back online toast */}
-        <AnimatePresence>
-          {justReconnected && isOnline && (
-            <m.div
-              initial={{ y: -50, opacity: 0 }}
-              animate={{ y: 20, opacity: 1 }}
-              exit={{ y: -50, opacity: 0 }}
-              className="absolute top-0 left-4 right-4 bg-[var(--surface)]/95 border border-[var(--success)]/30 text-[var(--text-primary)] px-5 py-3 rounded-2xl shadow-xl z-[99] flex items-center space-x-3 backdrop-blur-xl"
-            >
-              <Wifi className="w-4 h-4 text-[var(--success)] flex-shrink-0" />
-              <span className="text-sm font-medium">Back online</span>
-            </m.div>
-          )}
-        </AnimatePresence>
+        {justReconnected && isOnline && (
+          <div className="absolute top-0 left-4 right-4 bg-[var(--surface)]/95 border border-[var(--success)]/30 text-[var(--text-primary)] px-5 py-3 rounded-2xl shadow-xl z-[99] flex items-center space-x-3 backdrop-blur-xl animate-toast-enter">
+            <Wifi className="w-4 h-4 text-[var(--success)] flex-shrink-0" />
+            <span className="text-sm font-medium">Back online</span>
+          </div>
+        )}
 
-        {/* Phone Mockup */}
-        <m.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="w-full h-dvh lg:w-[390px] lg:h-[844px] bg-[var(--screen-bg)] lg:rounded-[50px] lg:shadow-[0_40px_100px_rgba(0,0,0,0.15)] overflow-hidden lg:border-[8px] border-0 lg:border-[var(--phone-frame)] relative flex flex-col transition-colors duration-200 contain-paint"
-        >
+        <div className="w-full h-dvh lg:w-[390px] lg:h-[844px] bg-[var(--screen-bg)] lg:rounded-[50px] lg:shadow-[0_40px_100px_rgba(0,0,0,0.15)] overflow-hidden lg:border-[8px] border-0 lg:border-[var(--phone-frame)] relative flex flex-col transition-colors duration-200 contain-paint animate-fade-in">
           <div className="hidden lg:block absolute top-0 left-1/2 -translate-x-1/2 w-40 h-7 bg-[var(--phone-frame)] rounded-b-[20px] z-[50]" />
 
           <header className="px-6 pb-2 sm:pb-4 flex items-center justify-between relative z-10 pt-[max(env(safe-area-inset-top),1.5rem)] lg:px-8 lg:pt-14 lg:pb-4">
@@ -228,111 +194,96 @@ export default function Home() {
           </header>
 
           <div className="flex-1 px-6 lg:px-8 flex flex-col overflow-hidden min-h-0">
-            <AnimatePresence mode="wait">
-              {!transcript ? (
-                <m.div
-                  key="landing"
-                  initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: 10 }}
-                  animate={prefersReducedMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
-                  exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.98 }}
-                  className="flex-1 flex flex-col items-center justify-between pb-6 h-full min-h-0"
-                >
-                  <TaglineCycler />
+            {!transcript ? (
+              <div className="flex-1 flex flex-col items-center justify-between pb-6 h-full min-h-0 animate-content-enter">
+                <TaglineCycler />
 
-                  <div className="w-full relative z-50 mb-4">
-                    <div className="bg-[var(--surface)]/80 backdrop-blur-xl rounded-[24px] p-1 border border-[var(--border)] shadow-sm transition-all duration-300">
-                      <LanguageSelector
-                        selectedLanguage={language}
-                        onSelectLanguage={setLanguage}
-                        className="!bg-transparent !border-none !p-4 !m-0"
-                        data-testid="language-selector"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex-1 flex items-center justify-center min-h-0 w-full overflow-visible">
-                    <AudioRecorder
-                      onTranscriptionComplete={handleTranscriptionComplete}
-                      onError={handleErrorAction}
-                      language={language}
-                      apiKey={apiKey}
-                      variant="circular"
-                      onRecordingStart={animateClear}
-                      theme={theme}
-                      isOnline={isOnline}
+                <div className="w-full relative z-50 mb-4">
+                  <div className="bg-[var(--surface)]/80 backdrop-blur-xl rounded-[24px] p-1 border border-[var(--border)] shadow-sm transition-all duration-300">
+                    <LanguageSelector
+                      selectedLanguage={language}
+                      onSelectLanguage={setLanguage}
+                      className="!bg-transparent !border-none !p-4 !m-0"
+                      data-testid="language-selector"
                     />
                   </div>
-                </m.div>
-              ) : (
-                <m.div
-                  key="transcribing"
-                  initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.98, filter: 'blur(4px)' }}
-                  animate={prefersReducedMotion ? { opacity: 1 } : { opacity: 1, scale: 1, filter: 'blur(0px)' }}
-                  exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: 20 }}
-                  transition={{ duration: 0.35 }}
-                  className="flex-1 flex flex-col h-full"
-                >
-                  <div className="flex items-center justify-between mb-4">
-                    <button
-                      onClick={() => setTranscript('')}
-                      className="group flex items-center space-x-1 pl-2 pr-3 py-2 hover:bg-[var(--surface-hover)] rounded-full transition-all text-[var(--text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring-focus)]"
-                      aria-label="Go back to recording view"
-                    >
-                      <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
-                      <span className="text-sm font-medium">Back</span>
-                    </button>
-                    {transcriptionTime !== null && (
-                      <span className="text-[length:var(--font-size-caption)] font-bold text-[var(--text-secondary)] uppercase tracking-wider bg-[var(--surface-hover)] px-3 py-1.5 rounded-full border border-[var(--border)]">
-                        Ready in {transcriptionTime.toFixed(1)}s
-                      </span>
+                </div>
+
+                <div className="flex-1 flex items-center justify-center min-h-0 w-full overflow-visible">
+                  <AudioRecorder
+                    onTranscriptionComplete={handleTranscriptionComplete}
+                    onError={handleErrorAction}
+                    language={language}
+                    apiKey={apiKey}
+                    variant="circular"
+                    onRecordingStart={animateClear}
+                    theme={theme}
+                    isOnline={isOnline}
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="flex-1 flex flex-col h-full animate-content-enter">
+                <div className="flex items-center justify-between mb-4">
+                  <button
+                    onClick={() => setTranscript('')}
+                    className="group flex items-center space-x-1 pl-2 pr-3 py-2 hover:bg-[var(--surface-hover)] rounded-full transition-all text-[var(--text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring-focus)]"
+                    aria-label="Go back to recording view"
+                  >
+                    <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
+                    <span className="text-sm font-medium">Back</span>
+                  </button>
+                  {transcriptionTime !== null && (
+                    <span className="text-[length:var(--font-size-caption)] font-bold text-[var(--text-secondary)] uppercase tracking-wider bg-[var(--surface-hover)] px-3 py-1.5 rounded-full border border-[var(--border)]">
+                      Ready in {transcriptionTime.toFixed(1)}s
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex-1 bg-[var(--surface)] rounded-[32px] p-6 lg:p-8 border border-[var(--border)] relative overflow-hidden mb-6 flex flex-col shadow-sm group transition-all duration-300">
+                  <textarea
+                    ref={transcriptRef}
+                    value={transcript}
+                    onChange={(e) => setTranscript(e.target.value)}
+                    className="w-full h-full bg-transparent border-none focus:ring-0 text-[var(--text-primary)] text-lg lg:text-xl font-medium leading-relaxed resize-none outline-none custom-scrollbar"
+                    placeholder="Your transcription will appear here..."
+                    data-testid="transcription-canvas"
+                  />
+                  <button
+                    onClick={() => setTranscript('')}
+                    className="absolute top-4 right-4 p-2.5 bg-[var(--app-bg)] rounded-xl transition-all active:scale-95 text-[var(--text-secondary)] hover:text-[var(--error)] lg:opacity-0 lg:group-hover:opacity-100 duration-200"
+                    aria-label="Clear transcript"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <div className="flex items-center space-x-4 mb-4 lg:mb-8 w-full max-w-full lg:max-w-[400px] mx-auto px-1 pb-[max(env(safe-area-inset-bottom),1rem)]">
+                  <button
+                    onClick={handleCopy}
+                    className={cn(
+                      "flex-1 py-3.5 rounded-full transition-all duration-300 active:scale-95 flex items-center justify-center space-x-2 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring-focus)]",
+                      hasCopied
+                        ? "bg-[var(--success-bg)] border border-[var(--success)]/40 text-[var(--success)]"
+                        : "bg-[var(--surface)] hover:bg-[var(--surface-hover)] border border-[var(--border)] text-[var(--text-primary)]"
                     )}
-                  </div>
+                    data-testid="copy-button"
+                  >
+                    <Copy className={cn("w-4.5 h-4.5 transition-colors", hasCopied ? "text-[var(--success)]" : "text-[var(--text-secondary)] group-hover:text-[var(--text-primary)]")} />
+                    <span className="font-bold text-sm tracking-wide">{hasCopied ? "Copied" : "Copy Text"}</span>
+                  </button>
 
-                  <div className="flex-1 bg-[var(--surface)] rounded-[32px] p-6 lg:p-8 border border-[var(--border)] relative overflow-hidden mb-6 flex flex-col shadow-sm group transition-all duration-300">
-                    <textarea
-                      ref={transcriptRef}
-                      value={transcript}
-                      onChange={(e) => setTranscript(e.target.value)}
-                      className="w-full h-full bg-transparent border-none focus:ring-0 text-[var(--text-primary)] text-lg lg:text-xl font-medium leading-relaxed resize-none outline-none custom-scrollbar"
-                      placeholder="Your transcription will appear here..."
-                      data-testid="transcription-canvas"
-                    />
-                    <button
-                      onClick={() => setTranscript('')}
-                      className="absolute top-4 right-4 p-2.5 bg-[var(--app-bg)] rounded-xl transition-all active:scale-95 text-[var(--text-secondary)] hover:text-[var(--error)] lg:opacity-0 lg:group-hover:opacity-100 duration-200"
-                      aria-label="Clear transcript"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-
-                  <div className="flex items-center space-x-4 mb-4 lg:mb-8 w-full max-w-full lg:max-w-[400px] mx-auto px-1 pb-[max(env(safe-area-inset-bottom),1rem)]">
-                    <button
-                      onClick={handleCopy}
-                      className={cn(
-                        "flex-1 py-3.5 rounded-full transition-all duration-300 active:scale-95 flex items-center justify-center space-x-2 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring-focus)]",
-                        hasCopied
-                          ? "bg-[var(--success-bg)] border border-[var(--success)]/40 text-[var(--success)]"
-                          : "bg-[var(--surface)] hover:bg-[var(--surface-hover)] border border-[var(--border)] text-[var(--text-primary)]"
-                      )}
-                      data-testid="copy-button"
-                    >
-                      <Copy className={cn("w-4.5 h-4.5 transition-colors", hasCopied ? "text-[var(--success)]" : "text-[var(--text-secondary)] group-hover:text-[var(--text-primary)]")} />
-                      <span className="font-bold text-sm tracking-wide">{hasCopied ? "Copied" : "Copy Text"}</span>
-                    </button>
-
-                    <button
-                      onClick={() => setTranscript('')}
-                      className="flex-1 py-3.5 bg-[var(--surface)] hover:bg-[var(--surface-hover)] rounded-full transition-all active:scale-95 border border-[var(--border)] flex items-center justify-center space-x-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring-focus)]"
-                      data-testid="speak-again-button"
-                    >
-                      <Mic className="w-4.5 h-4.5 text-[var(--text-secondary)]" />
-                      <span className="font-bold text-sm text-[var(--text-primary)] tracking-wide">Speak Again</span>
-                    </button>
-                  </div>
-                </m.div>
-              )}
-            </AnimatePresence>
+                  <button
+                    onClick={() => setTranscript('')}
+                    className="flex-1 py-3.5 bg-[var(--surface)] hover:bg-[var(--surface-hover)] rounded-full transition-all active:scale-95 border border-[var(--border)] flex items-center justify-center space-x-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring-focus)]"
+                    data-testid="speak-again-button"
+                  >
+                    <Mic className="w-4.5 h-4.5 text-[var(--text-secondary)]" />
+                    <span className="font-bold text-sm text-[var(--text-primary)] tracking-wide">Speak Again</span>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           <Suspense fallback={<div className="h-10" />}>
@@ -340,7 +291,7 @@ export default function Home() {
           </Suspense>
 
           <div className="hidden lg:block absolute bottom-2 left-1/2 -translate-x-1/2 w-32 h-1.5 bg-[var(--border)] rounded-full opacity-60" />
-        </m.div>
+        </div>
       </div>
 
       <AnimatePresence>
