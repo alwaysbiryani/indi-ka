@@ -2,7 +2,6 @@
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { ChevronDown, Check } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/utils/cn';
 
 interface LanguageSelectorProps {
@@ -141,64 +140,58 @@ const LanguageSelector = React.memo(({ selectedLanguage, onSelectLanguage, class
                 <ChevronDown className={`w-5 h-5 text-[var(--text-secondary)] transition-transform duration-300 ${isOpen ? 'rotate-180 text-[var(--text-primary)]' : ''}`} />
             </button>
 
-
-            <AnimatePresence>
-                {isOpen && (
-                    <>
-                        <div
-                            className="fixed inset-0 z-30"
-                            onClick={() => closeDropdown()}
-                        />
-                        <motion.div
-                            initial={{ opacity: 0, y: -10, scale: 0.98 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: -10, scale: 0.98 }}
-                            role="listbox"
-                            aria-label="Select target language"
-                            aria-activedescendant={focusedIndex >= 0 ? `lang-option-${languages[focusedIndex].code}` : undefined}
-                            className="absolute left-0 right-0 mt-2 bg-[var(--surface)] border border-[var(--border)] rounded-[32px] shadow-xl overflow-hidden z-[400] max-h-[400px] overflow-y-auto custom-scrollbar p-2"
-                        >
-                            <div className="p-1.5 grid grid-cols-1 gap-0.5">
-                                {languages.map((lang, index) => (
-                                    <button
-                                        key={lang.code}
-                                        ref={(el) => { optionRefs.current[index] = el; }}
-                                        id={`lang-option-${lang.code}`}
-                                        role="option"
-                                        aria-selected={selectedLanguage === lang.code}
-                                        onClick={() => selectItem(lang.code)}
-                                        onKeyDown={(e) => handleOptionKeyDown(e, index)}
-                                        className={cn(
-                                            "w-full px-4 py-3 text-left text-sm rounded-2xl transition-all flex items-center justify-between group mb-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring-focus)]",
+            {isOpen && (
+                <>
+                    <div
+                        className="fixed inset-0 z-30"
+                        onClick={() => closeDropdown()}
+                    />
+                    <div
+                        role="listbox"
+                        aria-label="Select target language"
+                        aria-activedescendant={focusedIndex >= 0 ? `lang-option-${languages[focusedIndex].code}` : undefined}
+                        className="absolute left-0 right-0 mt-2 bg-[var(--surface)] border border-[var(--border)] rounded-[32px] shadow-xl overflow-hidden z-[400] max-h-[400px] overflow-y-auto custom-scrollbar p-2 animate-fade-scale-in"
+                    >
+                        <div className="p-1.5 grid grid-cols-1 gap-0.5">
+                            {languages.map((lang, index) => (
+                                <button
+                                    key={lang.code}
+                                    ref={(el) => { optionRefs.current[index] = el; }}
+                                    id={`lang-option-${lang.code}`}
+                                    role="option"
+                                    aria-selected={selectedLanguage === lang.code}
+                                    onClick={() => selectItem(lang.code)}
+                                    onKeyDown={(e) => handleOptionKeyDown(e, index)}
+                                    className={cn(
+                                        "w-full px-4 py-3 text-left text-sm rounded-2xl transition-all flex items-center justify-between group mb-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring-focus)]",
+                                        selectedLanguage === lang.code
+                                            ? 'bg-[var(--surface-hover)] text-[var(--text-primary)] shadow-sm'
+                                            : focusedIndex === index
+                                                ? 'bg-[var(--surface-hover)]/60 text-[var(--text-primary)]'
+                                                : 'text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]'
+                                    )}
+                                >
+                                    <span className="flex items-center space-x-3">
+                                        <span className={cn(
+                                            "flex items-center justify-center w-8 h-8 rounded-xl text-xs font-bold transition-all",
                                             selectedLanguage === lang.code
-                                                ? 'bg-[var(--surface-hover)] text-[var(--text-primary)] shadow-sm'
-                                                : focusedIndex === index
-                                                    ? 'bg-[var(--surface-hover)]/60 text-[var(--text-primary)]'
-                                                    : 'text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]'
-                                        )}
-                                    >
-                                        <span className="flex items-center space-x-3">
-                                            <span className={cn(
-                                                "flex items-center justify-center w-8 h-8 rounded-xl text-xs font-bold transition-all",
-                                                selectedLanguage === lang.code
-                                                    ? "bg-[var(--text-primary)] text-[var(--app-bg)] shadow-md font-bold"
-                                                    : "bg-[var(--surface-hover)] text-[var(--text-secondary)] group-hover:text-[var(--text-primary)]"
-                                            )}>
-                                                {lang.id}
-                                            </span>
-                                            <span className="font-bold tracking-tight">{lang.label}</span>
+                                                ? "bg-[var(--text-primary)] text-[var(--app-bg)] shadow-md font-bold"
+                                                : "bg-[var(--surface-hover)] text-[var(--text-secondary)] group-hover:text-[var(--text-primary)]"
+                                        )}>
+                                            {lang.id}
                                         </span>
-                                        {selectedLanguage === lang.code && (
-                                            <Check className="w-4 h-4 text-[var(--text-primary)]" />
-                                        )}
-                                    </button>
+                                        <span className="font-bold tracking-tight">{lang.label}</span>
+                                    </span>
+                                    {selectedLanguage === lang.code && (
+                                        <Check className="w-4 h-4 text-[var(--text-primary)]" />
+                                    )}
+                                </button>
 
-                                ))}
-                            </div>
-                        </motion.div>
-                    </>
-                )}
-            </AnimatePresence>
+                            ))}
+                        </div>
+                    </div>
+                </>
+            )}
         </div>
     );
 });
