@@ -2,7 +2,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 
 const taglines = [
     { l1: "Baat karo dil se,", l2: "Typing kyu? Chill se." },
@@ -34,23 +33,14 @@ export function TaglineCycler() {
 
     return (
         <div className="h-20 flex flex-col items-center justify-center text-center overflow-hidden mb-8 w-full">
-            <AnimatePresence mode="wait">
-                <motion.div
-                    key={index}
-                    initial={{ y: 20, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    exit={{ y: -20, opacity: 0 }}
-                    transition={{ duration: 0.5, ease: "easeOut" }}
-                    className="flex flex-col space-y-2"
-                >
-                    <p className="text-xl font-bold text-[var(--text-primary)] leading-snug tracking-tight">
-                        {taglines[index].l1}
-                    </p>
-                    <p className="text-xl font-bold bg-gradient-to-r from-[#FF9933] via-[var(--text-primary)] to-[#138808] bg-clip-text text-transparent leading-snug tracking-tight opacity-90">
-                        {taglines[index].l2}
-                    </p>
-                </motion.div>
-            </AnimatePresence>
+            <div key={index} className="flex flex-col space-y-2 animate-tagline-in">
+                <p className="text-xl font-bold text-[var(--text-primary)] leading-snug tracking-tight">
+                    {taglines[index].l1}
+                </p>
+                <p className="text-xl font-bold bg-gradient-to-r from-[#FF9933] via-[var(--text-primary)] to-[#138808] bg-clip-text text-transparent leading-snug tracking-tight opacity-90">
+                    {taglines[index].l2}
+                </p>
+            </div>
         </div>
     );
 }

@@ -3,7 +3,6 @@
 
 import React, { useState, useRef } from 'react';
 import { Mic, Loader2, WifiOff } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { SimpleScrollingWaveform } from '@/components/ui/Waveform';
 import { cn } from '@/utils/cn';
 
@@ -336,44 +335,31 @@ const AudioRecorder = React.memo(function AudioRecorder({
     if (variant === 'circular') {
         return (
             <div className={cn("flex flex-col items-center justify-center w-full", className)}>
-                <AnimatePresence mode="wait">
-                    {!isRecording && !isProcessing && (
-                        <motion.button
-                            initial={{ scale: 0.95, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={startRecording}
-                            data-testid="record-button"
-                            className="relative group w-64 h-64"
-                        >
-                            {!hasInteracted && (
-                                <>
-                                    <motion.div
-                                        className="absolute inset-0 rounded-full border-2 border-[var(--text-secondary)]/20"
-                                        animate={{ scale: [1, 1.4], opacity: [0, 0.4, 0] }}
-                                        transition={{ duration: 2.4, repeat: Infinity, ease: "easeOut" }}
-                                    />
-                                    <motion.div
-                                        className="absolute inset-0 rounded-full border-2 border-[var(--text-secondary)]/20"
-                                        animate={{ scale: [1, 1.4], opacity: [0, 0.4, 0] }}
-                                        transition={{ duration: 2.4, repeat: Infinity, ease: "easeOut", delay: 1.2 }}
-                                    />
-                                </>
+                {!isRecording && !isProcessing && (
+                    <button
+                        onClick={startRecording}
+                        data-testid="record-button"
+                        className="relative group w-64 h-64 animate-fade-scale-in transition-transform hover:scale-105 active:scale-95"
+                    >
+                        {!hasInteracted && (
+                            <>
+                                <div className="absolute inset-0 rounded-full border-2 border-[var(--text-secondary)]/20 animate-ping" />
+                                <div className="absolute inset-0 rounded-full border-2 border-[var(--text-secondary)]/20 animate-ping [animation-delay:1.2s]" />
+                            </>
+                        )}
+                        <div className="absolute inset-0 bg-gradient-to-br from-[var(--surface-hover)]/20 to-[var(--surface)]/5 rounded-full blur-xl group-hover:blur-2xl transition-all" />
+                        <div className={cn("relative w-full h-full bg-[var(--surface)] rounded-full flex flex-col items-center justify-center shadow-2xl border-4 border-[var(--border)]", !isOnline && "opacity-50")}>
+                            {isOnline ? (
+                                <Mic className="w-16 h-16 text-[var(--text-primary)] mb-2" />
+                            ) : (
+                                <WifiOff className="w-12 h-12 text-[var(--text-tertiary)] mb-2" />
                             )}
-                            <div className="absolute inset-0 bg-gradient-to-br from-[var(--surface-hover)]/20 to-[var(--surface)]/5 rounded-full blur-xl group-hover:blur-2xl transition-all" />
-                            <div className={cn("relative w-full h-full bg-[var(--surface)] rounded-full flex flex-col items-center justify-center shadow-2xl border-4 border-[var(--border)]", !isOnline && "opacity-50")}>
-                                {isOnline ? (
-                                    <Mic className="w-16 h-16 text-[var(--text-primary)] mb-2" />
-                                ) : (
-                                    <WifiOff className="w-12 h-12 text-[var(--text-tertiary)] mb-2" />
-                                )}
-                                <span className="text-xl font-bold text-[var(--text-primary)] tracking-tight uppercase">
-                                    {isOnline ? 'Tap to Speak' : 'Offline'}
-                                </span>
-                            </div>
-                        </motion.button>
-                    )}
+                            <span className="text-xl font-bold text-[var(--text-primary)] tracking-tight uppercase">
+                                {isOnline ? 'Tap to Speak' : 'Offline'}
+                            </span>
+                        </div>
+                    </button>
+                )}
 
                     {isRecording && (
                         <div className="flex flex-col items-center justify-between w-full h-full py-2 sm:py-6 space-y-4 sm:space-y-8">
@@ -459,37 +445,25 @@ const AudioRecorder = React.memo(function AudioRecorder({
                             </div>
                         </div>
                     )}
-                </AnimatePresence>
             </div>
         );
     }
 
     return (
         <div className={cn("flex flex-col items-center justify-center w-full", isCompact ? "h-full" : "", className)}>
-            <AnimatePresence mode="wait">
-                {!isRecording && !isProcessing && (
-                    <motion.div
-                        key="idle"
-                        initial={{ scale: 0.98, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        exit={{ scale: 0.98, opacity: 0 }}
-                        className={cn("w-full", isCompact ? "h-full" : "")}
-                    >
-                        <button onClick={startRecording} className={buttonBaseClasses}>
-                            <Mic className="w-5 h-5" />
-                            <span>{isCompact ? "Tap" : "Tap to Speak"}</span>
-                        </button>
-                    </motion.div>
-                )}
+            {!isRecording && !isProcessing && (
+                <div className={cn("w-full animate-fade-scale-in", isCompact ? "h-full" : "")}>
+                    <button onClick={startRecording} className={buttonBaseClasses}>
+                        <Mic className="w-5 h-5" />
+                        <span>{isCompact ? "Tap" : "Tap to Speak"}</span>
+                    </button>
+                </div>
+            )}
 
-                {isRecording && (
-                    <motion.div
-                        key="recording"
-                        initial={{ scale: 0.98, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        exit={{ scale: 0.98, opacity: 0 }}
-                        className={cn("w-full", isCompact ? "h-full" : "flex flex-col items-center justify-center")}
-                    >
+            {isRecording && (
+                <div
+                    className={cn("w-full animate-fade-scale-in", isCompact ? "h-full" : "flex flex-col items-center justify-center")}
+                >
                         <div
                             className={cn(
                                 "w-full flex items-center justify-center bg-[var(--error)] rounded-3xl transition-all shadow-xl active:scale-95 cursor-pointer",
@@ -502,24 +476,19 @@ const AudioRecorder = React.memo(function AudioRecorder({
                                 <span className="text-sm font-bold text-white uppercase tracking-widest">STOP</span>
                             </div>
                         </div>
-                    </motion.div>
-                )}
+                </div>
+            )}
 
-                {isProcessing && (
-                    <motion.div
-                        key="processing"
-                        initial={{ scale: 0.98, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        exit={{ scale: 0.98, opacity: 0 }}
-                        className={cn("w-full", isCompact ? "h-full" : "")}
-                    >
-                        <div className={processingClasses}>
-                            <Loader2 className="w-5 h-5 animate-spin" />
-                            <span>{isCompact ? "Processing" : (processingStatus || "Processing...")}</span>
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+            {isProcessing && (
+                <div
+                    className={cn("w-full animate-fade-scale-in", isCompact ? "h-full" : "")}
+                >
+                    <div className={processingClasses}>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        <span>{isCompact ? "Processing" : (processingStatus || "Processing...")}</span>
+                    </div>
+                </div>
+            )}
         </div>
     );
 });
