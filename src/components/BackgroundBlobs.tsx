@@ -5,7 +5,6 @@ import React, { useState, useEffect, memo } from 'react';
 import { useIsMobile } from '@/hooks/useIsMobile';
 
 export const BackgroundBlobs = memo(function BackgroundBlobs() {
-    const [mounted, setMounted] = useState(false);
     const [isVisible, setIsVisible] = useState(true);
     const isMobile = useIsMobile();
 

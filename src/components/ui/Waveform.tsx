@@ -395,18 +395,20 @@ export const AudioScrubber = ({
     const [localProgress, setLocalProgress] = useState(0)
     const containerRef = useRef<HTMLDivElement>(null)
 
-    const waveformData = useMemo(() =>
-        data.length > 0
+    const waveformData = useMemo(
+        () => (data.length > 0
             ? data
-            : Array.from({ length: 100 }, () => 0.2 + Math.random() * 0.6),
+            : Array.from({ length: 100 }, (_, i) => {
+                const seeded = Math.sin((i + 1) * 12.9898) * 43758.5453
+                const normalized = seeded - Math.floor(seeded)
+                return 0.2 + normalized * 0.6
+            })),
         [data]
     )
 
-    useEffect(() => {
-        if (!isDragging && duration > 0) {
-            setLocalProgress(currentTime / duration)
-        }
-    }, [currentTime, duration, isDragging])
+    const displayProgress = isDragging
+        ? localProgress
+        : (duration > 0 ? currentTime / duration : 0)
 
     const handleScrub = useCallback(
         (clientX: number) => {
@@ -471,16 +473,16 @@ export const AudioScrubber = ({
             />
             <div
                 className="bg-primary/20 pointer-events-none absolute inset-y-0 left-0"
-                style={{ width: `${localProgress * 100}%` }}
+                style={{ width: `${displayProgress * 100}%` }}
             />
             <div
                 className="bg-primary pointer-events-none absolute top-0 bottom-0 w-0.5"
-                style={{ left: `${localProgress * 100}%` }}
+                style={{ left: `${displayProgress * 100}%` }}
             />
             {showHandle && (
                 <div
                     className="border-background bg-primary pointer-events-none absolute top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 shadow-lg transition-transform hover:scale-110"
-                    style={{ left: `${localProgress * 100}%` }}
+                    style={{ left: `${displayProgress * 100}%` }}
                 />
             )}
         </div>
@@ -714,7 +716,6 @@ export const CircularMicrophoneWaveform = ({
     color = "#ffffff",
     onError,
     className,
-    ...props
 }: MicrophoneWaveformProps & { size?: number; color?: string }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null)
     const analyserRef = useRef<AnalyserNode | null>(null)
@@ -910,7 +911,13 @@ export const SimpleScrollingWaveform = ({
                     localStreamRef.current = stream
                 }
 
-                const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+                const AudioContextClass =
+                    window.AudioContext ||
+                    (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+                if (!AudioContextClass) {
+                    throw new Error("AudioContext not supported")
+                }
+                const audioContext = new AudioContextClass()
                 const analyser = audioContext.createAnalyser()
                 analyser.fftSize = 256
                 const source = audioContext.createMediaStreamSource(stream)

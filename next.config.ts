@@ -12,6 +12,12 @@ const nextConfig: NextConfig = {
   // Asset optimization
   compress: true,
 
+  // Reduce client bundle size by rewriting broad package imports
+  // to per-module imports where supported.
+  experimental: {
+    optimizePackageImports: ["lucide-react", "framer-motion"],
+  },
+
   // Ensure clean builds (no stale artifacts)
   cleanDistDir: true,
 
