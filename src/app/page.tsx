@@ -41,8 +41,10 @@ export default function Home() {
   const [errorBanner, setErrorBanner] = useState<string | null>(null);
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     if (typeof window === 'undefined') return 'dark';
-    const saved = localStorage.getItem('app_theme') as 'light' | 'dark' | null;
-    if (saved) return saved;
+    const existingTheme = document.documentElement.dataset.theme;
+    if (existingTheme === 'light' || existingTheme === 'dark') return existingTheme;
+    const saved = localStorage.getItem('app_theme');
+    if (saved === 'light' || saved === 'dark') return saved;
     return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
   });
   const isMountedRef = useRef(false);
@@ -125,13 +127,10 @@ export default function Home() {
     }
   }, [confirmingClearAll, handleClearHistory]);
 
-  // Initialize on mount: hydrate history + apply theme to DOM
+  // Initialize on mount: hydrate history
   useEffect(() => {
     isMountedRef.current = true;
     hydrateHistory();
-    // Apply the already-initialized theme to the DOM
-    document.documentElement.setAttribute('data-theme', theme);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hydrateHistory]);
 
   // Sync theme to DOM + localStorage on changes after mount

@@ -81,6 +81,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: "(function(){try{var t=localStorage.getItem('app_theme');if(t==='light'||t==='dark'){document.documentElement.dataset.theme=t;}}catch(e){}})();",
+          }}
+        />
         {/* Preconnect to Sarvam AI API for faster transcription */}
         <link rel="preconnect" href="https://api.sarvam.ai" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://api.sarvam.ai" />
