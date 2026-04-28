@@ -43,49 +43,32 @@ export const Waveform = React.memo(function Waveform({
 }: WaveformProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null)
     const containerRef = useRef<HTMLDivElement>(null)
+    const dimensionsRef = useRef({ width: 0, height: 0 })
+    const colorRef = useRef<string>("#000")
     const heightStyle = typeof height === "number" ? `${height}px` : height
+    const step = useMemo(() => barWidth + barGap, [barWidth, barGap])
 
-    useEffect(() => {
+    const renderWaveform = useCallback(() => {
         const canvas = canvasRef.current
-        const container = containerRef.current
-        if (!canvas || !container) return
+        if (!canvas) return
+        const ctx = canvas.getContext("2d")
+        if (!ctx) return
+        const { width, height } = dimensionsRef.current
+        if (width <= 0 || height <= 0) return
+        ctx.clearRect(0, 0, width, height)
 
-        const resizeObserver = new ResizeObserver(() => {
-            const rect = container.getBoundingClientRect()
-            const dpr = window.devicePixelRatio || 1
-            canvas.width = rect.width * dpr
-            canvas.height = rect.height * dpr
-            canvas.style.width = `${rect.width}px`
-            canvas.style.height = `${rect.height}px`
-            const ctx = canvas.getContext("2d")
-            if (ctx) {
-                ctx.scale(dpr, dpr)
-                renderWaveform()
-            }
-        })
-
-        const renderWaveform = () => {
-            const ctx = canvas.getContext("2d")
-            if (!ctx) return
-            const rect = canvas.getBoundingClientRect()
-            ctx.clearRect(0, 0, rect.width, rect.height)
-
-            const computedBarColor =
-                barColor ||
-                getComputedStyle(canvas).getPropertyValue("--foreground") ||
-                "#000"
-
-            const barCount = Math.floor(rect.width / (barWidth + barGap))
-            const centerY = rect.height / 2
+        const barCount = Math.floor(width / step)
+        if (barCount <= 0) return
+        const centerY = height / 2
 
             for (let i = 0; i < barCount; i++) {
                 const dataIndex = Math.floor((i / barCount) * data.length)
                 const value = data[dataIndex] || 0
-                const barHeight = Math.max(baseBarHeight, value * rect.height * 0.8)
-                const x = i * (barWidth + barGap)
+                const barHeight = Math.max(baseBarHeight, value * height * 0.8)
+                const x = i * step
                 const y = centerY - barHeight / 2
 
-                ctx.fillStyle = computedBarColor
+                ctx.fillStyle = colorRef.current
                 ctx.globalAlpha = 0.3 + value * 0.7
 
                 if (barRadius > 0) {
@@ -98,20 +81,67 @@ export const Waveform = React.memo(function Waveform({
             }
 
             ctx.globalAlpha = 1
+    }, [barRadius, barWidth, baseBarHeight, data, step])
+
+    useEffect(() => {
+        const canvas = canvasRef.current
+        const container = containerRef.current
+        if (!canvas || !container) return
+
+        const updateColor = () => {
+            colorRef.current =
+                barColor ||
+                getComputedStyle(canvas).getPropertyValue("--foreground").trim() ||
+                "#000"
         }
 
+        const updateDimensions = () => {
+            const rect = container.getBoundingClientRect()
+            const dpr = window.devicePixelRatio || 1
+            canvas.width = rect.width * dpr
+            canvas.height = rect.height * dpr
+            canvas.style.width = `${rect.width}px`
+            canvas.style.height = `${rect.height}px`
+            const ctx = canvas.getContext("2d")
+            if (ctx) {
+                ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+            }
+            dimensionsRef.current = { width: rect.width, height: rect.height }
+        }
+
+        const resizeObserver = new ResizeObserver(() => {
+            updateDimensions()
+            updateColor()
+            renderWaveform()
+        })
+
+        const themeObserver = new MutationObserver(() => {
+            updateColor()
+            renderWaveform()
+        })
+        themeObserver.observe(document.documentElement, {
+            attributes: true,
+            attributeFilter: ["class", "style", "data-theme"],
+        })
+        const darkModeQuery = window.matchMedia("(prefers-color-scheme: dark)")
+        const handleThemeMediaChange = () => {
+            updateColor()
+            renderWaveform()
+        }
+        darkModeQuery.addEventListener("change", handleThemeMediaChange)
+
         resizeObserver.observe(container)
+        updateDimensions()
+        updateColor()
         renderWaveform()
-        return () => resizeObserver.disconnect()
+        return () => {
+            resizeObserver.disconnect()
+            themeObserver.disconnect()
+            darkModeQuery.removeEventListener("change", handleThemeMediaChange)
+        }
     }, [
-        data,
-        barWidth,
-        baseBarHeight,
-        barGap,
-        barRadius,
         barColor,
-        fadeEdges,
-        fadeWidth,
+        renderWaveform,
     ])
 
     const handleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -175,9 +205,14 @@ export const ScrollingWaveform = ({
     const canvasRef = useRef<HTMLCanvasElement>(null)
     const containerRef = useRef<HTMLDivElement>(null)
     const barsRef = useRef<Array<{ x: number; height: number }>>([])
+    const headRef = useRef(0)
+    const countRef = useRef(0)
     const animationRef = useRef<number>(0)
     const lastTimeRef = useRef<number>(0)
     const seedRef = useRef(0)
+    const driftRef = useRef(0)
+    const generatedIndexRef = useRef(0)
+    const metricsRef = useRef({ width: 0, height: 0, color: "#000" })
     useEffect(() => {
         seedRef.current = Math.random()
     }, [])
@@ -185,6 +220,7 @@ export const ScrollingWaveform = ({
     const isVisible = useIntersectionObserver(canvasRef)
     const isMobile = useIsMobile()
     const lastFrameTimeRef = useRef<number>(0)
+    const step = useMemo(() => barWidth + barGap, [barWidth, barGap])
 
     const heightStyle = typeof height === "number" ? `${height}px` : height
 
@@ -193,7 +229,51 @@ export const ScrollingWaveform = ({
         const container = containerRef.current
         if (!canvas || !container) return
 
-        const resizeObserver = new ResizeObserver(() => {
+        const updateColor = () => {
+            metricsRef.current.color =
+                barColor ||
+                getComputedStyle(canvas).getPropertyValue("--foreground").trim() ||
+                "#000"
+        }
+
+        const ensureCapacity = (nextCapacity: number) => {
+            if (barsRef.current.length >= nextCapacity) return
+            const oldBuffer = barsRef.current
+            const oldLength = oldBuffer.length
+            const newBufferLength = Math.max(nextCapacity, oldLength * 2, 16)
+            const newBuffer = Array.from({ length: newBufferLength }, () => ({
+                x: 0,
+                height: 0,
+            }))
+            for (let i = 0; i < countRef.current; i++) {
+                const oldIndex = (headRef.current + i) % Math.max(oldLength, 1)
+                newBuffer[i] = oldBuffer[oldIndex] || { x: 0, height: 0 }
+            }
+            barsRef.current = newBuffer
+            headRef.current = 0
+        }
+
+        const resetBarsForWidth = (width: number) => {
+            const desiredBars = Math.max(barCount * 2, Math.ceil(width / step) + 4)
+            ensureCapacity(desiredBars)
+            headRef.current = 0
+            countRef.current = 0
+            let currentX = width
+            while (currentX > -step && countRef.current < barsRef.current.length) {
+                const idx = (headRef.current + countRef.current) % barsRef.current.length
+                const seeded = Math.sin(seedRef.current * 10000 + generatedIndexRef.current) * 10000
+                const random = seeded - Math.floor(seeded)
+                barsRef.current[idx] = {
+                    x: currentX,
+                    height: 0.2 + random * 0.6,
+                }
+                countRef.current += 1
+                generatedIndexRef.current += 1
+                currentX -= step
+            }
+        }
+
+        const updateDimensions = () => {
             const rect = container.getBoundingClientRect()
             const dpr = window.devicePixelRatio || 1
             canvas.width = rect.width * dpr
@@ -202,30 +282,36 @@ export const ScrollingWaveform = ({
             canvas.style.height = `${rect.height}px`
             const ctx = canvas.getContext("2d")
             if (ctx) {
-                ctx.scale(dpr, dpr)
+                ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
             }
+            metricsRef.current.width = rect.width
+            metricsRef.current.height = rect.height
 
-            if (barsRef.current.length === 0) {
-                const step = barWidth + barGap
-                let currentX = rect.width
-                let index = 0
-                const seededRandom = (i: number) => {
-                    const x = Math.sin(seedRef.current * 10000 + i) * 10000
-                    return x - Math.floor(x)
-                }
-                while (currentX > -step) {
-                    barsRef.current.push({
-                        x: currentX,
-                        height: 0.2 + seededRandom(index++) * 0.6,
-                    })
-                    currentX -= step
-                }
-            }
+            resetBarsForWidth(rect.width)
+        }
+
+        const resizeObserver = new ResizeObserver(() => {
+            updateDimensions()
+            updateColor()
         })
 
+        const themeObserver = new MutationObserver(updateColor)
+        themeObserver.observe(document.documentElement, {
+            attributes: true,
+            attributeFilter: ["class", "style", "data-theme"],
+        })
+        const darkModeQuery = window.matchMedia("(prefers-color-scheme: dark)")
+        darkModeQuery.addEventListener("change", updateColor)
+
         resizeObserver.observe(container)
-        return () => resizeObserver.disconnect()
-    }, [barWidth, barGap])
+        updateDimensions()
+        updateColor()
+        return () => {
+            resizeObserver.disconnect()
+            themeObserver.disconnect()
+            darkModeQuery.removeEventListener("change", updateColor)
+        }
+    }, [barColor, barCount, step])
 
     useEffect(() => {
         const canvas = canvasRef.current
@@ -254,68 +340,75 @@ export const ScrollingWaveform = ({
                 ? (currentTime - lastTimeRef.current) / 1000
                 : 0
             lastTimeRef.current = currentTime
+            driftRef.current += deltaTime * 0.01
 
-            const rect = canvas.getBoundingClientRect()
-            ctx.clearRect(0, 0, rect.width, rect.height)
+            const { width, height, color } = metricsRef.current
+            if (width <= 0 || height <= 0 || barsRef.current.length === 0) {
+                animationRef.current = requestAnimationFrame(animate)
+                return
+            }
+            ctx.clearRect(0, 0, width, height)
 
-            const computedBarColor =
-                barColor ||
-                getComputedStyle(canvas).getPropertyValue("--foreground") ||
-                "#000"
-
-            const step = barWidth + barGap
-            for (let i = 0; i < barsRef.current.length; i++) {
-                barsRef.current[i].x -= speed * deltaTime
+            for (let i = 0; i < countRef.current; i++) {
+                const idx = (headRef.current + i) % barsRef.current.length
+                barsRef.current[idx].x -= speed * deltaTime
             }
 
-            barsRef.current = barsRef.current.filter(
-                (bar) => bar.x + barWidth > -step
-            )
+            while (countRef.current > 0) {
+                const headBar = barsRef.current[headRef.current]
+                if (headBar.x + barWidth > -step) break
+                headRef.current = (headRef.current + 1) % barsRef.current.length
+                countRef.current -= 1
+            }
 
             while (
-                barsRef.current.length === 0 ||
-                barsRef.current[barsRef.current.length - 1].x < rect.width
+                countRef.current === 0 ||
+                barsRef.current[(headRef.current + countRef.current - 1) % barsRef.current.length].x < width
             ) {
-                const lastBar = barsRef.current[barsRef.current.length - 1]
-                const nextX = lastBar ? lastBar.x + step : rect.width
+                if (countRef.current >= barsRef.current.length) break
+                const lastBar =
+                    countRef.current > 0
+                        ? barsRef.current[(headRef.current + countRef.current - 1) % barsRef.current.length]
+                        : null
+                const nextX = lastBar ? lastBar.x + step : width
                 let newHeight: number
 
                 if (data && data.length > 0) {
                     newHeight = data[dataIndexRef.current % data.length] || 0.1
                     dataIndexRef.current = (dataIndexRef.current + 1) % data.length
                 } else {
-                    const time = Date.now() / 1000
-                    const uniqueIndex = barsRef.current.length + time * 0.01
-                    const seededRandom = (index: number) => {
-                        const x = Math.sin(seedRef.current * 10000 + index * 137.5) * 10000
-                        return x - Math.floor(x)
-                    }
+                    const uniqueIndex = generatedIndexRef.current + driftRef.current
+                    const seededValue =
+                        Math.sin(seedRef.current * 10000 + uniqueIndex * 137.5) * 10000
+                    const randomComponent = (seededValue - Math.floor(seededValue)) * 0.4
                     const wave1 = Math.sin(uniqueIndex * 0.1) * 0.2
                     const wave2 = Math.cos(uniqueIndex * 0.05) * 0.15
-                    const randomComponent = seededRandom(uniqueIndex) * 0.4
                     newHeight = Math.max(
                         0.1,
                         Math.min(0.9, 0.3 + wave1 + wave2 + randomComponent)
                     )
+                    generatedIndexRef.current += 1
                 }
 
-                barsRef.current.push({
+                const insertIndex = (headRef.current + countRef.current) % barsRef.current.length
+                barsRef.current[insertIndex] = {
                     x: nextX,
                     height: newHeight,
-                })
-                if (barsRef.current.length > barCount * 2) break
+                }
+                countRef.current += 1
             }
 
-            const centerY = rect.height / 2
-            for (const bar of barsRef.current) {
-                if (bar.x < rect.width && bar.x + barWidth > 0) {
+            const centerY = height / 2
+            for (let i = 0; i < countRef.current; i++) {
+                const bar = barsRef.current[(headRef.current + i) % barsRef.current.length]
+                if (bar.x < width && bar.x + barWidth > 0) {
                     const barHeight = Math.max(
                         baseBarHeight,
-                        bar.height * rect.height * 0.6
+                        bar.height * height * 0.6
                     )
                     const y = centerY - barHeight / 2
 
-                    ctx.fillStyle = computedBarColor
+                    ctx.fillStyle = color
                     ctx.globalAlpha = 0.3 + bar.height * 0.7
 
                     if (barRadius > 0) {
@@ -345,9 +438,9 @@ export const ScrollingWaveform = ({
         baseBarHeight,
         barGap,
         barRadius,
-        barColor,
         fadeEdges,
         fadeWidth,
+        step,
         data,
         isMobile,
         isVisible
