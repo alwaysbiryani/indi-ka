@@ -34,7 +34,7 @@ export default function Home() {
 
   // Standalone state
   const [language, setLanguage] = useState('auto');
-  const [apiKey, setApiKey] = useState(() => {
+  const [apiKey] = useState(() => {
     if (typeof window === 'undefined') return '';
     return localStorage.getItem('sarvam_api_key') || '';
   });
@@ -131,7 +131,6 @@ export default function Home() {
     hydrateHistory();
     // Apply the already-initialized theme to the DOM
     document.documentElement.setAttribute('data-theme', theme);
-    console.log('%c🇮🇳 Indi-क Performance-Optimized v7', 'font-size: 16px; font-weight: bold; color: #FF9933;');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hydrateHistory]);
 

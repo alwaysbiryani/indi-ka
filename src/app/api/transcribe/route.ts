@@ -29,11 +29,10 @@ export async function POST(req: NextRequest) {
             .trim()
             .toLowerCase() || 'application/octet-stream';
 
-        const providerBlob = new Blob([audioFile], { type: normalizedMime });
         const providerFilename = audioFile.name || (normalizedMime === 'audio/webm' ? 'recording.webm' : 'recording.bin');
 
         const sarvamFormData = new FormData();
-        sarvamFormData.append('file', providerBlob, providerFilename);
+        sarvamFormData.append('file', audioFile, providerFilename);
         sarvamFormData.append('model', 'saaras:v3');
 
         if (language === 'hinglish' || language === 'auto') {
