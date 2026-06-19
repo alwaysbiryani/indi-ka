@@ -8,6 +8,7 @@ import { cn } from '@/utils/cn';
 
 interface AudioRecorderProps {
     onTranscriptionComplete: (text: string, detectedLanguage?: string, isPartial?: boolean, processingTime?: number) => void;
+    onTranscribingProgress?: (completed: number, total: number) => void;
     onError: (msg: string) => void;
     language: string;
     apiKey: string;
@@ -21,6 +22,7 @@ interface AudioRecorderProps {
 
 const AudioRecorder = React.memo(function AudioRecorder({
     onTranscriptionComplete,
+    onTranscribingProgress,
     onError,
     language,
     apiKey,
@@ -40,7 +42,7 @@ const AudioRecorder = React.memo(function AudioRecorder({
     const [activeStream, setActiveStream] = useState<MediaStream | null>(null);
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
-    const flushTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const flushTimerRef = useRef<ReturnType<typeof setTimeout> | ReturnType<typeof setInterval> | null>(null);
     const accumulatedTranscriptRef = useRef("");
     const detectedLanguageRef = useRef("auto");
     const [hasInteracted, setHasInteracted] = useState(true);
@@ -58,10 +60,11 @@ const AudioRecorder = React.memo(function AudioRecorder({
     const drainPromiseRef = useRef<Promise<void>>(Promise.resolve());
     const segmentTimingsRef = useRef<Array<{ index: number; requestMs: number; providerMs?: number; ok: boolean }>>([]);
 
-    // Keep chunks under the provider's 30s hard cap with some safety margin.
-    const TRANSCRIPTION_CHUNK_MS = 25000;
-    const FORCED_FLUSH_EVERY_MS = 8000;
-    const MAX_CONCURRENT_SEGMENTS = 2;
+    const FIRST_FLUSH_MS = 4000;
+    const REGULAR_FLUSH_MS = 10000;
+    const MAX_CONCURRENT_SEGMENTS = 3;
+    const onTranscribingProgressRef = useRef(onTranscribingProgress);
+    onTranscribingProgressRef.current = onTranscribingProgress;
 
     React.useEffect(() => {
         const interacted = localStorage.getItem('audio_recorder_interacted');
@@ -79,7 +82,10 @@ const AudioRecorder = React.memo(function AudioRecorder({
     React.useEffect(() => {
         return () => {
             if (timerRef.current) clearInterval(timerRef.current);
-            if (flushTimerRef.current) clearInterval(flushTimerRef.current);
+            if (flushTimerRef.current) {
+                clearTimeout(flushTimerRef.current);
+                clearInterval(flushTimerRef.current);
+            }
         };
     }, []);
 
@@ -181,11 +187,14 @@ const AudioRecorder = React.memo(function AudioRecorder({
                 } finally {
                     inFlightSegmentsRef.current -= 1;
                     segmentsCompletedRef.current += 1;
-                    if (isProcessingRef.current && totalSegmentsRef.current > 1) {
+                    const total = totalSegmentsRef.current;
+                    const completed = segmentsCompletedRef.current;
+                    if (isProcessingRef.current && total > 1) {
                         setProcessingProgress(
-                            Math.round((segmentsCompletedRef.current / totalSegmentsRef.current) * 100)
+                            Math.round((completed / total) * 100)
                         );
                     }
+                    onTranscribingProgressRef.current?.(completed, total);
                     pumpQueue();
                     maybeResolveDrain();
                 }
@@ -266,7 +275,7 @@ const AudioRecorder = React.memo(function AudioRecorder({
                 }
             };
 
-            mediaRecorder.start(TRANSCRIPTION_CHUNK_MS);
+            mediaRecorder.start(300_000);
             setIsRecording(true);
             setRecordingDuration(0);
             accumulatedTranscriptRef.current = "";
@@ -284,14 +293,20 @@ const AudioRecorder = React.memo(function AudioRecorder({
                 resolveDrainRef.current = resolve;
             });
 
-            flushTimerRef.current = setInterval(() => {
+            const flushRecorder = () => {
                 if (!mediaRecorderRef.current || mediaRecorderRef.current.state !== 'recording') return;
                 try {
                     mediaRecorderRef.current.requestData();
                 } catch (err) {
                     console.warn("Periodic requestData failed", err);
                 }
-            }, FORCED_FLUSH_EVERY_MS);
+            };
+
+            // Fast first chunk for quick initial feedback, then regular intervals
+            flushTimerRef.current = setTimeout(() => {
+                flushRecorder();
+                flushTimerRef.current = setInterval(flushRecorder, REGULAR_FLUSH_MS);
+            }, FIRST_FLUSH_MS);
 
             timerRef.current = setInterval(() => {
                 setRecordingDuration(prev => prev + 1);
@@ -318,6 +333,7 @@ const AudioRecorder = React.memo(function AudioRecorder({
                 timerRef.current = null;
             }
             if (flushTimerRef.current) {
+                clearTimeout(flushTimerRef.current);
                 clearInterval(flushTimerRef.current);
                 flushTimerRef.current = null;
             }

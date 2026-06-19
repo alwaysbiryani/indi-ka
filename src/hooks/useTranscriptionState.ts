@@ -14,6 +14,8 @@ export function useTranscriptionState({ language, onAddHistoryItem, onClearError
   const [transcriptionTime, setTranscriptionTime] = useState<number | null>(null);
   const [hasCopied, setHasCopied] = useState(false);
   const [showAutoCopyBanner, setShowAutoCopyBanner] = useState(false);
+  const [isTranscribingMore, setIsTranscribingMore] = useState(false);
+  const [transcriptionProgress, setTranscriptionProgress] = useState<{ completed: number; total: number } | null>(null);
   const transcriptRef = useRef<HTMLTextAreaElement>(null);
 
   // Auto-scroll transcript to bottom on change
@@ -33,12 +35,20 @@ export function useTranscriptionState({ language, onAddHistoryItem, onClearError
     }
   }, [transcript]);
 
+  const handleTranscriptionProgress = useCallback((completed: number, total: number) => {
+    setTranscriptionProgress({ completed, total });
+    setIsTranscribingMore(completed < total);
+  }, []);
+
   const handleTranscriptionComplete = useCallback((text: string, detectedLanguage?: string, isPartial?: boolean, processingTime?: number) => {
     if (isPartial) {
       setTranscript(text);
+      setIsTranscribingMore(true);
       return;
     }
 
+    setIsTranscribingMore(false);
+    setTranscriptionProgress(null);
     if (processingTime) setTranscriptionTime(processingTime);
 
     if (!text || text.trim() === '') {
@@ -87,8 +97,11 @@ export function useTranscriptionState({ language, onAddHistoryItem, onClearError
     transcriptionTime,
     hasCopied,
     showAutoCopyBanner,
+    isTranscribingMore,
+    transcriptionProgress,
     handleCopy,
     handleTranscriptionComplete,
+    handleTranscriptionProgress,
     animateClear,
   };
 }
