@@ -42,6 +42,7 @@ const AudioRecorder = React.memo(function AudioRecorder({
     const [activeStream, setActiveStream] = useState<MediaStream | null>(null);
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
+    const flushTimerRef = useRef<NodeJS.Timeout | null>(null);
     const accumulatedTranscriptRef = useRef("");
     const detectedLanguageRef = useRef("auto");
     const [hasInteracted, setHasInteracted] = useState(true);
@@ -58,14 +59,11 @@ const AudioRecorder = React.memo(function AudioRecorder({
     const resolveDrainRef = useRef<(() => void) | null>(null);
     const drainPromiseRef = useRef<Promise<void>>(Promise.resolve());
     const segmentTimingsRef = useRef<Array<{ index: number; requestMs: number; providerMs?: number; ok: boolean }>>([]);
-    const failedSegmentCountRef = useRef(0);
-    const lastSegmentErrorRef = useRef<string | null>(null);
 
-    // Each timeslice chunk is a self-contained WebM segment the ASR provider can decode.
-    // 10s balances fast feedback with enough audio for accurate transcription.
-    const CHUNK_TIMESLICE_MS = 10_000;
-    const MAX_CONCURRENT_SEGMENTS = 3;
-    const MIN_BLOB_BYTES = 500;
+    // Keep chunks under the provider's 30s hard cap with some safety margin.
+    const TRANSCRIPTION_CHUNK_MS = 25000;
+    const FORCED_FLUSH_EVERY_MS = 8000;
+    const MAX_CONCURRENT_SEGMENTS = 2;
     const onTranscribingProgressRef = useRef(onTranscribingProgress);
     onTranscribingProgressRef.current = onTranscribingProgress;
 
@@ -81,9 +79,11 @@ const AudioRecorder = React.memo(function AudioRecorder({
         }
     }, [recordingDuration]);
 
+    // Cleanup on unmount
     React.useEffect(() => {
         return () => {
             if (timerRef.current) clearInterval(timerRef.current);
+            if (flushTimerRef.current) clearInterval(flushTimerRef.current);
         };
     }, []);
 
@@ -131,7 +131,6 @@ const AudioRecorder = React.memo(function AudioRecorder({
 
             const transcribeSegment = async (blob: Blob): Promise<{ text: string; detectedLanguageCode: string; providerMs?: number; ok: boolean; requestMs: number }> => {
                 const requestStart = performance.now();
-                console.info(`[transcribe] sending segment: ${blob.size} bytes, type=${blob.type}`);
                 try {
                     const formData = new FormData();
                     const extension = blob.type.includes('webm')
@@ -158,16 +157,12 @@ const AudioRecorder = React.memo(function AudioRecorder({
                             requestMs,
                         };
                     } else {
-                        const errData = await response.json().catch(() => ({ error: 'Transcription failed' }));
-                        const errMsg = errData.details || errData.error || `HTTP ${response.status}`;
-                        console.error(`[transcribe] segment failed (${response.status}):`, errMsg);
-                        lastSegmentErrorRef.current = errMsg;
+                        const errData = await response.json();
+                        onError(errData.details || errData.error || "Transcription failed");
                         return { text: "", detectedLanguageCode: 'auto', ok: false, requestMs };
                     }
                 } catch (err) {
-                    const errMsg = err instanceof Error ? err.message : 'Network error';
-                    console.error("[transcribe] segment request failed:", errMsg);
-                    lastSegmentErrorRef.current = errMsg;
+                    console.error("Segment transcription request failed", err);
                     return { text: "", detectedLanguageCode: 'auto', ok: false, requestMs: Math.round(performance.now() - requestStart) };
                 }
             };
@@ -176,9 +171,6 @@ const AudioRecorder = React.memo(function AudioRecorder({
                 inFlightSegmentsRef.current += 1;
                 try {
                     const result = await transcribeSegment(blob);
-                    if (!result.ok) {
-                        failedSegmentCountRef.current += 1;
-                    }
                     pendingResultsRef.current.set(index, {
                         text: result.text,
                         detectedLanguageCode: result.detectedLanguageCode,
@@ -193,14 +185,12 @@ const AudioRecorder = React.memo(function AudioRecorder({
                 } finally {
                     inFlightSegmentsRef.current -= 1;
                     segmentsCompletedRef.current += 1;
-                    const total = totalSegmentsRef.current;
-                    const completed = segmentsCompletedRef.current;
-                    if (isProcessingRef.current && total > 1) {
+                    if (isProcessingRef.current && totalSegmentsRef.current > 1) {
                         setProcessingProgress(
-                            Math.round((completed / total) * 100)
+                            Math.round((segmentsCompletedRef.current / totalSegmentsRef.current) * 100)
                         );
                     }
-                    onTranscribingProgressRef.current?.(completed, total);
+                    onTranscribingProgressRef.current?.(segmentsCompletedRef.current, totalSegmentsRef.current);
                     pumpQueue();
                     maybeResolveDrain();
                 }
@@ -218,7 +208,7 @@ const AudioRecorder = React.memo(function AudioRecorder({
             };
 
             mediaRecorder.ondataavailable = (e) => {
-                if (e.data.size <= MIN_BLOB_BYTES) return;
+                if (e.data.size <= 0) return;
                 const index = nextSegmentIndexRef.current;
                 nextSegmentIndexRef.current += 1;
                 totalSegmentsRef.current += 1;
@@ -266,13 +256,6 @@ const AudioRecorder = React.memo(function AudioRecorder({
                         });
                     }
 
-                    if (failedSegmentCountRef.current > 0 && failedSegmentCountRef.current >= totalSegmentsRef.current) {
-                        const reason = lastSegmentErrorRef.current || "Unknown error";
-                        onError(`Transcription failed: ${reason}`);
-                    } else if (failedSegmentCountRef.current > 0) {
-                        console.warn(`[transcription] ${failedSegmentCountRef.current}/${totalSegmentsRef.current} segments failed`);
-                    }
-
                     if (processingStartTimeRef.current) {
                         const duration = (Date.now() - processingStartTimeRef.current) / 1000;
                         onTranscriptionComplete(accumulatedTranscriptRef.current, detectedLanguageRef.current, false, duration);
@@ -288,15 +271,13 @@ const AudioRecorder = React.memo(function AudioRecorder({
                 }
             };
 
-            mediaRecorder.start(CHUNK_TIMESLICE_MS);
+            mediaRecorder.start(TRANSCRIPTION_CHUNK_MS);
             setIsRecording(true);
             setRecordingDuration(0);
             accumulatedTranscriptRef.current = "";
             detectedLanguageRef.current = "auto";
             segmentsCompletedRef.current = 0;
             totalSegmentsRef.current = 0;
-            failedSegmentCountRef.current = 0;
-            lastSegmentErrorRef.current = null;
             pendingSegmentsRef.current = [];
             inFlightSegmentsRef.current = 0;
             nextSegmentIndexRef.current = 0;
@@ -308,6 +289,15 @@ const AudioRecorder = React.memo(function AudioRecorder({
                 resolveDrainRef.current = resolve;
             });
 
+            flushTimerRef.current = setInterval(() => {
+                if (!mediaRecorderRef.current || mediaRecorderRef.current.state !== 'recording') return;
+                try {
+                    mediaRecorderRef.current.requestData();
+                } catch (err) {
+                    console.warn("Periodic requestData failed", err);
+                }
+            }, FORCED_FLUSH_EVERY_MS);
+
             timerRef.current = setInterval(() => {
                 setRecordingDuration(prev => prev + 1);
             }, 1000);
@@ -318,6 +308,7 @@ const AudioRecorder = React.memo(function AudioRecorder({
 
     const stopRecording = () => {
         if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+            // Haptic feedback on mobile
             if ('vibrate' in navigator) navigator.vibrate([20, 30, 20]);
             processingStartTimeRef.current = Date.now();
             try {
@@ -330,6 +321,10 @@ const AudioRecorder = React.memo(function AudioRecorder({
             if (timerRef.current) {
                 clearInterval(timerRef.current);
                 timerRef.current = null;
+            }
+            if (flushTimerRef.current) {
+                clearInterval(flushTimerRef.current);
+                flushTimerRef.current = null;
             }
         }
     };
