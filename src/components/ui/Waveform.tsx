@@ -718,8 +718,7 @@ export const MicrophoneWaveform = ({
                 })
                 streamRef.current = stream
                 const audioContext = new (window.AudioContext ||
-                    (window as unknown as { webkitAudioContext: typeof AudioContext })
-                        .webkitAudioContext)()
+                    (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext!)()
                 const analyser = audioContext.createAnalyser()
                 analyser.fftSize = fftSize
                 analyser.smoothingTimeConstant = smoothingTimeConstant

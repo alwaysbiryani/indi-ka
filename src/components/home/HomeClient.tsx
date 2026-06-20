@@ -129,13 +129,13 @@ export default function HomeClient() {
     }
   }, [confirmingClearAll, handleClearHistory]);
 
+  const initialThemeRef = useRef(theme);
+
   // Initialize on mount: hydrate history + apply theme to DOM
   useEffect(() => {
     isMountedRef.current = true;
     hydrateHistory();
-    // Apply the already-initialized theme to the DOM
-    document.documentElement.setAttribute('data-theme', theme);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    document.documentElement.setAttribute('data-theme', initialThemeRef.current);
   }, [hydrateHistory]);
 
   // Sync theme to DOM + localStorage on changes after mount
