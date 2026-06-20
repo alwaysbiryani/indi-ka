@@ -59,6 +59,7 @@ const AudioRecorder = React.memo(function AudioRecorder({
     const drainPromiseRef = useRef<Promise<void>>(Promise.resolve());
     const segmentTimingsRef = useRef<Array<{ index: number; requestMs: number; providerMs?: number; ok: boolean }>>([]);
     const failedSegmentCountRef = useRef(0);
+    const lastSegmentErrorRef = useRef<string | null>(null);
 
     // Each timeslice chunk is a self-contained WebM segment the ASR provider can decode.
     // 10s balances fast feedback with enough audio for accurate transcription.
@@ -130,6 +131,7 @@ const AudioRecorder = React.memo(function AudioRecorder({
 
             const transcribeSegment = async (blob: Blob): Promise<{ text: string; detectedLanguageCode: string; providerMs?: number; ok: boolean; requestMs: number }> => {
                 const requestStart = performance.now();
+                console.info(`[transcribe] sending segment: ${blob.size} bytes, type=${blob.type}`);
                 try {
                     const formData = new FormData();
                     const extension = blob.type.includes('webm')
@@ -157,11 +159,15 @@ const AudioRecorder = React.memo(function AudioRecorder({
                         };
                     } else {
                         const errData = await response.json().catch(() => ({ error: 'Transcription failed' }));
-                        console.warn(`Segment transcription failed (${response.status}):`, errData);
+                        const errMsg = errData.details || errData.error || `HTTP ${response.status}`;
+                        console.error(`[transcribe] segment failed (${response.status}):`, errMsg);
+                        lastSegmentErrorRef.current = errMsg;
                         return { text: "", detectedLanguageCode: 'auto', ok: false, requestMs };
                     }
                 } catch (err) {
-                    console.warn("Segment transcription request failed", err);
+                    const errMsg = err instanceof Error ? err.message : 'Network error';
+                    console.error("[transcribe] segment request failed:", errMsg);
+                    lastSegmentErrorRef.current = errMsg;
                     return { text: "", detectedLanguageCode: 'auto', ok: false, requestMs: Math.round(performance.now() - requestStart) };
                 }
             };
@@ -261,7 +267,8 @@ const AudioRecorder = React.memo(function AudioRecorder({
                     }
 
                     if (failedSegmentCountRef.current > 0 && failedSegmentCountRef.current >= totalSegmentsRef.current) {
-                        onError("Transcription failed. Please try again.");
+                        const reason = lastSegmentErrorRef.current || "Unknown error";
+                        onError(`Transcription failed: ${reason}`);
                     } else if (failedSegmentCountRef.current > 0) {
                         console.warn(`[transcription] ${failedSegmentCountRef.current}/${totalSegmentsRef.current} segments failed`);
                     }
@@ -289,6 +296,7 @@ const AudioRecorder = React.memo(function AudioRecorder({
             segmentsCompletedRef.current = 0;
             totalSegmentsRef.current = 0;
             failedSegmentCountRef.current = 0;
+            lastSegmentErrorRef.current = null;
             pendingSegmentsRef.current = [];
             inFlightSegmentsRef.current = 0;
             nextSegmentIndexRef.current = 0;

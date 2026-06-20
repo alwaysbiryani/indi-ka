@@ -46,6 +46,8 @@ export async function POST(req: NextRequest) {
             sarvamFormData.append('mode', 'transcribe');
         }
 
+        console.info(`[transcribe-route] file=${providerFilename} size=${audioFile.size} mime=${normalizedMime} lang=${language}`);
+
         const providerStart = performance.now();
         const asrResponse = await fetch('https://api.sarvam.ai/speech-to-text', {
             method: 'POST',
@@ -58,7 +60,7 @@ export async function POST(req: NextRequest) {
 
         if (!asrResponse.ok) {
             const errorText = await asrResponse.text();
-            console.error("ASR Error:", errorText);
+            console.error(`[transcribe-route] ASR Error (${asrResponse.status}):`, errorText);
 
             if (asrResponse.status === 402 ||
                 (asrResponse.status === 400 && errorText.includes("quota")) ||
