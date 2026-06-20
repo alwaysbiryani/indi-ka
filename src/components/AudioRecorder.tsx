@@ -42,7 +42,6 @@ const AudioRecorder = React.memo(function AudioRecorder({
     const [activeStream, setActiveStream] = useState<MediaStream | null>(null);
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
-    const flushTimerRef = useRef<ReturnType<typeof setTimeout> | ReturnType<typeof setInterval> | null>(null);
     const accumulatedTranscriptRef = useRef("");
     const detectedLanguageRef = useRef("auto");
     const [hasInteracted, setHasInteracted] = useState(true);
@@ -59,10 +58,13 @@ const AudioRecorder = React.memo(function AudioRecorder({
     const resolveDrainRef = useRef<(() => void) | null>(null);
     const drainPromiseRef = useRef<Promise<void>>(Promise.resolve());
     const segmentTimingsRef = useRef<Array<{ index: number; requestMs: number; providerMs?: number; ok: boolean }>>([]);
+    const failedSegmentCountRef = useRef(0);
 
-    const FIRST_FLUSH_MS = 4000;
-    const REGULAR_FLUSH_MS = 10000;
+    // Each timeslice chunk is a self-contained WebM segment the ASR provider can decode.
+    // 10s balances fast feedback with enough audio for accurate transcription.
+    const CHUNK_TIMESLICE_MS = 10_000;
     const MAX_CONCURRENT_SEGMENTS = 3;
+    const MIN_BLOB_BYTES = 500;
     const onTranscribingProgressRef = useRef(onTranscribingProgress);
     onTranscribingProgressRef.current = onTranscribingProgress;
 
@@ -78,14 +80,9 @@ const AudioRecorder = React.memo(function AudioRecorder({
         }
     }, [recordingDuration]);
 
-    // Cleanup on unmount
     React.useEffect(() => {
         return () => {
             if (timerRef.current) clearInterval(timerRef.current);
-            if (flushTimerRef.current) {
-                clearTimeout(flushTimerRef.current);
-                clearInterval(flushTimerRef.current);
-            }
         };
     }, []);
 
@@ -159,12 +156,12 @@ const AudioRecorder = React.memo(function AudioRecorder({
                             requestMs,
                         };
                     } else {
-                        const errData = await response.json();
-                        onError(errData.details || errData.error || "Transcription failed");
+                        const errData = await response.json().catch(() => ({ error: 'Transcription failed' }));
+                        console.warn(`Segment transcription failed (${response.status}):`, errData);
                         return { text: "", detectedLanguageCode: 'auto', ok: false, requestMs };
                     }
                 } catch (err) {
-                    console.error("Segment transcription request failed", err);
+                    console.warn("Segment transcription request failed", err);
                     return { text: "", detectedLanguageCode: 'auto', ok: false, requestMs: Math.round(performance.now() - requestStart) };
                 }
             };
@@ -173,6 +170,9 @@ const AudioRecorder = React.memo(function AudioRecorder({
                 inFlightSegmentsRef.current += 1;
                 try {
                     const result = await transcribeSegment(blob);
+                    if (!result.ok) {
+                        failedSegmentCountRef.current += 1;
+                    }
                     pendingResultsRef.current.set(index, {
                         text: result.text,
                         detectedLanguageCode: result.detectedLanguageCode,
@@ -212,7 +212,7 @@ const AudioRecorder = React.memo(function AudioRecorder({
             };
 
             mediaRecorder.ondataavailable = (e) => {
-                if (e.data.size <= 0) return;
+                if (e.data.size <= MIN_BLOB_BYTES) return;
                 const index = nextSegmentIndexRef.current;
                 nextSegmentIndexRef.current += 1;
                 totalSegmentsRef.current += 1;
@@ -260,6 +260,12 @@ const AudioRecorder = React.memo(function AudioRecorder({
                         });
                     }
 
+                    if (failedSegmentCountRef.current > 0 && failedSegmentCountRef.current >= totalSegmentsRef.current) {
+                        onError("Transcription failed. Please try again.");
+                    } else if (failedSegmentCountRef.current > 0) {
+                        console.warn(`[transcription] ${failedSegmentCountRef.current}/${totalSegmentsRef.current} segments failed`);
+                    }
+
                     if (processingStartTimeRef.current) {
                         const duration = (Date.now() - processingStartTimeRef.current) / 1000;
                         onTranscriptionComplete(accumulatedTranscriptRef.current, detectedLanguageRef.current, false, duration);
@@ -275,13 +281,14 @@ const AudioRecorder = React.memo(function AudioRecorder({
                 }
             };
 
-            mediaRecorder.start(300_000);
+            mediaRecorder.start(CHUNK_TIMESLICE_MS);
             setIsRecording(true);
             setRecordingDuration(0);
             accumulatedTranscriptRef.current = "";
             detectedLanguageRef.current = "auto";
             segmentsCompletedRef.current = 0;
             totalSegmentsRef.current = 0;
+            failedSegmentCountRef.current = 0;
             pendingSegmentsRef.current = [];
             inFlightSegmentsRef.current = 0;
             nextSegmentIndexRef.current = 0;
@@ -293,21 +300,6 @@ const AudioRecorder = React.memo(function AudioRecorder({
                 resolveDrainRef.current = resolve;
             });
 
-            const flushRecorder = () => {
-                if (!mediaRecorderRef.current || mediaRecorderRef.current.state !== 'recording') return;
-                try {
-                    mediaRecorderRef.current.requestData();
-                } catch (err) {
-                    console.warn("Periodic requestData failed", err);
-                }
-            };
-
-            // Fast first chunk for quick initial feedback, then regular intervals
-            flushTimerRef.current = setTimeout(() => {
-                flushRecorder();
-                flushTimerRef.current = setInterval(flushRecorder, REGULAR_FLUSH_MS);
-            }, FIRST_FLUSH_MS);
-
             timerRef.current = setInterval(() => {
                 setRecordingDuration(prev => prev + 1);
             }, 1000);
@@ -318,7 +310,6 @@ const AudioRecorder = React.memo(function AudioRecorder({
 
     const stopRecording = () => {
         if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-            // Haptic feedback on mobile
             if ('vibrate' in navigator) navigator.vibrate([20, 30, 20]);
             processingStartTimeRef.current = Date.now();
             try {
@@ -331,11 +322,6 @@ const AudioRecorder = React.memo(function AudioRecorder({
             if (timerRef.current) {
                 clearInterval(timerRef.current);
                 timerRef.current = null;
-            }
-            if (flushTimerRef.current) {
-                clearTimeout(flushTimerRef.current);
-                clearInterval(flushTimerRef.current);
-                flushTimerRef.current = null;
             }
         }
     };
