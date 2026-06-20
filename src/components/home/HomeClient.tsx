@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback, useRef, Suspense } from 'react
 import dynamic from 'next/dynamic';
 import {
   Clock, Copy, MessageSquare, X, Trash2,
-  ArrowLeft, Sun, Moon, Mic, Loader2
+  ArrowLeft, Sun, Moon, Mic
 } from 'lucide-react';
 import { m, AnimatePresence } from 'framer-motion';
 import LanguageSelector from '@/components/LanguageSelector';
@@ -73,11 +73,8 @@ export default function HomeClient() {
     transcriptionTime,
     hasCopied,
     showAutoCopyBanner,
-    isTranscribingMore,
-    transcriptionProgress,
     handleCopy,
     handleTranscriptionComplete,
-    handleTranscriptionProgress,
     animateClear,
   } = useTranscriptionState({
     language,
@@ -229,7 +226,6 @@ export default function HomeClient() {
                   <div className="flex-1 flex items-center justify-center min-h-0 w-full overflow-visible">
                     <AudioRecorder
                       onTranscriptionComplete={handleTranscriptionComplete}
-                      onTranscribingProgress={handleTranscriptionProgress}
                       onError={handleErrorAction}
                       language={language}
                       apiKey={apiKey}
@@ -282,30 +278,6 @@ export default function HomeClient() {
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
-
-                  <AnimatePresence>
-                    {isTranscribingMore && (
-                      <m.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        className="flex items-center justify-center space-x-2 mb-3 overflow-hidden"
-                      >
-                        <Loader2 className="w-3.5 h-3.5 text-[var(--accent)] animate-spin" />
-                        <span className="text-[length:var(--font-size-caption)] font-bold text-[var(--text-secondary)] uppercase tracking-widest">
-                          Transcribing{transcriptionProgress ? ` ${transcriptionProgress.completed}/${transcriptionProgress.total}` : '...'}
-                        </span>
-                        {transcriptionProgress && transcriptionProgress.total > 1 && (
-                          <div className="w-16 h-1.5 bg-[var(--border)] rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-[var(--accent)] rounded-full transition-all duration-500 ease-out"
-                              style={{ width: `${Math.round((transcriptionProgress.completed / transcriptionProgress.total) * 100)}%` }}
-                            />
-                          </div>
-                        )}
-                      </m.div>
-                    )}
-                  </AnimatePresence>
 
                   <div className="flex items-center space-x-4 mb-4 lg:mb-8 w-full max-w-full lg:max-w-[400px] mx-auto px-1 pb-[max(env(safe-area-inset-bottom),1rem)]">
                     <button

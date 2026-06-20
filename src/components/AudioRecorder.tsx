@@ -8,7 +8,6 @@ import { cn } from '@/utils/cn';
 
 interface AudioRecorderProps {
     onTranscriptionComplete: (text: string, detectedLanguage?: string, isPartial?: boolean, processingTime?: number) => void;
-    onTranscribingProgress?: (completed: number, total: number) => void;
     onError: (msg: string) => void;
     language: string;
     apiKey: string;
@@ -22,7 +21,6 @@ interface AudioRecorderProps {
 
 const AudioRecorder = React.memo(function AudioRecorder({
     onTranscriptionComplete,
-    onTranscribingProgress,
     onError,
     language,
     apiKey,
@@ -64,8 +62,6 @@ const AudioRecorder = React.memo(function AudioRecorder({
     const TRANSCRIPTION_CHUNK_MS = 25000;
     const FORCED_FLUSH_EVERY_MS = 8000;
     const MAX_CONCURRENT_SEGMENTS = 2;
-    const onTranscribingProgressRef = useRef(onTranscribingProgress);
-    onTranscribingProgressRef.current = onTranscribingProgress;
 
     React.useEffect(() => {
         const interacted = localStorage.getItem('audio_recorder_interacted');
@@ -190,7 +186,6 @@ const AudioRecorder = React.memo(function AudioRecorder({
                             Math.round((segmentsCompletedRef.current / totalSegmentsRef.current) * 100)
                         );
                     }
-                    onTranscribingProgressRef.current?.(segmentsCompletedRef.current, totalSegmentsRef.current);
                     pumpQueue();
                     maybeResolveDrain();
                 }
