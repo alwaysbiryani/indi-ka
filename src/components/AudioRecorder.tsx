@@ -4,6 +4,7 @@
 import React, { useState, useRef } from 'react';
 import { Mic, Loader2, WifiOff } from 'lucide-react';
 import { SimpleScrollingWaveform } from '@/components/ui/Waveform';
+import { sliceAudioBuffer, bufferToWav } from '@/utils/audioProcessing';
 import { cn } from '@/utils/cn';
 
 interface AudioRecorderProps {
@@ -59,10 +60,22 @@ const AudioRecorder = React.memo(function AudioRecorder({
     const resolveDrainRef = useRef<(() => void) | null>(null);
     const drainPromiseRef = useRef<Promise<void>>(Promise.resolve());
     const segmentTimingsRef = useRef<Array<{ index: number; requestMs: number; providerMs?: number; ok: boolean }>>([]);
+    // Raw WebM blobs are a single continuous stream: only the first blob carries
+    // the container header, so later blobs are NOT independently decodable. We keep
+    // every blob, decode the full accumulated stream, then slice out fresh WAV
+    // segments (self-contained files) to send to the provider.
+    const chunksRef = useRef<Blob[]>([]);
+    const lastProcessedTimeRef = useRef(0);
+    const isSlicingRef = useRef(false);
+    const audioContextRef = useRef<AudioContext | null>(null);
 
     const FIRST_FLUSH_MS = 4000;
     const REGULAR_FLUSH_MS = 10000;
     const MAX_CONCURRENT_SEGMENTS = 3;
+    // Sarvam's synchronous ASR rejects audio longer than 30s; keep a safety margin.
+    const MAX_SEGMENT_SECONDS = 28;
+    // Don't cut tiny partial slivers mid-recording (jittery flush timing).
+    const MIN_PARTIAL_SECONDS = 1.0;
     const onTranscribingProgressRef = useRef(onTranscribingProgress);
     onTranscribingProgressRef.current = onTranscribingProgress;
 
@@ -86,6 +99,10 @@ const AudioRecorder = React.memo(function AudioRecorder({
                 clearTimeout(flushTimerRef.current);
                 clearInterval(flushTimerRef.current);
             }
+            if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+                void audioContextRef.current.close();
+                audioContextRef.current = null;
+            }
         };
     }, []);
 
@@ -108,6 +125,15 @@ const AudioRecorder = React.memo(function AudioRecorder({
             // Low bitrate optimization for faster upload
             const mediaRecorder = new MediaRecorder(stream, { audioBitsPerSecond: 16000 });
             mediaRecorderRef.current = mediaRecorder;
+
+            const getAudioContext = (): AudioContext => {
+                if (!audioContextRef.current || audioContextRef.current.state === 'closed') {
+                    const Ctor = window.AudioContext ||
+                        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+                    audioContextRef.current = new Ctor();
+                }
+                return audioContextRef.current;
+            };
 
             const flushOrderedResults = () => {
                 while (pendingResultsRef.current.has(nextEmitIndexRef.current)) {
@@ -211,13 +237,77 @@ const AudioRecorder = React.memo(function AudioRecorder({
                 }
             };
 
+            /**
+             * Decode the full accumulated WebM stream and enqueue any not-yet-processed
+             * audio as self-contained WAV segments (each < 30s). Runs on every flush for
+             * incremental partial results, and once more on stop for the final tail.
+             */
+            const enqueueReadySegments = async (isFinal: boolean) => {
+                // Ignore late partial flushes once we've committed to finalizing.
+                if (noMoreSegmentsRef.current && !isFinal) return;
+                // Single-flight: a partial slice may be running. Skip overlapping
+                // partials; the finalize pass must wait for it and then run.
+                if (isSlicingRef.current) {
+                    if (!isFinal) return;
+                    while (isSlicingRef.current) {
+                        await new Promise((resolve) => setTimeout(resolve, 20));
+                    }
+                }
+                if (chunksRef.current.length === 0) return;
+
+                isSlicingRef.current = true;
+                try {
+                    const audioBlob = new Blob(chunksRef.current, {
+                        type: mediaRecorderRef.current?.mimeType || 'audio/webm',
+                    });
+                    if (audioBlob.size === 0) return;
+
+                    let audioBuffer: AudioBuffer;
+                    try {
+                        const arrayBuffer = await audioBlob.arrayBuffer();
+                        audioBuffer = await getAudioContext().decodeAudioData(arrayBuffer);
+                    } catch (decodeErr) {
+                        // Not enough data to decode yet (e.g. header-only first flush);
+                        // a later flush / the finalize pass will retry with more data.
+                        console.warn("decodeAudioData failed, will retry with more data", decodeErr);
+                        return;
+                    }
+
+                    const duration = audioBuffer.duration;
+                    const audioContext = getAudioContext();
+
+                    while (lastProcessedTimeRef.current < duration) {
+                        const start = lastProcessedTimeRef.current;
+                        const remaining = duration - start;
+                        let end: number;
+                        if (remaining > MAX_SEGMENT_SECONDS) {
+                            end = start + MAX_SEGMENT_SECONDS; // enforce the provider cap
+                        } else if (isFinal) {
+                            end = duration; // final tail: take whatever's left
+                        } else if (remaining >= MIN_PARTIAL_SECONDS) {
+                            end = duration; // partial: emit the (< cap) remainder early
+                        } else {
+                            break; // too small to bother mid-recording; wait for more
+                        }
+
+                        const slicedBuffer = sliceAudioBuffer(audioBuffer, start, end, audioContext);
+                        const slicedBlob = bufferToWav(slicedBuffer);
+                        const index = nextSegmentIndexRef.current;
+                        nextSegmentIndexRef.current += 1;
+                        totalSegmentsRef.current += 1;
+                        lastProcessedTimeRef.current = end;
+                        pendingSegmentsRef.current.push({ index, blob: slicedBlob });
+                        pumpQueue();
+                    }
+                } finally {
+                    isSlicingRef.current = false;
+                }
+            };
+
             mediaRecorder.ondataavailable = (e) => {
                 if (e.data.size <= 0) return;
-                const index = nextSegmentIndexRef.current;
-                nextSegmentIndexRef.current += 1;
-                totalSegmentsRef.current += 1;
-                pendingSegmentsRef.current.push({ index, blob: e.data });
-                pumpQueue();
+                chunksRef.current.push(e.data);
+                void enqueueReadySegments(false);
             };
 
             mediaRecorder.onstop = async () => {
@@ -231,6 +321,9 @@ const AudioRecorder = React.memo(function AudioRecorder({
                     timerRef.current = null;
                 }
                 try {
+                    // Decode the complete recording and enqueue the final tail as WAV
+                    // segment(s) before we allow the drain to resolve.
+                    await enqueueReadySegments(true);
                     noMoreSegmentsRef.current = true;
                     setIsMultiSegment(totalSegmentsRef.current > 1);
                     if (totalSegmentsRef.current > 1) {
@@ -272,6 +365,11 @@ const AudioRecorder = React.memo(function AudioRecorder({
                     setProcessingStatus("");
                     stream.getTracks().forEach(track => track.stop());
                     setActiveStream(null);
+                    if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+                        void audioContextRef.current.close();
+                        audioContextRef.current = null;
+                    }
+                    chunksRef.current = [];
                 }
             };
 
@@ -289,6 +387,9 @@ const AudioRecorder = React.memo(function AudioRecorder({
             pendingResultsRef.current = new Map();
             noMoreSegmentsRef.current = false;
             segmentTimingsRef.current = [];
+            chunksRef.current = [];
+            lastProcessedTimeRef.current = 0;
+            isSlicingRef.current = false;
             drainPromiseRef.current = new Promise<void>((resolve) => {
                 resolveDrainRef.current = resolve;
             });
