@@ -8,21 +8,17 @@ The Sarvam AI `speech-to-text` API (and many similar synchronous ASR services) h
 To handle recordings longer than 30 seconds, the application implements **client-side chunking** in `src/components/AudioRecorder.tsx`.
 
 ### Key Components:
-1.  **Time-sliced Capture**: `MediaRecorder` emits chunks every ~25 seconds, safely below the 30-second API limit.
-2.  **Direct Upload**: Each emitted chunk is sent as-is to `/api/transcribe` without decode/re-encode.
-3.  **Bounded Parallelism + Ordered Merge**: Up to 2 chunk requests run in parallel, but results are merged in chunk index order so text remains stable.
-4.  **Live Partial Updates**: The UI updates with each completed chunk while recording continues.
-5.  **Fast Finalization**: On stop, the app only waits for any remaining queued chunk uploads.
+1.  **Continuous Capture**: `MediaRecorder` records one continuous WebM stream. We periodically call `requestData()` (first at ~4s, then every ~10s) to flush what's been captured so far.
+2.  **Decode + Slice to WAV** (critical): WebM/Matroska is a streaming container — **only the first emitted blob carries the container header**, so later `requestData()` blobs are headerless fragments that no decoder (including Sarvam) can read on their own. We therefore keep **every** blob, decode the *full accumulated stream* via the Web Audio API (`decodeAudioData`), then slice out the not-yet-processed audio and re-encode each slice as a **self-contained WAV** file (`sliceAudioBuffer` + `bufferToWav` in `src/utils/audioProcessing.ts`). Each WAV segment is a valid, independently decodable file kept under the 30-second cap.
+3.  **Bounded Parallelism + Ordered Merge**: Up to 3 segment requests run in parallel, but results are merged in segment index order so text remains stable.
+4.  **Live Partial Updates**: Each flush emits the fresh (< 30s) tail as its own segment, so the UI updates incrementally while recording continues.
+5.  **Fast Finalization**: On stop, the recording is decoded one last time and the remaining tail is enqueued; the app then waits only for any in-flight segment uploads.
 6.  **Timing Telemetry**: Each segment captures roundtrip timing and backend provider timing (`provider_ms`) for performance diagnosis.
 
-### Why this is faster
-- Avoids repeatedly decoding increasingly large accumulated blobs.
-- Avoids WAV conversion overhead and larger payload sizes.
-- Reduces "time after stop" by transcribing incrementally during recording.
-- Improves throughput for longer recordings with bounded parallel in-flight requests.
+> ⚠️ **Do NOT send raw `requestData()` WebM blobs directly to the provider.** Only the first blob is a valid file; every subsequent fragment lacks the header and fails to decode, so only the first few seconds of audio ever get transcribed. This exact regression shipped once and silently broke transcription for any recording longer than the first flush interval.
 
 ## Prevention of Future Issues
-- Keep chunk interval under 30 seconds (current setting: ~25 seconds).
-- Keep network concurrency low and bounded (current setting: `2`) to avoid provider throttling.
-- Preserve ordered merge by chunk index to prevent transcript shuffling.
-- Keep backend upload format aligned with provider expectations (`recording.webm` filename is preserved).
+- Keep each sliced segment under 30 seconds (current cap: `MAX_SEGMENT_SECONDS = 28`).
+- Always slice from the *decoded* accumulated buffer and upload WAV — never a mid-stream WebM fragment.
+- Keep network concurrency low and bounded (current setting: `3`) to avoid provider throttling.
+- Preserve ordered merge by segment index to prevent transcript shuffling.
