@@ -31,8 +31,14 @@ export async function POST(req: NextRequest) {
 
         const providerFilename = audioFile.name || (normalizedMime === 'audio/webm' ? 'recording.webm' : 'recording.bin');
 
+        // Re-wrap with the normalized MIME: the provider's allowlist accepts
+        // "audio/webm" but rejects the codec-qualified "audio/webm;codecs=opus"
+        // that browsers stamp on MediaRecorder output. Appending audioFile
+        // directly would forward its original codec-qualified Content-Type.
+        const uploadBlob = new Blob([audioFile], { type: normalizedMime });
+
         const sarvamFormData = new FormData();
-        sarvamFormData.append('file', audioFile, providerFilename);
+        sarvamFormData.append('file', uploadBlob, providerFilename);
         sarvamFormData.append('model', 'saaras:v3');
 
         if (language === 'hinglish' || language === 'auto') {
